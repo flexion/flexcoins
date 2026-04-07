@@ -21,6 +21,7 @@ func _ready() -> void:
 	GameManager.currency_changed.connect(_on_currency_changed)
 	GameManager.upgrade_purchased.connect(_on_upgrade_purchased)
 	GameManager.milestone_reached.connect(_on_milestone_reached)
+	GameManager.coin_collected.connect(_on_coin_collected)
 	_on_currency_changed(GameManager.currency)
 	_create_upgrade_buttons()
 	shop_toggle.pressed.connect(_on_shop_toggle_pressed)
@@ -74,6 +75,35 @@ func _on_shop_toggle_pressed() -> void:
 func _on_welcome_dismissed() -> void:
 	welcome_panel.visible = false
 	GameManager.clear_offline_earnings()
+
+
+func _on_coin_collected(value: int, world_position: Vector2) -> void:
+	# Spawn a small gold circle that arcs up to the currency label
+	var icon := ColorRect.new()
+	icon.custom_minimum_size = Vector2(12.0, 12.0)
+	icon.size = Vector2(12.0, 12.0)
+	icon.color = Color(1.0, 0.84, 0.0, 1.0)
+	icon.position = world_position - Vector2(6.0, 6.0)
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.z_index = 20
+	add_child(icon)
+	# Target: currency label center (in screen coords, which match CanvasLayer)
+	var target := Vector2(currency_label.global_position.x + currency_label.size.x / 2.0,
+			currency_label.global_position.y + currency_label.size.y / 2.0)
+	# Arc via a midpoint above
+	var mid := (icon.position + target) / 2.0 - Vector2(0.0, 150.0)
+	var tween := create_tween().set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tween.tween_method(func(t: float) -> void:
+		# Quadratic bezier: P = (1-t)^2*P0 + 2*(1-t)*t*P1 + t^2*P2
+		var start_pos := world_position - Vector2(6.0, 6.0)
+		var p := (1.0 - t) * (1.0 - t) * start_pos + 2.0 * (1.0 - t) * t * mid + t * t * target
+		icon.position = p
+		icon.scale = Vector2(1.0, 1.0).lerp(Vector2(0.5, 0.5), t)
+	, 0.0, 1.0, 0.4)
+	tween.tween_callback(func() -> void:
+		GameManager.add_currency(value)
+		icon.queue_free()
+	)
 
 
 func _on_mute_pressed() -> void:

@@ -38,9 +38,11 @@ func _process(delta: float) -> void:
 
 func _on_area_entered(area: Area2D) -> void:
 	if area.has_method("collect"):
-		GameManager.add_currency(area.value)
-		_spawn_floating_text(area.global_position, area.value)
-		_spawn_collect_burst(area.global_position)
+		var value: int = area.value
+		var pos: Vector2 = area.global_position
+		GameManager.coin_collected.emit(value, pos)
+		_spawn_floating_text(pos, value)
+		_spawn_collect_burst(pos)
 		bling_sound.play()
 		area.collect()
 
