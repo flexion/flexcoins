@@ -8,9 +8,13 @@ const TIER_COLORS: Array[Color] = [
 	Color(0.8, 0.4, 1.0, 1.0),    # Purple (tier 3+)
 ]
 const EMPTY_COLOR := Color(0.2, 0.2, 0.2, 1.0)
+const AFFORD_COLOR := Color(1.0, 0.84, 0.0, 1.0)
+const UNAFFORD_COLOR := Color(0.5, 0.5, 0.5, 1.0)
 
 var upgrade_id: String = ""
 var _segment_rects: Array[ColorRect] = []
+var _was_affordable: bool = false
+var _pulse_tween: Tween
 
 @onready var name_label: Label = %NameLabel
 @onready var effect_label: Label = %EffectLabel
@@ -51,7 +55,9 @@ func _update_display() -> void:
 	name_label.text = data.name
 	effect_label.text = data.description
 	buy_button.text = "Buy: %d" % cost
-	buy_button.disabled = GameManager.currency < cost
+	var affordable := GameManager.currency >= cost
+	buy_button.disabled = not affordable
+	_update_afford_cue(affordable)
 	_update_segments(level)
 
 
@@ -81,6 +87,33 @@ func _update_segments(level: int) -> void:
 	var fill_color: Color = TIER_COLORS[mini(tier, TIER_COLORS.size() - 1)]
 	for i: int in range(SEGMENTS):
 		_segment_rects[i].color = fill_color if i < filled else EMPTY_COLOR
+
+
+func _update_afford_cue(affordable: bool) -> void:
+	if affordable:
+		buy_button.add_theme_color_override("font_color", AFFORD_COLOR)
+		if not _was_affordable:
+			# Just became affordable — start pulse
+			_was_affordable = true
+			_start_pulse()
+	else:
+		buy_button.add_theme_color_override("font_color", UNAFFORD_COLOR)
+		if _was_affordable:
+			_was_affordable = false
+			_stop_pulse()
+
+
+func _start_pulse() -> void:
+	_stop_pulse()
+	_pulse_tween = create_tween().set_loops()
+	_pulse_tween.tween_property(buy_button, "modulate:a", 0.6, 0.5).set_ease(Tween.EASE_IN_OUT)
+	_pulse_tween.tween_property(buy_button, "modulate:a", 1.0, 0.5).set_ease(Tween.EASE_IN_OUT)
+
+
+func _stop_pulse() -> void:
+	if _pulse_tween and _pulse_tween.is_running():
+		_pulse_tween.kill()
+	buy_button.modulate.a = 1.0
 
 
 func _animate_purchase() -> void:
