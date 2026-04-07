@@ -4,6 +4,8 @@ extends CanvasLayer
 
 var _gold_flash: ColorRect
 var _milestone_label: Label
+var _shop_open: bool = false
+var _shop_tween: Tween
 
 @onready var currency_label: Label = %CurrencyLabel
 @onready var upgrade_container: VBoxContainer = %UpgradeContainer
@@ -23,6 +25,9 @@ func _ready() -> void:
 	_create_upgrade_buttons()
 	shop_toggle.pressed.connect(_on_shop_toggle_pressed)
 	mute_button.pressed.connect(_on_mute_pressed)
+	# Start with shop hidden off-screen
+	upgrade_panel.visible = false
+	upgrade_panel.offset_top = 0.0
 	_check_offline_earnings()
 	_create_gold_flash_overlay()
 	_create_milestone_label()
@@ -51,8 +56,19 @@ func _check_offline_earnings() -> void:
 
 
 func _on_shop_toggle_pressed() -> void:
-	upgrade_panel.visible = not upgrade_panel.visible
-	shop_toggle.text = "Close" if upgrade_panel.visible else "Shop"
+	if _shop_tween and _shop_tween.is_running():
+		return
+	_shop_open = not _shop_open
+	shop_toggle.text = "Close" if _shop_open else "Shop"
+	_shop_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	if _shop_open:
+		upgrade_panel.visible = true
+		upgrade_panel.offset_top = 0.0
+		_shop_tween.tween_property(upgrade_panel, "offset_top", -260.0, 0.3)
+	else:
+		_shop_tween.set_trans(Tween.TRANS_QUAD)
+		_shop_tween.tween_property(upgrade_panel, "offset_top", 0.0, 0.2)
+		_shop_tween.tween_callback(func() -> void: upgrade_panel.visible = false)
 
 
 func _on_welcome_dismissed() -> void:
