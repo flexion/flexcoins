@@ -8,11 +8,16 @@ signal coin_missed
 signal frenzy_started
 signal frenzy_ended
 signal bomb_hit
+signal ascended(count: int)
 
 const SAVE_PATH: String = "user://save.json"
 const MAX_OFFLINE_SECONDS: float = 28800.0  # 8 hours
 const OFFLINE_EFFICIENCY: float = 0.5
 const MILESTONES: Array[int] = [100, 500, 1000, 5000, 10000, 50000, 100000]
+
+const ASCEND_MIN_LEVEL: int = 15
+const ASCEND_MULTIPLIER: float = 1.5
+const CORE_UPGRADES: Array[String] = ["spawn_rate", "coin_value", "catcher_speed", "catcher_width"]
 
 const UPGRADE_DATA: Dictionary = {
 	"spawn_rate": {"name": "Spawn Rate", "description": "More coins fall", "base_cost": 10, "cost_growth": 1.15},
@@ -27,6 +32,7 @@ var _upgrade_levels: Dictionary = {}
 var _last_played: float = 0.0
 var _offline_earnings: int = 0
 var _last_milestone: int = 0
+var ascension_count: int = 0
 var frenzy_active: bool = false
 var _frenzy_timer: Timer
 
@@ -79,7 +85,8 @@ func get_spawn_interval() -> float:
 	return maxf(0.1, 0.8 * pow(0.95, _upgrade_levels.get("spawn_rate", 0)))
 
 func get_coin_value() -> int:
-	return 1 + _upgrade_levels.get("coin_value", 0)
+	var base: int = 1 + int(_upgrade_levels.get("coin_value", 0))
+	return int(base * get_ascension_multiplier())
 
 func get_catcher_speed() -> float:
 	return 600.0 + _upgrade_levels.get("catcher_speed", 0) * 50.0
@@ -119,6 +126,31 @@ func _end_frenzy() -> void:
 	frenzy_active = false
 	frenzy_ended.emit()
 
+func get_ascension_multiplier() -> float:
+	if ascension_count == 0:
+		return 1.0
+	return pow(ASCEND_MULTIPLIER, ascension_count)
+
+func can_ascend() -> bool:
+	for id: String in CORE_UPGRADES:
+		if _upgrade_levels.get(id, 0) < ASCEND_MIN_LEVEL:
+			return false
+	return true
+
+func try_ascend() -> bool:
+	if not can_ascend():
+		return false
+	ascension_count += 1
+	currency = 0
+	for id: String in _upgrade_levels:
+		_upgrade_levels[id] = 0
+	_last_milestone = 0
+	currency_changed.emit(currency)
+	upgrade_purchased.emit("")
+	ascended.emit(ascension_count)
+	save_game()
+	return true
+
 func get_earn_rate() -> float:
 	return float(get_coin_value()) / get_spawn_interval()
 
@@ -132,6 +164,7 @@ func save_game() -> void:
 	var data: Dictionary = {
 		"currency": currency,
 		"upgrade_levels": _upgrade_levels,
+		"ascension_count": ascension_count,
 		"last_played": Time.get_unix_time_from_system(),
 	}
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -154,6 +187,7 @@ func load_game() -> void:
 		for id: String in _upgrade_levels:
 			if id in saved_levels:
 				_upgrade_levels[id] = int(saved_levels[id])
+	ascension_count = int(data.get("ascension_count", 0))
 	var last_played: float = data.get("last_played", 0.0)
 	if last_played > 0.0:
 		var elapsed: float = clampf(Time.get_unix_time_from_system() - last_played, 0.0, MAX_OFFLINE_SECONDS)

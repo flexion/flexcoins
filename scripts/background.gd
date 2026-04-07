@@ -1,13 +1,35 @@
 extends ColorRect
 
 var _time: float = 0.0
+var _color_a := Color(0.08, 0.08, 0.18, 1.0)
+var _color_b := Color(0.12, 0.06, 0.22, 1.0)
 
-const COLOR_A := Color(0.08, 0.08, 0.18, 1.0)   # Deep navy
-const COLOR_B := Color(0.12, 0.06, 0.22, 1.0)    # Deep purple
+const PALETTES: Array[Array] = [
+	[Color(0.08, 0.08, 0.18, 1.0), Color(0.12, 0.06, 0.22, 1.0)],   # Navy/purple (base)
+	[Color(0.15, 0.08, 0.02, 1.0), Color(0.22, 0.12, 0.0, 1.0)],    # Deep bronze
+	[Color(0.02, 0.1, 0.15, 1.0), Color(0.0, 0.15, 0.22, 1.0)],     # Ocean teal
+	[Color(0.15, 0.02, 0.08, 1.0), Color(0.22, 0.0, 0.12, 1.0)],    # Crimson
+	[Color(0.08, 0.15, 0.02, 1.0), Color(0.05, 0.2, 0.08, 1.0)],    # Emerald
+]
 const CYCLE_SPEED: float = 0.15
+
+
+func _ready() -> void:
+	GameManager.ascended.connect(_on_ascended)
+	_set_palette(GameManager.ascension_count)
 
 
 func _process(delta: float) -> void:
 	_time += delta * CYCLE_SPEED
 	var t := (sin(_time) + 1.0) * 0.5
-	color = COLOR_A.lerp(COLOR_B, t)
+	color = _color_a.lerp(_color_b, t)
+
+
+func _on_ascended(count: int) -> void:
+	_set_palette(count)
+
+
+func _set_palette(ascension: int) -> void:
+	var idx: int = ascension % PALETTES.size()
+	_color_a = PALETTES[idx][0]
+	_color_b = PALETTES[idx][1]

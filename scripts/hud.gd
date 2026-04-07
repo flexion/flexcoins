@@ -4,6 +4,8 @@ extends CanvasLayer
 
 var _gold_flash: ColorRect
 var _milestone_label: Label
+var _ascension_label: Label
+var _ascend_button: Button
 var _shop_open: bool = false
 var _shop_tween: Tween
 
@@ -34,10 +36,12 @@ func _ready() -> void:
 	_check_offline_earnings()
 	_create_gold_flash_overlay()
 	_create_milestone_label()
+	_create_ascension_ui()
 
 
 func _on_currency_changed(new_amount: int) -> void:
 	currency_label.text = "Coins: %d" % new_amount
+	_update_ascend_button()
 
 
 func _create_upgrade_buttons() -> void:
@@ -72,6 +76,51 @@ func _on_shop_toggle_pressed() -> void:
 		_shop_tween.set_trans(Tween.TRANS_QUAD)
 		_shop_tween.tween_property(upgrade_panel, "offset_top", 0.0, 0.2)
 		_shop_tween.tween_callback(func() -> void: upgrade_panel.visible = false)
+
+
+func _create_ascension_ui() -> void:
+	# Ascension display label (top-left area, below currency)
+	_ascension_label = Label.new()
+	_ascension_label.anchors_preset = Control.PRESET_TOP_LEFT
+	_ascension_label.offset_left = 20.0
+	_ascension_label.offset_top = 55.0
+	_ascension_label.offset_right = 400.0
+	_ascension_label.add_theme_font_size_override("font_size", 16)
+	_ascension_label.add_theme_color_override("font_color", Color(0.8, 0.6, 1.0, 1.0))
+	_ascension_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_ascension_label)
+	_update_ascension_label()
+	# Ascend button in shop area
+	_ascend_button = Button.new()
+	_ascend_button.text = "ASCEND"
+	_ascend_button.custom_minimum_size = Vector2(200.0, 40.0)
+	_ascend_button.add_theme_font_size_override("font_size", 18)
+	_ascend_button.add_theme_color_override("font_color", Color(0.8, 0.6, 1.0, 1.0))
+	_ascend_button.pressed.connect(_on_ascend_pressed)
+	upgrade_container.add_child(_ascend_button)
+	_update_ascend_button()
+
+
+func _update_ascension_label() -> void:
+	if GameManager.ascension_count > 0:
+		_ascension_label.text = "Ascension %d  (%.1fx)" % [GameManager.ascension_count, GameManager.get_ascension_multiplier()]
+		_ascension_label.visible = true
+	else:
+		_ascension_label.visible = false
+
+
+func _update_ascend_button() -> void:
+	if _ascend_button:
+		_ascend_button.visible = GameManager.can_ascend()
+
+
+func _on_ascend_pressed() -> void:
+	if GameManager.try_ascend():
+		_update_ascension_label()
+		# Big celebration
+		_show_milestone_celebration(0)
+		_milestone_label.text = "ASCENDED!"
+		_milestone_label.add_theme_color_override("font_color", Color(0.8, 0.6, 1.0, 1.0))
 
 
 func _on_welcome_dismissed() -> void:
