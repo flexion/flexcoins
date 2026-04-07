@@ -2,10 +2,16 @@ extends Area2D
 
 @export var floating_text_scene: PackedScene
 
+const MAX_COMBO_PITCH: float = 2.0
+const PITCH_STEP: float = 0.08
+
 var speed: float = 600.0
 
 var _prev_x: float = 0.0
 var _trail_particles: CPUParticles2D
+var _combo: int = 0
+var _combo_label: Label
+var _combo_fade_timer: Timer
 
 @onready var color_rect: ColorRect = $ColorRect
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
@@ -18,6 +24,8 @@ func _ready() -> void:
 	_apply_upgrades()
 	_prev_x = position.x
 	_setup_trail()
+	_setup_combo_label()
+	GameManager.coin_missed.connect(_on_coin_missed)
 
 
 func _process(delta: float) -> void:
@@ -45,10 +53,13 @@ func _on_area_entered(area: Area2D) -> void:
 	if area.has_method("collect"):
 		var value: int = area.value
 		var pos: Vector2 = area.global_position
+		_combo += 1
+		bling_sound.pitch_scale = minf(1.0 + (_combo - 1) * PITCH_STEP, MAX_COMBO_PITCH)
 		GameManager.coin_collected.emit(value, pos)
 		_spawn_floating_text(pos, value)
 		_spawn_collect_burst(pos)
 		_squash_bounce()
+		_update_combo_label()
 		bling_sound.play()
 		area.collect()
 
@@ -103,6 +114,40 @@ func _spawn_collect_burst(at_position: Vector2) -> void:
 	get_parent().add_child(burst)
 	# Self-free after particles are done
 	get_tree().create_timer(burst.lifetime + 0.1).timeout.connect(burst.queue_free)
+
+
+func _setup_combo_label() -> void:
+	_combo_label = Label.new()
+	_combo_label.add_theme_font_size_override("font_size", 20)
+	_combo_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.9))
+	_combo_label.position = Vector2(30.0, -30.0)
+	_combo_label.modulate.a = 0.0
+	add_child(_combo_label)
+	_combo_fade_timer = Timer.new()
+	_combo_fade_timer.one_shot = true
+	_combo_fade_timer.wait_time = 2.0
+	_combo_fade_timer.timeout.connect(_fade_combo_label)
+	add_child(_combo_fade_timer)
+
+
+func _update_combo_label() -> void:
+	if _combo >= 2:
+		_combo_label.text = "x%d" % _combo
+		_combo_label.modulate.a = 1.0
+		_combo_fade_timer.start()
+	else:
+		_combo_label.modulate.a = 0.0
+
+
+func _fade_combo_label() -> void:
+	var tween := create_tween()
+	tween.tween_property(_combo_label, "modulate:a", 0.0, 0.5)
+
+
+func _on_coin_missed() -> void:
+	_combo = 0
+	bling_sound.pitch_scale = 1.0
+	_combo_label.modulate.a = 0.0
 
 
 func _setup_trail() -> void:

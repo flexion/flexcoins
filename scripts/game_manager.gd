@@ -4,6 +4,7 @@ signal currency_changed(new_amount: int)
 signal upgrade_purchased(upgrade_id: String)
 signal milestone_reached(amount: int)
 signal coin_collected(value: int, world_position: Vector2)
+signal coin_missed
 
 const SAVE_PATH: String = "user://save.json"
 const MAX_OFFLINE_SECONDS: float = 28800.0  # 8 hours

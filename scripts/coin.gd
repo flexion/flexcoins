@@ -3,6 +3,7 @@ extends Area2D
 @export var fall_speed: float = 300.0
 var value: int = 1
 
+var _collected: bool = false
 var _current_speed: float = 0.0
 var _rotation_speed: float = 0.0
 
@@ -25,6 +26,7 @@ func _process(delta: float) -> void:
 
 
 func collect() -> void:
+	_collected = true
 	set_deferred("monitoring", false)
 	set_deferred("monitorable", false)
 	set_process(false)
@@ -37,6 +39,8 @@ func collect() -> void:
 
 
 func _on_screen_exited() -> void:
+	if not _collected:
+		GameManager.coin_missed.emit()
 	queue_free()
 
 
