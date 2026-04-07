@@ -12,6 +12,7 @@ var _milestone_label: Label
 @onready var welcome_panel: PanelContainer = %WelcomePanel
 @onready var welcome_earnings_label: Label = %WelcomeEarningsLabel
 @onready var welcome_button: Button = %WelcomeButton
+@onready var mute_button: Button = %MuteButton
 
 
 func _ready() -> void:
@@ -21,6 +22,7 @@ func _ready() -> void:
 	_on_currency_changed(GameManager.currency)
 	_create_upgrade_buttons()
 	shop_toggle.pressed.connect(_on_shop_toggle_pressed)
+	mute_button.pressed.connect(_on_mute_pressed)
 	_check_offline_earnings()
 	_create_gold_flash_overlay()
 	_create_milestone_label()
@@ -56,6 +58,13 @@ func _on_shop_toggle_pressed() -> void:
 func _on_welcome_dismissed() -> void:
 	welcome_panel.visible = false
 	GameManager.clear_offline_earnings()
+
+
+func _on_mute_pressed() -> void:
+	var bus_index := AudioServer.get_bus_index("Master")
+	var muted := not AudioServer.is_bus_mute(bus_index)
+	AudioServer.set_bus_mute(bus_index, muted)
+	mute_button.text = "🔇" if muted else "🔊"
 
 
 func _on_upgrade_purchased(_upgrade_id: String) -> void:
