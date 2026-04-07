@@ -1,6 +1,6 @@
 extends Area2D
 
-enum CoinType { SILVER, GOLD, FRENZY }
+enum CoinType { SILVER, GOLD, FRENZY, BOMB }
 
 @export var fall_speed: float = 300.0
 var value: int = 1
@@ -27,6 +27,10 @@ func _ready() -> void:
 		CoinType.FRENZY:
 			value = 0
 			modulate = Color(0.3, 1.0, 0.4, 1.0)
+		CoinType.BOMB:
+			value = 0
+			fall_speed *= 0.8
+			modulate = Color(1.0, 0.25, 0.2, 1.0)
 
 	_add_glow()
 	_add_trail()
@@ -43,6 +47,8 @@ func collect() -> void:
 	_collected = true
 	if coin_type == CoinType.FRENZY:
 		GameManager.start_frenzy()
+	elif coin_type == CoinType.BOMB:
+		GameManager.trigger_bomb()
 	set_deferred("monitoring", false)
 	set_deferred("monitorable", false)
 	set_process(false)
@@ -54,7 +60,7 @@ func collect() -> void:
 
 
 func _on_screen_exited() -> void:
-	if not _collected and coin_type != CoinType.FRENZY:
+	if not _collected and coin_type != CoinType.FRENZY and coin_type != CoinType.BOMB:
 		GameManager.coin_missed.emit()
 	queue_free()
 
@@ -83,6 +89,8 @@ func _add_glow() -> void:
 			glow.modulate = Color(1.0, 0.9, 0.3, 0.3)
 		CoinType.FRENZY:
 			glow.modulate = Color(0.3, 1.0, 0.4, 0.3)
+		CoinType.BOMB:
+			glow.modulate = Color(1.0, 0.2, 0.1, 0.3)
 		_:
 			glow.modulate = Color(1.0, 0.84, 0.0, 0.2)
 	glow.z_index = -1
@@ -106,6 +114,8 @@ func _add_trail() -> void:
 			trail.color = Color(1.0, 0.9, 0.3, 0.5)
 		CoinType.FRENZY:
 			trail.color = Color(0.3, 1.0, 0.4, 0.5)
+		CoinType.BOMB:
+			trail.color = Color(1.0, 0.2, 0.1, 0.5)
 		_:
 			trail.color = Color(1.0, 0.84, 0.0, 0.35)
 	add_child(trail)

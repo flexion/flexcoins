@@ -23,6 +23,7 @@ func _ready() -> void:
 	GameManager.milestone_reached.connect(_on_milestone_reached)
 	GameManager.coin_collected.connect(_on_coin_collected)
 	GameManager.frenzy_started.connect(_on_frenzy_started)
+	GameManager.bomb_hit.connect(_on_bomb_hit)
 	_on_currency_changed(GameManager.currency)
 	_create_upgrade_buttons()
 	shop_toggle.pressed.connect(_on_shop_toggle_pressed)
@@ -127,6 +128,21 @@ func _on_frenzy_started() -> void:
 	tween.tween_interval(1.5)
 	tween.tween_property(lbl, "modulate:a", 0.0, 0.5)
 	tween.tween_callback(lbl.queue_free)
+
+
+func _on_bomb_hit() -> void:
+	# Red screen flash
+	_gold_flash.color = Color(1.0, 0.1, 0.0, 0.3)
+	var flash_tween := create_tween()
+	flash_tween.tween_property(_gold_flash, "color:a", 0.0, 0.4).set_ease(Tween.EASE_OUT)
+	# Screen shake via camera or offset on the Main node
+	var main_node := get_tree().current_scene
+	if main_node:
+		var shake_tween := create_tween()
+		for i: int in range(8):
+			var offset := Vector2(randf_range(-8.0, 8.0), randf_range(-8.0, 8.0))
+			shake_tween.tween_property(main_node, "position", offset, 0.04)
+		shake_tween.tween_property(main_node, "position", Vector2.ZERO, 0.04)
 
 
 func _on_mute_pressed() -> void:

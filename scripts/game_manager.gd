@@ -7,6 +7,7 @@ signal coin_collected(value: int, world_position: Vector2)
 signal coin_missed
 signal frenzy_started
 signal frenzy_ended
+signal bomb_hit
 
 const SAVE_PATH: String = "user://save.json"
 const MAX_OFFLINE_SECONDS: float = 28800.0  # 8 hours
@@ -107,6 +108,12 @@ func start_frenzy() -> void:
 	frenzy_active = true
 	_frenzy_timer.start(5.0)
 	frenzy_started.emit()
+
+func trigger_bomb() -> void:
+	var loss := maxi(1, currency / 10)
+	currency = maxi(0, currency - loss)
+	currency_changed.emit(currency)
+	bomb_hit.emit()
 
 func _end_frenzy() -> void:
 	frenzy_active = false

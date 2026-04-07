@@ -12,6 +12,7 @@ var _trail_particles: CPUParticles2D
 var _combo: int = 0
 var _combo_label: Label
 var _combo_fade_timer: Timer
+var _bomb_shrink_active: bool = false
 
 @onready var color_rect: ColorRect = $ColorRect
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
@@ -27,6 +28,7 @@ func _ready() -> void:
 	_setup_trail()
 	_setup_combo_label()
 	GameManager.coin_missed.connect(_on_coin_missed)
+	GameManager.bomb_hit.connect(_on_bomb_hit)
 
 
 func _process(delta: float) -> void:
@@ -149,6 +151,27 @@ func _on_coin_missed() -> void:
 	_combo = 0
 	bling_sound.pitch_scale = 1.0
 	_combo_label.modulate.a = 0.0
+
+
+func _on_bomb_hit() -> void:
+	if _bomb_shrink_active:
+		return
+	_bomb_shrink_active = true
+	# Shrink to 60% width
+	var normal_w := GameManager.get_catcher_width()
+	var shrunk_w := normal_w * 0.6
+	color_rect.offset_left = -shrunk_w / 2.0
+	color_rect.offset_right = shrunk_w / 2.0
+	collision_shape.shape.size = Vector2(shrunk_w, 20.0)
+	# Flash red
+	color_rect.color = Color(1.0, 0.2, 0.1, 1.0)
+	var flash_tween := create_tween()
+	flash_tween.tween_property(color_rect, "color", Color(0.29, 0.56, 0.85, 1.0), 0.5)
+	# Restore after 3 seconds
+	get_tree().create_timer(3.0).timeout.connect(func() -> void:
+		_bomb_shrink_active = false
+		_apply_upgrades()
+	)
 
 
 func _setup_trail() -> void:
