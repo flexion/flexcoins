@@ -1,7 +1,11 @@
 extends Area2D
 
 @export var fall_speed: float = 300.0
-@export var value: int = 1
+var value: int = 1
+
+
+func _ready() -> void:
+	value = GameManager.get_coin_value()
 
 
 func _process(delta: float) -> void:

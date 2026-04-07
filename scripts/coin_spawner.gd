@@ -1,13 +1,18 @@
 extends Node2D
 
 @export var coin_scene: PackedScene
-@export var spawn_interval: float = 0.8
 @export var margin: float = 40.0
 
 
 func _ready() -> void:
-	$Timer.wait_time = spawn_interval
+	$Timer.wait_time = GameManager.get_spawn_interval()
 	$Timer.start()
+	GameManager.upgrade_purchased.connect(_on_upgrade_purchased)
+
+
+func _on_upgrade_purchased(upgrade_id: String) -> void:
+	if upgrade_id == "spawn_rate":
+		$Timer.wait_time = GameManager.get_spawn_interval()
 
 
 func _on_timer_timeout() -> void:

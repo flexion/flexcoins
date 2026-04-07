@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://main_scene_001"]
+[gd_scene load_steps=6 format=3 uid="uid://main_scene_001"]
 
 [ext_resource type="Script" path="res://scripts/coin_spawner.gd" id="1_spawner_script"]
 [ext_resource type="PackedScene" path="res://scenes/coin.tscn" id="2_coin_scene"]
 [ext_resource type="PackedScene" path="res://scenes/catcher.tscn" id="3_catcher_scene"]
 [ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="4_hud_scene"]
+[ext_resource type="PackedScene" path="res://scenes/floating_text.tscn" id="5_float_text"]
 
 [node name="Main" type="Node2D"]
 
@@ -19,7 +20,8 @@ coin_scene = ExtResource("2_coin_scene")
 [node name="Timer" type="Timer" parent="CoinSpawner"]
 
 [node name="Catcher" parent="." instance=ExtResource("3_catcher_scene")]
-position = Vector2(360, 1180)
+position = Vector2(360, 1000)
+floating_text_scene = ExtResource("5_float_text")
 
 [node name="HUD" parent="." instance=ExtResource("4_hud_scene")]
 

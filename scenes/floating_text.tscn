@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://floating_text_001"]
+
+[ext_resource type="Script" path="res://scripts/floating_text.gd" id="1_script"]
+
+[node name="FloatingText" type="Label"]
+script = ExtResource("1_script")
+theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(1, 0.84, 0, 1)

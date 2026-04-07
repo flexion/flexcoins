@@ -1,0 +1,42 @@
+[gd_scene load_steps=2 format=3 uid="uid://upgrade_btn_001"]
+
+[ext_resource type="Script" path="res://scripts/upgrade_button.gd" id="1_script"]
+
+[node name="UpgradeButton" type="PanelContainer"]
+script = ExtResource("1_script")
+custom_minimum_size = Vector2(0, 50)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="InfoVBox" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="NameLabel" type="Label" parent="MarginContainer/HBoxContainer/InfoVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Upgrade Lv.0"
+
+[node name="EffectLabel" type="Label" parent="MarginContainer/HBoxContainer/InfoVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+text = "Description"
+
+[node name="BuyButton" type="Button" parent="MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(120, 40)
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(1, 0.84, 0, 1)
+text = "Buy: 100"
