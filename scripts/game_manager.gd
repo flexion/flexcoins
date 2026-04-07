@@ -5,6 +5,8 @@ signal upgrade_purchased(upgrade_id: String)
 signal milestone_reached(amount: int)
 signal coin_collected(value: int, world_position: Vector2)
 signal coin_missed
+signal frenzy_started
+signal frenzy_ended
 
 const SAVE_PATH: String = "user://save.json"
 const MAX_OFFLINE_SECONDS: float = 28800.0  # 8 hours
@@ -24,6 +26,8 @@ var _upgrade_levels: Dictionary = {}
 var _last_played: float = 0.0
 var _offline_earnings: int = 0
 var _last_milestone: int = 0
+var frenzy_active: bool = false
+var _frenzy_timer: Timer
 
 func _ready() -> void:
 	get_tree().auto_accept_quit = false
@@ -93,6 +97,20 @@ func get_magnet_strength() -> float:
 	if level == 0:
 		return 0.0
 	return 100.0 + level * 40.0
+
+func start_frenzy() -> void:
+	if not _frenzy_timer:
+		_frenzy_timer = Timer.new()
+		_frenzy_timer.one_shot = true
+		_frenzy_timer.timeout.connect(_end_frenzy)
+		add_child(_frenzy_timer)
+	frenzy_active = true
+	_frenzy_timer.start(5.0)
+	frenzy_started.emit()
+
+func _end_frenzy() -> void:
+	frenzy_active = false
+	frenzy_ended.emit()
 
 func get_earn_rate() -> float:
 	return float(get_coin_value()) / get_spawn_interval()

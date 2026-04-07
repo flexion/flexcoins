@@ -1,7 +1,10 @@
 extends Area2D
 
+enum CoinType { SILVER, GOLD, FRENZY }
+
 @export var fall_speed: float = 300.0
 var value: int = 1
+var coin_type: CoinType = CoinType.SILVER
 
 var _collected: bool = false
 var _current_speed: float = 0.0
@@ -15,6 +18,16 @@ func _ready() -> void:
 	rotation = randf_range(0.0, TAU)
 	_rotation_speed = randf_range(-1.5, 1.5)
 	_current_speed = fall_speed * 0.15
+
+	match coin_type:
+		CoinType.GOLD:
+			value *= 5
+			fall_speed *= 1.5
+			modulate = Color(1.0, 0.9, 0.3, 1.0)
+		CoinType.FRENZY:
+			value = 0
+			modulate = Color(0.3, 1.0, 0.4, 1.0)
+
 	_add_glow()
 	_add_trail()
 
@@ -28,10 +41,11 @@ func _process(delta: float) -> void:
 
 func collect() -> void:
 	_collected = true
+	if coin_type == CoinType.FRENZY:
+		GameManager.start_frenzy()
 	set_deferred("monitoring", false)
 	set_deferred("monitorable", false)
 	set_process(false)
-	# Scale-up pop before disappearing
 	var tween := create_tween()
 	tween.tween_property(sprite, "scale", Vector2(0.55, 0.55), 0.07).set_ease(Tween.EASE_OUT)
 	tween.tween_property(sprite, "scale", Vector2(0.0, 0.0), 0.09).set_ease(Tween.EASE_IN)
@@ -40,7 +54,7 @@ func collect() -> void:
 
 
 func _on_screen_exited() -> void:
-	if not _collected:
+	if not _collected and coin_type != CoinType.FRENZY:
 		GameManager.coin_missed.emit()
 	queue_free()
 
@@ -61,11 +75,16 @@ func _apply_magnet(delta: float) -> void:
 
 
 func _add_glow() -> void:
-	# Faint glow behind the coin using a scaled-up tinted copy of the sprite
 	var glow := Sprite2D.new()
 	glow.texture = sprite.texture
 	glow.scale = Vector2(0.55, 0.55)
-	glow.modulate = Color(1.0, 0.84, 0.0, 0.2)
+	match coin_type:
+		CoinType.GOLD:
+			glow.modulate = Color(1.0, 0.9, 0.3, 0.3)
+		CoinType.FRENZY:
+			glow.modulate = Color(0.3, 1.0, 0.4, 0.3)
+		_:
+			glow.modulate = Color(1.0, 0.84, 0.0, 0.2)
 	glow.z_index = -1
 	add_child(glow)
 
@@ -82,5 +101,11 @@ func _add_trail() -> void:
 	trail.gravity = Vector2.ZERO
 	trail.scale_amount_min = 1.5
 	trail.scale_amount_max = 3.0
-	trail.color = Color(1.0, 0.84, 0.0, 0.35)
+	match coin_type:
+		CoinType.GOLD:
+			trail.color = Color(1.0, 0.9, 0.3, 0.5)
+		CoinType.FRENZY:
+			trail.color = Color(0.3, 1.0, 0.4, 0.5)
+		_:
+			trail.color = Color(1.0, 0.84, 0.0, 0.35)
 	add_child(trail)

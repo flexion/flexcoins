@@ -22,6 +22,7 @@ func _ready() -> void:
 	GameManager.upgrade_purchased.connect(_on_upgrade_purchased)
 	GameManager.milestone_reached.connect(_on_milestone_reached)
 	GameManager.coin_collected.connect(_on_coin_collected)
+	GameManager.frenzy_started.connect(_on_frenzy_started)
 	_on_currency_changed(GameManager.currency)
 	_create_upgrade_buttons()
 	shop_toggle.pressed.connect(_on_shop_toggle_pressed)
@@ -78,6 +79,8 @@ func _on_welcome_dismissed() -> void:
 
 
 func _on_coin_collected(value: int, world_position: Vector2) -> void:
+	if value <= 0:
+		return
 	# Spawn a small gold circle that arcs up to the currency label
 	var icon := ColorRect.new()
 	icon.custom_minimum_size = Vector2(12.0, 12.0)
@@ -104,6 +107,26 @@ func _on_coin_collected(value: int, world_position: Vector2) -> void:
 		GameManager.add_currency(value)
 		icon.queue_free()
 	)
+
+
+func _on_frenzy_started() -> void:
+	var lbl := Label.new()
+	lbl.text = "FRENZY!"
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.anchors_preset = Control.PRESET_CENTER_TOP
+	lbl.offset_left = -200.0
+	lbl.offset_right = 200.0
+	lbl.offset_top = 80.0
+	lbl.add_theme_font_size_override("font_size", 42)
+	lbl.add_theme_color_override("font_color", Color(0.3, 1.0, 0.4, 1.0))
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(lbl)
+	var tween := create_tween()
+	tween.tween_property(lbl, "scale", Vector2(1.2, 1.2), 0.15).from(Vector2(0.5, 0.5)).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	tween.tween_property(lbl, "scale", Vector2(1.0, 1.0), 0.1)
+	tween.tween_interval(1.5)
+	tween.tween_property(lbl, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(lbl.queue_free)
 
 
 func _on_mute_pressed() -> void:
