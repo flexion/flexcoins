@@ -14,17 +14,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
+      fail-fast: false
       matrix:
         include:
           - preset: "Windows"
             artifact: "FlexCoins-windows"
-            path: "build/FlexCoins.exe"
+            export_path: "build/FlexCoins.exe"
           - preset: "Linux"
             artifact: "FlexCoins-linux"
-            path: "build/FlexCoins.x86_64"
+            export_path: "build/FlexCoins.x86_64"
           - preset: "Web"
             artifact: "FlexCoins-web"
-            path: "build/web"
+            export_path: "build/web/FlexCoins.html"
 
     steps:
       - uses: actions/checkout@v4
@@ -50,15 +51,14 @@ jobs:
         run: mkdir -p build/web
 
       - name: Export ${{ matrix.preset }}
-        run: godot --headless --export-release "${{ matrix.preset }}" "${{ matrix.path }}"
+        run: godot --headless --export-release "${{ matrix.preset }}" "${{ matrix.export_path }}"
 
       - name: Zip build output
         run: |
-          cd build
-          if [ -d "web" ]; then
-            zip -r ../FlexCoins-web.zip web/
+          if [ "${{ matrix.preset }}" = "Web" ]; then
+            cd build && zip -r ../FlexCoins-web.zip web/
           else
-            zip -r ../${{ matrix.artifact }}.zip $(basename "${{ matrix.path }}")
+            cd build && zip -r ../${{ matrix.artifact }}.zip $(basename "${{ matrix.export_path }}")
           fi
 
       - name: Upload artifact
