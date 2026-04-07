@@ -13,6 +13,9 @@ var _combo: int = 0
 var _combo_label: Label
 var _combo_fade_timer: Timer
 var _bomb_shrink_active: bool = false
+var _stripe: ColorRect
+var _catcher_tier: int = -1
+var _rainbow_time: float = 0.0
 
 @onready var color_rect: ColorRect = $ColorRect
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
@@ -51,6 +54,13 @@ func _process(delta: float) -> void:
 	var stretch_y := lerpf(1.0, 0.85, speed_ratio)
 	color_rect.scale = color_rect.scale.lerp(Vector2(stretch_x, stretch_y), 10.0 * delta)
 
+	# Rainbow animation for tier 3+
+	if _catcher_tier >= 3:
+		_rainbow_time += delta * 1.5
+		color_rect.color = Color.from_hsv(fmod(_rainbow_time, 1.0), 0.7, 0.9)
+		if _stripe:
+			_stripe.color = Color.from_hsv(fmod(_rainbow_time + 0.3, 1.0), 0.5, 1.0, 0.5)
+
 
 func _on_area_entered(area: Area2D) -> void:
 	if area.has_method("collect"):
@@ -79,6 +89,52 @@ func _apply_upgrades() -> void:
 	color_rect.offset_top = -10.0
 	color_rect.offset_bottom = 10.0
 	collision_shape.shape.size = Vector2(w, 20.0)
+	_update_catcher_visual()
+
+
+func _update_catcher_visual() -> void:
+	var level: int = GameManager.get_upgrade_level("catcher_width")
+	var new_tier: int = level / 10
+	if new_tier == _catcher_tier:
+		return
+	_catcher_tier = new_tier
+	# Remove old stripe
+	if _stripe:
+		_stripe.queue_free()
+		_stripe = null
+
+	match _catcher_tier:
+		0:
+			# Blue (default)
+			color_rect.color = Color(0.29, 0.56, 0.85, 1.0)
+		1:
+			# Wooden brown with grain stripe
+			color_rect.color = Color(0.55, 0.35, 0.17, 1.0)
+			_stripe = ColorRect.new()
+			_stripe.color = Color(0.65, 0.45, 0.25, 0.6)
+			_stripe.offset_left = color_rect.offset_left
+			_stripe.offset_right = color_rect.offset_right
+			_stripe.offset_top = -2.0
+			_stripe.offset_bottom = 2.0
+			add_child(_stripe)
+		2:
+			# Chrome/silver metallic with white highlight
+			color_rect.color = Color(0.7, 0.72, 0.75, 1.0)
+			_stripe = ColorRect.new()
+			_stripe.color = Color(1.0, 1.0, 1.0, 0.4)
+			_stripe.offset_left = color_rect.offset_left
+			_stripe.offset_right = color_rect.offset_right
+			_stripe.offset_top = -6.0
+			_stripe.offset_bottom = -2.0
+			add_child(_stripe)
+		_:
+			# Rainbow (animated in _process)
+			_stripe = ColorRect.new()
+			_stripe.offset_left = color_rect.offset_left
+			_stripe.offset_right = color_rect.offset_right
+			_stripe.offset_top = -3.0
+			_stripe.offset_bottom = 3.0
+			add_child(_stripe)
 
 
 func _squash_bounce() -> void:
@@ -163,13 +219,12 @@ func _on_bomb_hit() -> void:
 	color_rect.offset_left = -shrunk_w / 2.0
 	color_rect.offset_right = shrunk_w / 2.0
 	collision_shape.shape.size = Vector2(shrunk_w, 20.0)
-	# Flash red
+	# Flash red (restore happens via _apply_upgrades after timer)
 	color_rect.color = Color(1.0, 0.2, 0.1, 1.0)
-	var flash_tween := create_tween()
-	flash_tween.tween_property(color_rect, "color", Color(0.29, 0.56, 0.85, 1.0), 0.5)
 	# Restore after 3 seconds
 	get_tree().create_timer(3.0).timeout.connect(func() -> void:
 		_bomb_shrink_active = false
+		_catcher_tier = -1
 		_apply_upgrades()
 	)
 
