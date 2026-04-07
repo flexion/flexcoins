@@ -12,6 +12,7 @@ env:
 jobs:
   export:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       matrix:
         include:
@@ -51,11 +52,22 @@ jobs:
       - name: Export ${{ matrix.preset }}
         run: godot --headless --export-release "${{ matrix.preset }}" "${{ matrix.path }}"
 
+      - name: Zip build output
+        run: |
+          cd build
+          if [ -d "web" ]; then
+            zip -r ../FlexCoins-web.zip web/
+          else
+            zip -r ../${{ matrix.artifact }}.zip $(basename "${{ matrix.path }}")
+          fi
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: ${{ matrix.path }}
+          path: ${{ matrix.artifact }}.zip
+          compression-level: 0
+          retention-days: 7
 
   release:
     needs: export
@@ -69,17 +81,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-
-      - name: Zip artifacts
-        run: |
-          cd artifacts
-          for dir in */; do
-            name="${dir%/}"
-            (cd "$name" && zip -r "../../${name}.zip" .)
-          done
+          merge-multiple: true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: "*.zip"
+          files: artifacts/*.zip
