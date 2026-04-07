@@ -23,6 +23,7 @@ func _process(delta: float) -> void:
 	_current_speed = move_toward(_current_speed, fall_speed, fall_speed * delta * 0.8)
 	position.y += _current_speed * delta
 	rotation += _rotation_speed * delta
+	_apply_magnet(delta)
 
 
 func collect() -> void:
@@ -42,6 +43,21 @@ func _on_screen_exited() -> void:
 	if not _collected:
 		GameManager.coin_missed.emit()
 	queue_free()
+
+
+func _apply_magnet(delta: float) -> void:
+	var radius := GameManager.get_magnet_radius()
+	if radius <= 0.0:
+		return
+	var catchers := get_tree().get_nodes_in_group("catcher")
+	if catchers.is_empty():
+		return
+	var catcher_pos: Vector2 = catchers[0].global_position
+	var diff := catcher_pos.x - global_position.x
+	if absf(diff) < radius:
+		var strength := GameManager.get_magnet_strength()
+		var pull := strength * (1.0 - absf(diff) / radius)
+		position.x += signf(diff) * pull * delta
 
 
 func _add_glow() -> void:

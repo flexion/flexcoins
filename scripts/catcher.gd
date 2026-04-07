@@ -19,6 +19,7 @@ var _combo_fade_timer: Timer
 
 
 func _ready() -> void:
+	add_to_group("catcher")
 	collision_shape.shape = collision_shape.shape.duplicate()
 	GameManager.upgrade_purchased.connect(_on_upgrade_purchased)
 	_apply_upgrades()
