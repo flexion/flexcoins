@@ -6,6 +6,7 @@ var speed: float = 600.0
 
 @onready var color_rect: ColorRect = $ColorRect
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
+@onready var bling_sound: AudioStreamPlayer = $BlingSound
 
 
 func _ready() -> void:
@@ -26,6 +27,7 @@ func _on_area_entered(area: Area2D) -> void:
 	if area.has_method("collect"):
 		GameManager.add_currency(area.value)
 		_spawn_floating_text(area.global_position, area.value)
+		bling_sound.play()
 		area.collect()
 
 

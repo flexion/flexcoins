@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://catcher_scene_001"]
+[gd_scene load_steps=4 format=3 uid="uid://catcher_scene_001"]
 
 [ext_resource type="Script" path="res://scripts/catcher.gd" id="1_script"]
+[ext_resource type="AudioStreamWAV" uid="uid://dmpx6knl0kltu" path="res://sounds/bling.wav" id="2_bling"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_catcher"]
 size = Vector2(100, 20)
@@ -17,5 +18,8 @@ color = Color(0.290196, 0.564706, 0.85098, 1)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_catcher")
+
+[node name="BlingSound" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("2_bling")
 
 [connection signal="area_entered" from="." to="." method="_on_area_entered"]
