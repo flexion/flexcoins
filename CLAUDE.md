@@ -4,29 +4,44 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FlexCoins is a 2D idle game built with **Godot 4.6** using **GDScript**. The game concept is a falling-coin collector with idle progression mechanics, featuring a custom Flexion-branded coin asset (`flexcoin.png`).
-
-The project is in early stage — scaffold only, no scenes or scripts yet.
+FlexCoins is a 2D idle falling-coin collector game built with **Godot 4.6** using **GDScript**. Coins spawn at the top of a portrait viewport (720x1280), fall downward, and the player moves a catcher left/right to collect them for currency.
 
 ## Engine & Language
 
 - **Godot 4.6** with Forward Plus renderer
 - **GDScript** (not C# or GDExtension)
-- Physics engine: Jolt Physics (configured but this is a 2D project)
+- Viewport: 720x1280 (portrait)
 
 ## Development Commands
 
 - **Open in Godot editor**: `godot project.godot` (or open via Godot Project Manager)
-- **Run the game**: `godot --path . --main-scene <scene_path>` or press F5 in editor
-- **Run a specific scene**: `godot --path . <scene_path>.tscn` or press F6 in editor
-- **Export**: Configure export presets in editor, then `godot --headless --export-release <preset>`
+- **Run the game**: Press F5 in editor (main scene: `res://scenes/main.tscn`)
+- **Run a specific scene**: Press F6 in editor, or `godot --path . scenes/coin.tscn`
+- **Input actions**: `move_left` (Left arrow / A), `move_right` (Right arrow / D)
 
-## Architecture Notes
+## Architecture
 
-- All game files live under `res://` (project root)
-- `.tscn` files are scene definitions, `.gd` files are scripts, `.tres` files are resources
-- The `.godot/` directory is generated/cached — it is gitignored
-- `project.godot` is the project configuration (entry scene, input maps, settings)
+### Scene Tree (main.tscn)
+```
+Main (Node2D)
+├── Background (ColorRect, 720x1280, dark navy)
+├── CoinSpawner (Node2D, scripts/coin_spawner.gd)
+│   └── Timer (fires _on_timer_timeout to spawn coins)
+├── Catcher (instanced from scenes/catcher.tscn, positioned at 360,1180)
+└── HUD (instanced from scenes/hud.tscn, CanvasLayer)
+    └── MarginContainer > VBoxContainer > %CurrencyLabel
+```
+
+### Autoloads
+- **GameManager** (`scripts/game_manager.gd`): Holds `currency: int`, emits `currency_changed(new_amount)`, exposes `add_currency(amount)`
+
+### Key Scenes
+- **coin.tscn**: Area2D + Sprite2D (flexcoin.png @ 0.4 scale) + CollisionShape2D (circle r=24) + VisibleOnScreenNotifier2D. Falls at `fall_speed`, has `value` export. `collect()` calls `queue_free()`. Screen exit also frees.
+- **catcher.tscn**: Area2D + ColorRect (100x20 blue placeholder) + CollisionShape2D. Moves via input axis, clamped to viewport. On `area_entered`, checks `has_method("collect")`, scores via GameManager, then calls `collect()`.
+- **hud.tscn**: CanvasLayer. Connects to `GameManager.currency_changed` to update `%CurrencyLabel`.
+
+### Data Flow
+Spawner → instantiates Coins → Coins fall → Catcher detects overlap → GameManager.add_currency() → emits currency_changed → HUD updates label
 
 ## GDScript Conventions
 
@@ -41,8 +56,8 @@ The project is in early stage — scaffold only, no scenes or scripts yet.
 
 - **Composition over inheritance**: build small reusable scenes (components), instance them into actors
 - **Signals go up, calls go down** the scene tree
-- **Autoloads** (singletons) only for truly global concerns (e.g., GameManager, AudioManager)
-- **Object pooling** for frequently spawned items (coins) — hide/reposition instead of queue_free() + instantiate
+- **Autoloads** only for truly global concerns (GameManager is the current one)
 - Use `Area2D` (not RigidBody2D) for falling items with constant velocity
-- Use `VisibleOnScreenNotifier2D` to free/recycle offscreen objects
+- Use `VisibleOnScreenNotifier2D` to free offscreen objects
 - Use `set_process(false)` on nodes that don't need per-frame updates
+- Duck-type checks (`has_method`) for cross-scene interactions
