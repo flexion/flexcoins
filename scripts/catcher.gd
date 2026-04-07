@@ -35,6 +35,11 @@ func _process(delta: float) -> void:
 		_trail_particles.emitting = speed_ratio > 0.3
 		_trail_particles.amount = int(lerpf(3.0, 12.0, speed_ratio))
 
+	# Horizontal stretch when moving fast
+	var stretch_x := lerpf(1.0, 1.15, speed_ratio)
+	var stretch_y := lerpf(1.0, 0.85, speed_ratio)
+	color_rect.scale = color_rect.scale.lerp(Vector2(stretch_x, stretch_y), 10.0 * delta)
+
 
 func _on_area_entered(area: Area2D) -> void:
 	if area.has_method("collect"):
@@ -43,6 +48,7 @@ func _on_area_entered(area: Area2D) -> void:
 		GameManager.coin_collected.emit(value, pos)
 		_spawn_floating_text(pos, value)
 		_spawn_collect_burst(pos)
+		_squash_bounce()
 		bling_sound.play()
 		area.collect()
 
@@ -59,6 +65,13 @@ func _apply_upgrades() -> void:
 	color_rect.offset_top = -10.0
 	color_rect.offset_bottom = 10.0
 	collision_shape.shape.size = Vector2(w, 20.0)
+
+
+func _squash_bounce() -> void:
+	var tween := create_tween()
+	tween.tween_property(color_rect, "scale", Vector2(1.2, 0.7), 0.06).set_ease(Tween.EASE_OUT)
+	tween.tween_property(color_rect, "scale", Vector2(0.95, 1.1), 0.08).set_ease(Tween.EASE_OUT)
+	tween.tween_property(color_rect, "scale", Vector2(1.0, 1.0), 0.1).set_ease(Tween.EASE_IN_OUT)
 
 
 func _spawn_floating_text(at_position: Vector2, value: int) -> void:
