@@ -2,10 +2,12 @@ extends Node
 
 signal currency_changed(new_amount: int)
 signal upgrade_purchased(upgrade_id: String)
+signal milestone_reached(amount: int)
 
 const SAVE_PATH: String = "user://save.json"
 const MAX_OFFLINE_SECONDS: float = 28800.0  # 8 hours
 const OFFLINE_EFFICIENCY: float = 0.5
+const MILESTONES: Array[int] = [100, 500, 1000, 5000, 10000, 50000, 100000]
 
 const UPGRADE_DATA: Dictionary = {
 	"spawn_rate": {"name": "Spawn Rate", "description": "More coins fall", "base_cost": 10, "cost_growth": 1.15},
@@ -18,6 +20,7 @@ var currency: int = 0
 var _upgrade_levels: Dictionary = {}
 var _last_played: float = 0.0
 var _offline_earnings: int = 0
+var _last_milestone: int = 0
 
 func _ready() -> void:
 	get_tree().auto_accept_quit = false
@@ -30,6 +33,10 @@ func _ready() -> void:
 	autosave_timer.timeout.connect(save_game)
 	add_child(autosave_timer)
 	autosave_timer.start()
+	# Set initial milestone based on loaded currency
+	for m: int in MILESTONES:
+		if currency >= m:
+			_last_milestone = m
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
@@ -37,8 +44,10 @@ func _notification(what: int) -> void:
 		get_tree().quit()
 
 func add_currency(amount: int) -> void:
+	var old_currency := currency
 	currency += amount
 	currency_changed.emit(currency)
+	_check_milestones(old_currency, currency)
 
 func get_upgrade_level(upgrade_id: String) -> int:
 	return _upgrade_levels.get(upgrade_id, 0)
@@ -114,3 +123,9 @@ func load_game() -> void:
 	# This fires before scene nodes connect signals. Consumers must read
 	# GameManager.currency in their own _ready() for the initial value.
 	currency_changed.emit(currency)
+
+func _check_milestones(old_amount: int, new_amount: int) -> void:
+	for m: int in MILESTONES:
+		if old_amount < m and new_amount >= m and m > _last_milestone:
+			_last_milestone = m
+			milestone_reached.emit(m)

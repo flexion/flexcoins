@@ -19,7 +19,8 @@ func _ready() -> void:
 
 
 func _on_buy_pressed() -> void:
-	GameManager.try_purchase_upgrade(upgrade_id)
+	if GameManager.try_purchase_upgrade(upgrade_id):
+		_animate_purchase()
 
 
 func _on_currency_changed(_amount: int) -> void:
@@ -40,3 +41,16 @@ func _update_display() -> void:
 	effect_label.text = data.description
 	buy_button.text = "Buy: %d" % cost
 	buy_button.disabled = GameManager.currency < cost
+
+
+func _animate_purchase() -> void:
+	var tween := create_tween()
+	# Quick scale punch
+	tween.tween_property(self, "scale", Vector2(1.05, 1.05), 0.08).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.12).set_ease(Tween.EASE_IN_OUT)
+	# Flash the button bright
+	var original_color: Color = buy_button.get_theme_color("font_color")
+	buy_button.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
+	tween.tween_callback(func() -> void:
+		buy_button.add_theme_color_override("font_color", original_color)
+	)

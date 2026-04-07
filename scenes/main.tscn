@@ -1,17 +1,20 @@
-[gd_scene load_steps=6 format=3 uid="uid://main_scene_001"]
+[gd_scene load_steps=8 format=3 uid="uid://main_scene_001"]
 
 [ext_resource type="Script" path="res://scripts/coin_spawner.gd" id="1_spawner_script"]
 [ext_resource type="PackedScene" path="res://scenes/coin.tscn" id="2_coin_scene"]
 [ext_resource type="PackedScene" path="res://scenes/catcher.tscn" id="3_catcher_scene"]
 [ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="4_hud_scene"]
 [ext_resource type="PackedScene" path="res://scenes/floating_text.tscn" id="5_float_text"]
+[ext_resource type="Script" path="res://scripts/background.gd" id="6_bg_script"]
+[ext_resource type="AudioStream" path="res://sounds/flexion-game-bonus.mp3" id="7_music"]
 
 [node name="Main" type="Node2D"]
 
 [node name="Background" type="ColorRect" parent="."]
 offset_right = 720.0
 offset_bottom = 1280.0
-color = Color(0.101961, 0.101961, 0.180392, 1)
+color = Color(0.08, 0.08, 0.18, 1)
+script = ExtResource("6_bg_script")
 
 [node name="CoinSpawner" type="Node2D" parent="."]
 script = ExtResource("1_spawner_script")
@@ -25,4 +28,10 @@ floating_text_scene = ExtResource("5_float_text")
 
 [node name="HUD" parent="." instance=ExtResource("4_hud_scene")]
 
+[node name="BackgroundMusic" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("7_music")
+volume_db = -10.0
+autoplay = true
+
 [connection signal="timeout" from="CoinSpawner/Timer" to="CoinSpawner" method="_on_timer_timeout"]
+[connection signal="finished" from="BackgroundMusic" to="BackgroundMusic" method="play"]
