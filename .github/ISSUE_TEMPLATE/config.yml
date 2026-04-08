@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: FlexCoins Discord
+    url: https://discord.gg/flexcoins
+    about: Get help, discuss features, and report issues on Discord
+  - name: Documentation
+    url: https://github.com/jherrflexion/flexcoins/wiki
+    about: Read the project documentation and guides
