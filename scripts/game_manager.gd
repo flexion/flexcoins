@@ -9,6 +9,8 @@ signal frenzy_started
 signal frenzy_ended
 signal bomb_hit
 signal ascended(count: int)
+signal shop_opened
+signal shop_closed
 
 const SAVE_PATH: String = "user://save.json"
 const MAX_OFFLINE_SECONDS: float = 28800.0  # 8 hours

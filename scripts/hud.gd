@@ -67,6 +67,10 @@ func _on_shop_toggle_pressed() -> void:
 		return
 	_shop_open = not _shop_open
 	shop_toggle.text = "Close" if _shop_open else "Shop"
+	if _shop_open:
+		GameManager.shop_opened.emit()
+	else:
+		GameManager.shop_closed.emit()
 	_shop_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	if _shop_open:
 		upgrade_panel.visible = true

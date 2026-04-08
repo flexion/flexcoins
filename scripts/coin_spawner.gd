@@ -13,6 +13,8 @@ func _ready() -> void:
 	GameManager.upgrade_purchased.connect(_on_upgrade_purchased)
 	GameManager.frenzy_started.connect(_on_frenzy_started)
 	GameManager.frenzy_ended.connect(_on_frenzy_ended)
+	GameManager.shop_opened.connect(_on_shop_opened)
+	GameManager.shop_closed.connect(_on_shop_closed)
 
 
 func _on_upgrade_purchased(upgrade_id: String) -> void:
@@ -47,3 +49,11 @@ func _on_timer_timeout() -> void:
 		coin.coin_type = coin.CoinType.GOLD
 
 	get_parent().add_child(coin)
+
+
+func _on_shop_opened() -> void:
+	$Timer.paused = true
+
+
+func _on_shop_closed() -> void:
+	$Timer.paused = false
