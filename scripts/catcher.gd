@@ -170,6 +170,8 @@ func _squash_bounce() -> void:
 
 
 func _spawn_floating_text(at_position: Vector2, value: int) -> void:
+	if value == 0:
+		return
 	if floating_text_scene:
 		var ft: Label = floating_text_scene.instantiate()
 		ft.text = "+%d" % value
