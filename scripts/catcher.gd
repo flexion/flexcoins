@@ -4,6 +4,10 @@ extends Area2D
 
 const MAX_COMBO_PITCH: float = 2.0
 const PITCH_STEP: float = 0.08
+const COMBO_MULTIPLIER_50: float = 1.5
+const COMBO_MULTIPLIER_100: float = 2.0
+const COMBO_THRESHOLD_50: int = 50
+const COMBO_THRESHOLD_100: int = 100
 
 var speed: float = 600.0
 
@@ -12,6 +16,7 @@ var _trail_particles: CPUParticles2D
 var _combo: int = 0
 var _combo_label: Label
 var _combo_fade_timer: Timer
+var _combo_multiplier: float = 1.0
 var _bomb_shrink_active: bool = false
 var _stripe: ColorRect
 var _catcher_tier: int = -1
@@ -26,6 +31,11 @@ var _game_paused: bool = false
 func _ready() -> void:
 	add_to_group("catcher")
 	collision_shape.shape = collision_shape.shape.duplicate()
+
+	# Read initial state from GameManager (signal may have already fired)
+	_combo_multiplier = 1.0
+	_update_combo_multiplier()
+
 	GameManager.upgrade_purchased.connect(_on_upgrade_purchased)
 	_apply_upgrades()
 	_prev_x = position.x
@@ -35,6 +45,8 @@ func _ready() -> void:
 	GameManager.bomb_hit.connect(_on_bomb_hit)
 	GameManager.shop_opened.connect(_on_shop_opened)
 	GameManager.shop_closed.connect(_on_shop_closed)
+	GameManager.game_loaded.connect(_on_game_loaded)
+	GameManager.ascended.connect(_on_ascension)
 
 
 func _process(delta: float) -> void:
@@ -73,7 +85,15 @@ func _on_area_entered(area: Area2D) -> void:
 		var pos: Vector2 = area.global_position
 		_combo += 1
 		bling_sound.pitch_scale = minf(1.0 + (_combo - 1) * PITCH_STEP, MAX_COMBO_PITCH)
+
+		# Update combo multiplier based on threshold and apply via GameManager
+		_update_combo_multiplier()
+
+		# Coin value is now multiplied in GameManager.get_coin_value()
 		GameManager.coin_collected.emit(value, pos)
+		# Track quest progress
+		GameManager.update_quest_catch_coins(1)
+		GameManager.update_quest_combo(_combo)
 		_spawn_floating_text(pos, value)
 		_spawn_collect_burst(pos)
 		_squash_bounce()
@@ -154,7 +174,7 @@ func _spawn_floating_text(at_position: Vector2, value: int) -> void:
 		var ft: Label = floating_text_scene.instantiate()
 		ft.text = "+%d" % value
 		ft.position = at_position + Vector2(0.0, -20.0)
-		ft.z_index = 10
+		ft.z_index = 250
 		get_parent().add_child(ft)
 
 
@@ -210,6 +230,7 @@ func _fade_combo_label() -> void:
 
 func _on_coin_missed() -> void:
 	_combo = 0
+	_reset_combo_multiplier()
 	bling_sound.pitch_scale = 1.0
 	_combo_label.modulate.a = 0.0
 
@@ -218,6 +239,9 @@ func _on_bomb_hit() -> void:
 	if _bomb_shrink_active:
 		return
 	_bomb_shrink_active = true
+	# Reset combo and multiplier on bomb hit (hard reset)
+	_combo = 0
+	_reset_combo_multiplier()
 	# Shrink to 60% width
 	var normal_w := GameManager.get_catcher_width()
 	var shrunk_w := normal_w * 0.6
@@ -232,6 +256,28 @@ func _on_bomb_hit() -> void:
 		_catcher_tier = -1
 		_apply_upgrades()
 	)
+
+
+func _update_combo_multiplier() -> void:
+	var old_multiplier := _combo_multiplier
+	if _combo >= COMBO_THRESHOLD_100:
+		_combo_multiplier = COMBO_MULTIPLIER_100
+	elif _combo >= COMBO_THRESHOLD_50:
+		_combo_multiplier = COMBO_MULTIPLIER_50
+	else:
+		_combo_multiplier = 1.0
+
+	# Apply multiplier to GameManager and emit signal if changed
+	if _combo_multiplier != old_multiplier:
+		GameManager.set_combo_multiplier(_combo_multiplier)
+		GameManager.combo_multiplier_changed.emit(_combo_multiplier)
+
+
+func _reset_combo_multiplier() -> void:
+	if _combo_multiplier != 1.0:
+		_combo_multiplier = 1.0
+		GameManager.set_combo_multiplier(1.0)
+		GameManager.combo_multiplier_changed.emit(1.0)
 
 
 func _setup_trail() -> void:
@@ -258,3 +304,15 @@ func _on_shop_closed() -> void:
 	_game_paused = false
 	monitoring = true
 	add_child(_trail_particles)
+
+
+func _on_game_loaded() -> void:
+	_combo_multiplier = 1.0
+	_update_combo_multiplier()
+
+
+func _on_ascension(count: int) -> void:
+	_combo = 0
+	_reset_combo_multiplier()
+	bling_sound.pitch_scale = 1.0
+	_combo_label.modulate.a = 0.0
