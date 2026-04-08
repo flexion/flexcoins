@@ -16,6 +16,7 @@ var _bomb_shrink_active: bool = false
 var _stripe: ColorRect
 var _catcher_tier: int = -1
 var _rainbow_time: float = 0.0
+var _game_paused: bool = false
 
 @onready var color_rect: ColorRect = $ColorRect
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
@@ -32,9 +33,13 @@ func _ready() -> void:
 	_setup_combo_label()
 	GameManager.coin_missed.connect(_on_coin_missed)
 	GameManager.bomb_hit.connect(_on_bomb_hit)
+	GameManager.shop_opened.connect(_on_shop_opened)
+	GameManager.shop_closed.connect(_on_shop_closed)
 
 
 func _process(delta: float) -> void:
+	if _game_paused:
+		return
 	var direction := Input.get_axis("move_left", "move_right")
 	position.x += direction * speed * delta
 	var half_width := GameManager.get_catcher_width() / 2.0
@@ -242,4 +247,14 @@ func _setup_trail() -> void:
 	_trail_particles.scale_amount_min = 2.0
 	_trail_particles.scale_amount_max = 4.0
 	_trail_particles.color = Color(0.4, 0.65, 1.0, 0.4)
+
+
+func _on_shop_opened() -> void:
+	_game_paused = true
+	monitoring = false
+
+
+func _on_shop_closed() -> void:
+	_game_paused = false
+	monitoring = true
 	add_child(_trail_particles)

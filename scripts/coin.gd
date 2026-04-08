@@ -34,6 +34,8 @@ func _ready() -> void:
 
 	_add_glow()
 	_add_trail()
+	GameManager.shop_opened.connect(func(): set_process(false))
+	GameManager.shop_closed.connect(func(): set_process(true))
 
 
 func _process(delta: float) -> void:
