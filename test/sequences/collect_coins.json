@@ -1,0 +1,12 @@
+{
+  "description": "Wait for coins to spawn, move to collect them, verify currency increases",
+  "steps": [
+    {"type": "wait", "seconds": 2.0},
+    {"type": "assert", "node": "/root/GameManager", "property": "currency", "equals": 0},
+    {"type": "hold", "action": "move_left", "seconds": 1.0},
+    {"type": "hold", "action": "move_right", "seconds": 2.0},
+    {"type": "wait", "seconds": 1.0},
+    {"type": "screenshot", "filename": "after_collecting.png"},
+    {"type": "clear"}
+  ]
+}

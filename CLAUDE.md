@@ -20,6 +20,77 @@ FlexCoins is a 2D idle falling-coin collector game built with **Godot 4.6** usin
 - **Input actions**: `move_left` (Left arrow / A), `move_right` (Right arrow / D)
 - **Save file location**: `user://save.json` (auto-saves every 30s + on quit)
 
+## Validation & Testing Infrastructure
+
+### Autoloads
+- **DevTools** (`scripts/dev_tools.gd`): File-based command interface for automation, testing, and CI
+  - Polls `user://devtools_commands.json` every 100ms, writes results to `user://devtools_results.json`
+  - Structured logs: `user://devtools_log.jsonl`
+  - User data path (macOS): `~/Library/Application Support/Godot/app_userdata/FlexCoins/`
+
+### Headless Lint (no game running needed)
+```bash
+# Full project lint (UIDs + scene warnings)
+godot --headless --script res://tools/lint_project.gd
+
+# Lint specific scene
+godot --headless --script res://tools/lint_project.gd -- --scene res://scenes/main.tscn
+
+# JSON output for CI
+godot --headless --script res://tools/lint_project.gd -- --all --json
+
+# Fail on warnings (strict mode)
+godot --headless --script res://tools/lint_project.gd -- --all --fail-on-warn
+```
+
+### DevTools CLI (requires game running)
+```bash
+# Check connection
+python3 tools/devtools.py ping
+
+# Screenshots
+python3 tools/devtools.py screenshot
+
+# Scene validation
+python3 tools/devtools.py validate-all
+python3 tools/devtools.py validate --scene res://scenes/main.tscn
+
+# Introspection
+python3 tools/devtools.py scene-tree
+python3 tools/devtools.py performance
+python3 tools/devtools.py get-state --node "/root/GameManager"
+python3 tools/devtools.py set-state --node "/root/GameManager" --property currency --value 10000
+python3 tools/devtools.py run-method --node "/root/GameManager" --method add_currency --args "[500]"
+
+# Input simulation
+python3 tools/devtools.py input press move_left
+python3 tools/devtools.py input release move_left
+python3 tools/devtools.py input tap move_right --hold 1.5
+python3 tools/devtools.py input clear
+python3 tools/devtools.py input list
+
+# Input sequences (automated test scripts)
+python3 tools/devtools.py input sequence test/sequences/move_catcher.json
+
+# Logs
+python3 tools/devtools.py logs --tail 20
+python3 tools/devtools.py logs --category input
+```
+
+### Pre-change Validation Checklist
+1. After modifying scenes: `godot --headless --script res://tools/lint_project.gd`
+2. After modifying scripts: run game + `python3 tools/devtools.py validate-all`
+3. After modifying gameplay: run game + `python3 tools/devtools.py input sequence test/sequences/move_catcher.json`
+
+### Key Files
+| File | Purpose |
+|---|---|
+| `scripts/dev_tools.gd` | DevTools autoload (command handler) |
+| `scripts/scene_validator.gd` | Runtime scene validation (static + instantiation) |
+| `tools/lint_project.gd` | Headless UID/NodePath linter |
+| `tools/devtools.py` | Python CLI client for DevTools |
+| `test/sequences/*.json` | Input sequence test scripts |
+
 ## Architecture
 
 ### Scene Tree (main.tscn)
@@ -37,7 +108,9 @@ Main (Node2D)
 ```
 
 ### Autoloads
-- **GameManager** (`scripts/game_manager.gd`): Single source of truth for game state
+- **GameManager** (`scripts/game_manager.gd`): Single source of truth for game state (loads first)
+- **DevTools** (`scripts/dev_tools.gd`): Automation/testing command interface (loads second; see Validation section above)
+- **GameManager** details:
   - Currency: `currency`, `add_currency()`, signal `currency_changed`
   - Upgrades: `UPGRADE_DATA` dict, `try_purchase_upgrade()`, `get_upgrade_cost()`, signal `upgrade_purchased`
   - Derived values: `get_spawn_interval()`, `get_coin_value()`, `get_catcher_speed()`, `get_catcher_width()`, `get_earn_rate()`

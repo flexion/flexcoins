@@ -1,0 +1,12 @@
+{
+  "description": "Move catcher left and right, take screenshots",
+  "steps": [
+    {"type": "wait", "seconds": 1.0},
+    {"type": "screenshot", "filename": "initial_state.png"},
+    {"type": "hold", "action": "move_left", "seconds": 1.5},
+    {"type": "screenshot", "filename": "moved_left.png"},
+    {"type": "hold", "action": "move_right", "seconds": 3.0},
+    {"type": "screenshot", "filename": "moved_right.png"},
+    {"type": "clear"}
+  ]
+}
