@@ -204,6 +204,7 @@ func _setup_combo_label() -> void:
 	_combo_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.9))
 	_combo_label.position = Vector2(30.0, -30.0)
 	_combo_label.modulate.a = 0.0
+	_combo_label.visible = false
 	add_child(_combo_label)
 	_combo_fade_timer = Timer.new()
 	_combo_fade_timer.one_shot = true
@@ -215,15 +216,18 @@ func _setup_combo_label() -> void:
 func _update_combo_label() -> void:
 	if _combo >= 2:
 		_combo_label.text = "x%d" % _combo
+		_combo_label.visible = true
 		_combo_label.modulate.a = 1.0
 		_combo_fade_timer.start()
 	else:
 		_combo_label.modulate.a = 0.0
+		_combo_label.visible = false
 
 
 func _fade_combo_label() -> void:
 	var tween := create_tween()
 	tween.tween_property(_combo_label, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(func() -> void: _combo_label.visible = false)
 
 
 func _on_coin_missed() -> void:
@@ -231,6 +235,7 @@ func _on_coin_missed() -> void:
 	_reset_combo_multiplier()
 	bling_sound.pitch_scale = 1.0
 	_combo_label.modulate.a = 0.0
+	_combo_label.visible = false
 
 
 func _on_bomb_hit() -> void:
@@ -240,6 +245,8 @@ func _on_bomb_hit() -> void:
 	# Reset combo and multiplier on bomb hit (hard reset)
 	_combo = 0
 	_reset_combo_multiplier()
+	_combo_label.modulate.a = 0.0
+	_combo_label.visible = false
 	# Shrink to 60% width
 	var normal_w := GameManager.get_catcher_width()
 	var shrunk_w := normal_w * 0.6
@@ -291,6 +298,7 @@ func _setup_trail() -> void:
 	_trail_particles.scale_amount_min = 2.0
 	_trail_particles.scale_amount_max = 4.0
 	_trail_particles.color = Color(0.4, 0.65, 1.0, 0.4)
+	add_child(_trail_particles)
 
 
 func _on_shop_opened() -> void:
@@ -301,7 +309,6 @@ func _on_shop_opened() -> void:
 func _on_shop_closed() -> void:
 	_game_paused = false
 	monitoring = true
-	add_child(_trail_particles)
 
 
 func _on_ascension(count: int) -> void:
@@ -309,3 +316,4 @@ func _on_ascension(count: int) -> void:
 	_reset_combo_multiplier()
 	bling_sound.pitch_scale = 1.0
 	_combo_label.modulate.a = 0.0
+	_combo_label.visible = false

@@ -8,6 +8,8 @@ var _ascension_label: Label
 var _ascend_button: Button
 var _combo_multiplier_label: Label
 var _combo_multiplier_glow_tween: Tween
+var _flash_tween: Tween
+var _milestone_tween: Tween
 var _shop_open: bool = false
 var _shop_tween: Tween
 
@@ -75,14 +77,14 @@ func _on_shop_toggle_pressed() -> void:
 func _create_ascension_ui() -> void:
 	# Ascension display label (top-left area, below currency)
 	_ascension_label = Label.new()
-	_ascension_label.anchors_preset = Control.PRESET_TOP_LEFT
-	_ascension_label.offset_left = 20.0
-	_ascension_label.offset_top = 55.0
-	_ascension_label.offset_right = 400.0
 	_ascension_label.add_theme_font_size_override("font_size", 16)
 	_ascension_label.add_theme_color_override("font_color", Color(0.8, 0.6, 1.0, 1.0))
 	_ascension_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_ascension_label)
+	_ascension_label.anchors_preset = Control.PRESET_TOP_LEFT
+	_ascension_label.offset_left = 20.0
+	_ascension_label.offset_top = 55.0
+	_ascension_label.offset_right = 400.0
 	_update_ascension_label()
 	# Ascend button in shop area
 	_ascend_button = Button.new()
@@ -201,6 +203,7 @@ func _on_frenzy_started() -> void:
 	lbl.add_theme_font_size_override("font_size", 42)
 	lbl.add_theme_color_override("font_color", Color(0.3, 1.0, 0.4, 1.0))
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lbl.z_index = 200
 	add_child(lbl)
 	# Set anchors_preset after add_child so anchors resolve against parent size
 	lbl.anchors_preset = Control.PRESET_CENTER_TOP
@@ -217,9 +220,11 @@ func _on_frenzy_started() -> void:
 
 func _on_bomb_hit() -> void:
 	# Red screen flash
+	if _flash_tween and _flash_tween.is_running():
+		_flash_tween.kill()
 	_gold_flash.color = Color(1.0, 0.1, 0.0, 0.3)
-	var flash_tween := create_tween()
-	flash_tween.tween_property(_gold_flash, "color:a", 0.0, 0.4).set_ease(Tween.EASE_OUT)
+	_flash_tween = create_tween()
+	_flash_tween.tween_property(_gold_flash, "color:a", 0.0, 0.4).set_ease(Tween.EASE_OUT)
 	# Screen shake via camera or offset on the Main node
 	var main_node := get_tree().current_scene
 	if main_node:
@@ -254,18 +259,18 @@ func _flash_currency_label() -> void:
 
 func _create_gold_flash_overlay() -> void:
 	_gold_flash = ColorRect.new()
-	_gold_flash.anchors_preset = Control.PRESET_FULL_RECT
-	_gold_flash.offset_right = 720.0
-	_gold_flash.offset_bottom = 1280.0
 	_gold_flash.color = Color(1.0, 0.84, 0.0, 0.0)
 	_gold_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_gold_flash)
+	_gold_flash.anchors_preset = Control.PRESET_FULL_RECT
 
 
 func _flash_gold_overlay() -> void:
-	var tween := create_tween()
-	_gold_flash.color.a = 0.15
-	tween.tween_property(_gold_flash, "color:a", 0.0, 0.3).set_ease(Tween.EASE_OUT)
+	if _flash_tween and _flash_tween.is_running():
+		_flash_tween.kill()
+	_flash_tween = create_tween()
+	_gold_flash.color = Color(1.0, 0.84, 0.0, 0.15)
+	_flash_tween.tween_property(_gold_flash, "color:a", 0.0, 0.3).set_ease(Tween.EASE_OUT)
 
 
 func _create_milestone_label() -> void:
@@ -275,6 +280,7 @@ func _create_milestone_label() -> void:
 	_milestone_label.add_theme_font_size_override("font_size", 48)
 	_milestone_label.add_theme_color_override("font_color", Color(1.0, 0.84, 0.0, 1.0))
 	_milestone_label.modulate.a = 0.0
+	_milestone_label.visible = false
 	_milestone_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_milestone_label)
 	# Set anchors_preset after add_child so anchors resolve against parent size
@@ -290,22 +296,28 @@ func _on_milestone_reached(amount: int) -> void:
 
 
 func _show_milestone_celebration(amount: int) -> void:
+	_milestone_label.visible = true
 	_milestone_label.text = "%d COINS!" % amount
 	_milestone_label.scale = Vector2(0.5, 0.5)
 
 	# Big gold screen flash
-	_gold_flash.color.a = 0.3
-	var flash_tween := create_tween()
-	flash_tween.tween_property(_gold_flash, "color:a", 0.0, 0.6).set_ease(Tween.EASE_OUT)
+	if _flash_tween and _flash_tween.is_running():
+		_flash_tween.kill()
+	_gold_flash.color = Color(1.0, 0.84, 0.0, 0.3)
+	_flash_tween = create_tween()
+	_flash_tween.tween_property(_gold_flash, "color:a", 0.0, 0.6).set_ease(Tween.EASE_OUT)
 
 	# Animated milestone text
-	var tween := create_tween()
-	tween.tween_property(_milestone_label, "modulate:a", 1.0, 0.15)
-	tween.parallel().tween_property(_milestone_label, "scale", Vector2(1.2, 1.2), 0.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	tween.tween_property(_milestone_label, "scale", Vector2(1.0, 1.0), 0.15)
-	tween.tween_interval(1.0)
-	tween.tween_property(_milestone_label, "modulate:a", 0.0, 0.4)
-	tween.tween_property(_milestone_label, "scale", Vector2(0.5, 0.5), 0.01)
+	if _milestone_tween and _milestone_tween.is_running():
+		_milestone_tween.kill()
+	_milestone_tween = create_tween()
+	_milestone_tween.tween_property(_milestone_label, "modulate:a", 1.0, 0.15)
+	_milestone_tween.parallel().tween_property(_milestone_label, "scale", Vector2(1.2, 1.2), 0.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	_milestone_tween.tween_property(_milestone_label, "scale", Vector2(1.0, 1.0), 0.15)
+	_milestone_tween.tween_interval(1.0)
+	_milestone_tween.tween_property(_milestone_label, "modulate:a", 0.0, 0.4)
+	_milestone_tween.tween_callback(func() -> void: _milestone_label.visible = false)
+	_milestone_tween.tween_property(_milestone_label, "scale", Vector2(0.5, 0.5), 0.01)
 
 	# Spawn celebration particles across the screen
 	_spawn_celebration_particles()
