@@ -77,6 +77,26 @@ python3 tools/devtools.py logs --tail 20
 python3 tools/devtools.py logs --category input
 ```
 
+### Debug Commands (for E2E testing)
+```bash
+# Coin control
+python3 tools/devtools.py spawn-coin --type GOLD --x 360
+python3 tools/devtools.py spawn-coin-on-catcher --type SILVER
+python3 tools/devtools.py get-active-coins
+python3 tools/devtools.py clear-coins
+
+# State shortcuts
+python3 tools/devtools.py set-upgrade-levels --spawn-rate 10 --coin-value 5
+python3 tools/devtools.py reset-session
+
+# Time control
+python3 tools/devtools.py set-game-speed 10.0
+python3 tools/devtools.py wait-frames 60
+
+# Composite queries
+python3 tools/devtools.py get-catcher-state
+```
+
 ### Runtime Validation Workflow (from CLI)
 ```bash
 # Launch game in background
