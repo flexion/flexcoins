@@ -540,6 +540,59 @@ def cmd_get_catcher_state(args, project_path: Path):
         sys.exit(1)
 
 
+# ==================== UI VALIDATION ====================
+
+
+def cmd_validate_ui(args, project_path: Path):
+    """Run all UI layout checks."""
+    result = send_command(project_path, "validate_ui")
+    print_validation_result(result)
+
+
+def cmd_ui_snapshot(args, project_path: Path):
+    """Get snapshot of all visible UI elements."""
+    result = send_command(project_path, "get_ui_snapshot")
+    if not result["success"]:
+        print(f"Failed: {result['message']}", file=sys.stderr)
+        sys.exit(1)
+
+    if args.json:
+        print(json.dumps(result["data"], indent=2))
+        return
+
+    data = result["data"]
+    vp = data["viewport"]
+    elements = data.get("elements", [])
+    print(f"Viewport: {vp['width']}x{vp['height']}")
+    print(f"UI Elements: {len(elements)}")
+    print()
+    for el in elements:
+        r = el["global_rect"]
+        vis = "visible" if el["visible"] else "hidden"
+        text_preview = f' "{el["text"]}"' if el.get("text") else ""
+        if len(text_preview) > 53:
+            text_preview = text_preview[:50] + '..."'
+        print(f"  {el['name']} ({el['type']}) [{r['x']:.0f},{r['y']:.0f} {r['w']:.0f}x{r['h']:.0f}] {vis} alpha={el['modulate_a']:.1f}{text_preview}")
+
+
+def cmd_node_bounds(args, project_path: Path):
+    """Get bounds for a specific node."""
+    result = send_command(project_path, "get_node_bounds", {"node_path": args.node_path})
+    if not result["success"]:
+        print(f"Failed: {result['message']}", file=sys.stderr)
+        sys.exit(1)
+
+    data = result["data"]
+    r = data["global_rect"]
+    print(f"{data['name']} ({data['type']})")
+    print(f"  Rect:         {r['x']:.0f}, {r['y']:.0f}, {r['w']:.0f}x{r['h']:.0f}")
+    print(f"  Visible:      {data['visible']}")
+    print(f"  Alpha:        {data['modulate_a']:.1f}")
+    print(f"  In viewport:  {data['in_viewport']}")
+    if data.get("text"):
+        print(f"  Text:         \"{data['text']}\"")
+
+
 def main():
     parser = argparse.ArgumentParser(description="DevTools CLI - interact with running Godot instance")
     parser.add_argument("--project", "-p", help="Path to Godot project", default=".")
@@ -688,6 +741,22 @@ def main():
     # get-catcher-state
     p = subparsers.add_parser("get-catcher-state", help="Get catcher state")
     p.set_defaults(func=cmd_get_catcher_state)
+
+    # ==================== UI VALIDATION ====================
+
+    # validate-ui
+    p = subparsers.add_parser("validate-ui", help="Run UI layout validation checks")
+    p.set_defaults(func=cmd_validate_ui)
+
+    # ui-snapshot
+    p = subparsers.add_parser("ui-snapshot", help="Get snapshot of all visible UI elements")
+    p.add_argument("--json", "-j", action="store_true", help="Output raw JSON")
+    p.set_defaults(func=cmd_ui_snapshot)
+
+    # node-bounds
+    p = subparsers.add_parser("node-bounds", help="Get bounds for a specific node")
+    p.add_argument("node_path", help="Node path (e.g., /root/Main/HUD/TopBar/CurrencyLabel)")
+    p.set_defaults(func=cmd_node_bounds)
 
     args = parser.parse_args()
 

@@ -95,6 +95,12 @@ python3 tools/devtools.py wait-frames 60
 
 # Composite queries
 python3 tools/devtools.py get-catcher-state
+
+# UI validation
+python3 tools/devtools.py validate-ui
+python3 tools/devtools.py ui-snapshot
+python3 tools/devtools.py ui-snapshot --json
+python3 tools/devtools.py node-bounds "/root/Main/HUD/TopBar/CurrencyLabel"
 ```
 
 ### Runtime Validation Workflow (from CLI)

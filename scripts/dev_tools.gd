@@ -58,6 +58,9 @@ func _ready() -> void:
 	_handlers["set_game_speed"] = _cmd_set_game_speed
 	_handlers["wait_frames"] = _cmd_wait_frames
 	_handlers["get_catcher_state"] = _cmd_get_catcher_state
+	_handlers["validate_ui"] = _cmd_validate_ui
+	_handlers["get_ui_snapshot"] = _cmd_get_ui_snapshot
+	_handlers["get_node_bounds"] = _cmd_get_node_bounds
 
 	_clear_stale_files()
 	_write_log("system", "DevTools initialized", {
@@ -780,6 +783,214 @@ func _cmd_get_catcher_state(_args: Dictionary) -> Dictionary:
 			"combo_multiplier": catcher.get("_combo_multiplier"),
 			"bomb_shrink_active": catcher.get("_bomb_shrink_active"),
 			"game_paused": catcher.get("_game_paused"),
+		},
+	}
+
+
+# --- UI Validation Helpers ---
+
+
+func _get_effective_alpha(node: Node) -> float:
+	var alpha: float = 1.0
+	var current: Node = node
+	while current != null:
+		if current is CanvasItem:
+			alpha *= current.modulate.a * current.self_modulate.a
+		if current is CanvasLayer:
+			break
+		current = current.get_parent()
+	return alpha
+
+
+func _is_effectively_visible(node: Node) -> bool:
+	var current: Node = node
+	while current != null:
+		if current is CanvasItem and not current.visible:
+			return false
+		if current is CanvasLayer:
+			break
+		current = current.get_parent()
+	return true
+
+
+func _get_control_text(node: Control) -> String:
+	if node is Label:
+		return node.text
+	if node is Button:
+		return node.text
+	if node is RichTextLabel:
+		return node.get_parsed_text()
+	return ""
+
+
+# --- UI Validation Command Handlers ---
+
+
+func _cmd_validate_ui(_args: Dictionary) -> Dictionary:
+	var issues: Array = []
+	var vp: Vector2 = Vector2(get_tree().root.size)
+	_validate_ui_recursive(get_tree().current_scene, vp, issues)
+
+	return {
+		"success": issues.is_empty(),
+		"message": "%d UI issues found" % issues.size() if not issues.is_empty() else "No UI issues found",
+		"data": {"issues": issues},
+	}
+
+
+func _validate_ui_recursive(node: Node, vp: Vector2, issues: Array) -> void:
+	if node is Control and _is_effectively_visible(node):
+		var control: Control = node as Control
+		var rect: Rect2 = control.get_global_rect()
+
+		# Check 1: Viewport overflow
+		if rect.position.x + rect.size.x > vp.x or rect.position.y + rect.size.y > vp.y:
+			issues.append({
+				"severity": "warning",
+				"code": "ui_overflow",
+				"message": "%s '%s' extends past viewport (rect: %.0f,%.0f -> %.0f,%.0f, viewport: %.0fx%.0f)" % [
+					control.get_class(), control.name,
+					rect.position.x, rect.position.y,
+					rect.position.x + rect.size.x, rect.position.y + rect.size.y,
+					vp.x, vp.y,
+				],
+			})
+
+		# Check 2: Zero-size visible
+		if control.size.x == 0.0 or control.size.y == 0.0:
+			issues.append({
+				"severity": "warning",
+				"code": "ui_zero_size",
+				"message": "%s '%s' is visible but has zero size (%.0fx%.0f)" % [
+					control.get_class(), control.name, control.size.x, control.size.y,
+				],
+			})
+
+		# Check 3: Fully transparent
+		var effective_alpha: float = _get_effective_alpha(control)
+		if effective_alpha == 0.0:
+			issues.append({
+				"severity": "info",
+				"code": "ui_transparent",
+				"message": "%s '%s' is visible but fully transparent (effective alpha: %.2f)" % [
+					control.get_class(), control.name, effective_alpha,
+				],
+			})
+
+		# Check 4: Text overflow (Label only, autowrap disabled)
+		if control is Label and control.autowrap_mode == TextServer.AUTOWRAP_OFF:
+			var font: Font = control.get_theme_font("font")
+			if font != null:
+				var font_size: int = control.get_theme_font_size("font_size")
+				if font_size <= 0:
+					font_size = control.get_theme_default_font_size()
+				var text_width: float = font.get_string_size(control.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+				if text_width > control.size.x and control.size.x > 0.0:
+					var display_text: String = control.text
+					if display_text.length() > 50:
+						display_text = display_text.substr(0, 47) + "..."
+					issues.append({
+						"severity": "warning",
+						"code": "ui_text_overflow",
+						"message": "%s '%s' text '%s' exceeds width (text: %.0fpx, label: %.0fpx)" % [
+							control.get_class(), control.name, display_text, text_width, control.size.x,
+						],
+					})
+
+		# Check 5: Negative position
+		if rect.position.x < 0.0 or rect.position.y < 0.0:
+			issues.append({
+				"severity": "info",
+				"code": "ui_negative_pos",
+				"message": "%s '%s' has negative position (%.0f, %.0f)" % [
+					control.get_class(), control.name, rect.position.x, rect.position.y,
+				],
+			})
+
+	for child in node.get_children():
+		_validate_ui_recursive(child, vp, issues)
+
+
+func _cmd_get_ui_snapshot(_args: Dictionary) -> Dictionary:
+	var vp: Vector2 = Vector2(get_tree().root.size)
+	var elements: Array = []
+	_snapshot_ui_recursive(get_tree().current_scene, vp, elements)
+
+	return {
+		"success": true,
+		"message": "%d UI elements captured" % elements.size(),
+		"data": {
+			"viewport": {"width": int(vp.x), "height": int(vp.y)},
+			"elements": elements,
+		},
+	}
+
+
+func _snapshot_ui_recursive(node: Node, vp: Vector2, elements: Array) -> void:
+	if node is Control:
+		var control: Control = node as Control
+		var eff_visible: bool = _is_effectively_visible(control)
+		var eff_alpha: float = _get_effective_alpha(control)
+
+		if eff_visible or eff_alpha > 0.0:
+			var rect: Rect2 = control.get_global_rect()
+			elements.append({
+				"name": str(control.name),
+				"type": control.get_class(),
+				"path": str(control.get_path()),
+				"global_rect": {
+					"x": rect.position.x,
+					"y": rect.position.y,
+					"w": rect.size.x,
+					"h": rect.size.y,
+				},
+				"visible": eff_visible,
+				"modulate_a": eff_alpha,
+				"text": _get_control_text(control),
+				"in_viewport": rect.position.x >= 0.0 and rect.position.y >= 0.0
+					and rect.position.x + rect.size.x <= vp.x
+					and rect.position.y + rect.size.y <= vp.y,
+			})
+
+	for child in node.get_children():
+		_snapshot_ui_recursive(child, vp, elements)
+
+
+func _cmd_get_node_bounds(args: Dictionary) -> Dictionary:
+	var node_path: String = args.get("node_path", "")
+	if node_path.is_empty():
+		return {"success": false, "message": "No node_path provided"}
+
+	var node: Node = get_node_or_null(node_path)
+	if node == null:
+		return {"success": false, "message": "Node not found: %s" % node_path}
+
+	if not node is Control:
+		return {"success": false, "message": "Node is not a Control: %s" % node_path}
+
+	var control: Control = node as Control
+	var vp: Vector2 = Vector2(get_tree().root.size)
+	var rect: Rect2 = control.get_global_rect()
+
+	return {
+		"success": true,
+		"message": "Bounds for %s" % control.name,
+		"data": {
+			"name": str(control.name),
+			"type": control.get_class(),
+			"path": str(control.get_path()),
+			"global_rect": {
+				"x": rect.position.x,
+				"y": rect.position.y,
+				"w": rect.size.x,
+				"h": rect.size.y,
+			},
+			"visible": _is_effectively_visible(control),
+			"modulate_a": _get_effective_alpha(control),
+			"text": _get_control_text(control),
+			"in_viewport": rect.position.x >= 0.0 and rect.position.y >= 0.0
+				and rect.position.x + rect.size.x <= vp.x
+				and rect.position.y + rect.size.y <= vp.y,
 		},
 	}
 
