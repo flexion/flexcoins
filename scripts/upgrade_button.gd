@@ -10,6 +10,13 @@ const TIER_COLORS: Array[Color] = [
 const EMPTY_COLOR := Color(0.2, 0.2, 0.2, 1.0)
 const AFFORD_COLOR := Color(1.0, 0.84, 0.0, 1.0)
 const UNAFFORD_COLOR := Color(0.5, 0.5, 0.5, 1.0)
+const UPGRADE_ICONS: Dictionary = {
+	"spawn_rate": preload("res://assets/textures/icon_repeat.png"),
+	"coin_value": preload("res://assets/textures/icon_star.png"),
+	"catcher_speed": preload("res://assets/textures/icon_arrow_up.png"),
+	"catcher_width": preload("res://assets/textures/icon_arrow_right.png"),
+	"magnet": preload("res://assets/textures/icon_circle.png"),
+}
 
 var upgrade_id: String = ""
 var _segment_rects: Array[ColorRect] = []
@@ -17,6 +24,9 @@ var _display_font: Font = preload("res://assets/fonts/kenney_future.ttf")
 var _narrow_font: Font = preload("res://assets/fonts/kenney_future_narrow.ttf")
 var _was_affordable: bool = false
 var _pulse_tween: Tween
+var _shake_tween: Tween
+var _purchase_sound: AudioStreamPlayer
+var _reject_sound: AudioStreamPlayer
 
 @onready var name_label: Label = %NameLabel
 @onready var effect_label: Label = %EffectLabel
@@ -34,13 +44,18 @@ func _ready() -> void:
 	buy_button.pressed.connect(_on_buy_pressed)
 	GameManager.currency_changed.connect(_on_currency_changed)
 	GameManager.upgrade_purchased.connect(_on_upgrade_changed)
+	# Order matters: segment bar must be created before icon reparents NameLabel
 	_create_segment_bar()
+	_setup_icon()
+	_setup_sounds()
 	_update_display()
 
 
 func _on_buy_pressed() -> void:
 	if GameManager.try_purchase_upgrade(upgrade_id):
 		_animate_purchase()
+	else:
+		_animate_reject()
 
 
 func _on_currency_changed(_amount: int) -> void:
@@ -61,9 +76,39 @@ func _update_display() -> void:
 	effect_label.text = data.description
 	buy_button.text = "Buy: %d" % cost
 	var affordable := GameManager.currency >= cost
-	buy_button.disabled = not affordable
 	_update_afford_cue(affordable)
 	_update_segments(level)
+
+
+func _setup_icon() -> void:
+	if not UPGRADE_ICONS.has(upgrade_id):
+		return
+	var name_row := HBoxContainer.new()
+	name_row.add_theme_constant_override("separation", 6)
+	var info_vbox: VBoxContainer = name_label.get_parent()
+	var idx: int = name_label.get_index()
+	info_vbox.add_child(name_row)
+	info_vbox.move_child(name_row, idx)
+	info_vbox.remove_child(name_label)
+	var icon := TextureRect.new()
+	icon.texture = UPGRADE_ICONS[upgrade_id]
+	icon.custom_minimum_size = Vector2(24.0, 24.0)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	name_row.add_child(icon)
+	name_row.add_child(name_label)
+
+
+func _setup_sounds() -> void:
+	_purchase_sound = AudioStreamPlayer.new()
+	_purchase_sound.stream = preload("res://assets/sounds/click_purchase.ogg")
+	_purchase_sound.volume_db = -6.0
+	add_child(_purchase_sound)
+
+	_reject_sound = AudioStreamPlayer.new()
+	_reject_sound.stream = preload("res://assets/sounds/tap_reject.ogg")
+	_reject_sound.volume_db = -6.0
+	add_child(_reject_sound)
 
 
 func _create_segment_bar() -> void:
@@ -96,12 +141,14 @@ func _update_segments(level: int) -> void:
 
 func _update_afford_cue(affordable: bool) -> void:
 	if affordable:
+		modulate.a = 1.0
 		buy_button.add_theme_color_override("font_color", AFFORD_COLOR)
 		if not _was_affordable:
 			# Just became affordable — start pulse
 			_was_affordable = true
 			_start_pulse()
 	else:
+		modulate.a = 0.7
 		buy_button.add_theme_color_override("font_color", UNAFFORD_COLOR)
 		if _was_affordable:
 			_was_affordable = false
@@ -129,4 +176,44 @@ func _animate_purchase() -> void:
 	buy_button.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 	tween.tween_callback(func() -> void:
 		buy_button.add_theme_color_override("font_color", original_color)
+	)
+	if _purchase_sound:
+		_purchase_sound.play()
+	_flash_segments()
+
+
+func _animate_reject() -> void:
+	if _shake_tween and _shake_tween.is_running():
+		_shake_tween.kill()
+	buy_button.position.x = 0.0
+	_shake_tween = create_tween()
+	var original_x: float = buy_button.position.x
+	for i: int in range(4):
+		_shake_tween.tween_property(buy_button, "position:x", original_x + 6.0, 0.037)
+		_shake_tween.tween_property(buy_button, "position:x", original_x - 6.0, 0.037)
+	_shake_tween.tween_property(buy_button, "position:x", original_x, 0.037)
+	# Flash red
+	buy_button.add_theme_color_override("font_color", Color(1.0, 0.3, 0.2, 1.0))
+	_shake_tween.tween_callback(func() -> void:
+		var affordable := GameManager.currency >= GameManager.get_upgrade_cost(upgrade_id)
+		buy_button.add_theme_color_override("font_color", AFFORD_COLOR if affordable else UNAFFORD_COLOR)
+	)
+	if _reject_sound:
+		_reject_sound.play()
+
+
+func _flash_segments() -> void:
+	var level: int = GameManager.get_upgrade_level(upgrade_id)
+	var filled: int = level % SEGMENTS
+	if level > 0 and filled == 0:
+		filled = SEGMENTS
+	var tier: int = (level - 1) / SEGMENTS if level > 0 else 0
+	var fill_color: Color = TIER_COLORS[mini(tier, TIER_COLORS.size() - 1)]
+	for i: int in range(filled):
+		_segment_rects[i].color = Color.WHITE
+	var flash_tween := create_tween()
+	flash_tween.tween_interval(0.1)
+	flash_tween.tween_callback(func() -> void:
+		for i: int in range(filled):
+			_segment_rects[i].color = fill_color
 	)
