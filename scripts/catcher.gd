@@ -55,6 +55,7 @@ func _ready() -> void:
 
 	GameManager.upgrade_purchased.connect(_on_upgrade_purchased)
 	_apply_upgrades()
+	position.x = get_viewport_rect().size.x / 2.0
 	_prev_x = position.x
 	_setup_trail()
 	_setup_combo_label()
