@@ -134,6 +134,7 @@ func _apply_upgrades() -> void:
 	color_rect.offset_right = w / 2.0
 	color_rect.offset_top = -10.0
 	color_rect.offset_bottom = 10.0
+	color_rect.pivot_offset = Vector2(w / 2.0, 10.0)
 	collision_shape.shape.size = Vector2(w, 20.0)
 	_update_catcher_visual()
 
