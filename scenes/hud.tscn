@@ -19,7 +19,7 @@ theme_override_constants/margin_right = 20
 [node name="CurrencyLabel" type="Label" parent="TopBar"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 48
 theme_override_colors/font_color = Color(1, 0.84, 0, 1)
 text = "Coins: 0"
 horizontal_alignment = 1

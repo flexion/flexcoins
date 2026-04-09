@@ -12,6 +12,10 @@ var _flash_tween: Tween
 var _milestone_tween: Tween
 var _shop_open: bool = false
 var _shop_tween: Tween
+var _currency_pop_tween: Tween
+var _currency_flash_tween: Tween
+var _display_font: Font = preload("res://assets/fonts/kenney_future.ttf")
+var _narrow_font: Font = preload("res://assets/fonts/kenney_future_narrow.ttf")
 
 @onready var currency_label: Label = %CurrencyLabel
 @onready var upgrade_container: VBoxContainer = %UpgradeContainer
@@ -28,6 +32,8 @@ func _ready() -> void:
 	GameManager.frenzy_started.connect(_on_frenzy_started)
 	GameManager.bomb_hit.connect(_on_bomb_hit)
 	GameManager.combo_multiplier_changed.connect(_on_combo_multiplier_changed)
+	currency_label.add_theme_font_override("font", _display_font)
+	currency_label.add_theme_font_size_override("font_size", 48)
 	_on_currency_changed(GameManager.currency)
 	_create_upgrade_buttons()
 	shop_toggle.pressed.connect(_on_shop_toggle_pressed)
@@ -77,7 +83,8 @@ func _on_shop_toggle_pressed() -> void:
 func _create_ascension_ui() -> void:
 	# Ascension display label (top-left area, below currency)
 	_ascension_label = Label.new()
-	_ascension_label.add_theme_font_size_override("font_size", 16)
+	_ascension_label.add_theme_font_override("font", _display_font)
+	_ascension_label.add_theme_font_size_override("font_size", 18)
 	_ascension_label.add_theme_color_override("font_color", Color(0.8, 0.6, 1.0, 1.0))
 	_ascension_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_ascension_label)
@@ -115,7 +122,8 @@ func _create_combo_multiplier_badge() -> void:
 	_combo_multiplier_label = Label.new()
 	_combo_multiplier_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_combo_multiplier_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_combo_multiplier_label.add_theme_font_size_override("font_size", 24)
+	_combo_multiplier_label.add_theme_font_override("font", _display_font)
+	_combo_multiplier_label.add_theme_font_size_override("font_size", 36)
 	_combo_multiplier_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.0, 1.0))
 	_combo_multiplier_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_combo_multiplier_label.visible = false
@@ -192,15 +200,27 @@ func _on_coin_collected(value: int, world_position: Vector2) -> void:
 	, 0.0, 1.0, 0.4)
 	tween.tween_callback(func() -> void:
 		GameManager.add_currency(value)
+		_pop_currency_label()
 		icon.queue_free()
 	)
+
+
+func _pop_currency_label() -> void:
+	if _currency_pop_tween and _currency_pop_tween.is_running():
+		_currency_pop_tween.kill()
+	if _currency_flash_tween and _currency_flash_tween.is_running():
+		_currency_flash_tween.kill()
+	_currency_pop_tween = create_tween()
+	_currency_pop_tween.tween_property(currency_label, "scale", Vector2(1.15, 1.15), 0.06).set_ease(Tween.EASE_OUT)
+	_currency_pop_tween.tween_property(currency_label, "scale", Vector2(1.0, 1.0), 0.08).set_ease(Tween.EASE_IN)
 
 
 func _on_frenzy_started() -> void:
 	var lbl := Label.new()
 	lbl.text = "FRENZY!"
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.add_theme_font_size_override("font_size", 42)
+	lbl.add_theme_font_override("font", _display_font)
+	lbl.add_theme_font_size_override("font_size", 64)
 	lbl.add_theme_color_override("font_color", Color(0.3, 1.0, 0.4, 1.0))
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	lbl.z_index = 200
@@ -248,11 +268,15 @@ func _on_upgrade_purchased(_upgrade_id: String) -> void:
 
 
 func _flash_currency_label() -> void:
-	var tween := create_tween()
+	if _currency_flash_tween and _currency_flash_tween.is_running():
+		_currency_flash_tween.kill()
+	if _currency_pop_tween and _currency_pop_tween.is_running():
+		_currency_pop_tween.kill()
+	_currency_flash_tween = create_tween()
 	currency_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
-	tween.tween_property(currency_label, "scale", Vector2(1.3, 1.3), 0.1).set_ease(Tween.EASE_OUT)
-	tween.tween_property(currency_label, "scale", Vector2(1.0, 1.0), 0.15).set_ease(Tween.EASE_IN)
-	tween.tween_callback(func() -> void:
+	_currency_flash_tween.tween_property(currency_label, "scale", Vector2(1.3, 1.3), 0.1).set_ease(Tween.EASE_OUT)
+	_currency_flash_tween.tween_property(currency_label, "scale", Vector2(1.0, 1.0), 0.15).set_ease(Tween.EASE_IN)
+	_currency_flash_tween.tween_callback(func() -> void:
 		currency_label.add_theme_color_override("font_color", Color(1.0, 0.84, 0.0, 1.0))
 	)
 
@@ -277,7 +301,8 @@ func _create_milestone_label() -> void:
 	_milestone_label = Label.new()
 	_milestone_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_milestone_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_milestone_label.add_theme_font_size_override("font_size", 48)
+	_milestone_label.add_theme_font_override("font", _display_font)
+	_milestone_label.add_theme_font_size_override("font_size", 64)
 	_milestone_label.add_theme_color_override("font_color", Color(1.0, 0.84, 0.0, 1.0))
 	_milestone_label.modulate.a = 0.0
 	_milestone_label.visible = false
