@@ -17,7 +17,13 @@ var _currency_flash_tween: Tween
 var _frenzy_label: Label
 var _frenzy_tween: Tween
 var _shake_tween: Tween
-var _fullscreen_button: Button
+var _gear_button: Button
+var _settings_panel: PanelContainer
+var _settings_backdrop: Control
+var _settings_open: bool = false
+var _settings_tween: Tween
+var _sound_toggle: Button
+var _fullscreen_toggle: Button
 var _display_font: Font = preload("res://assets/fonts/kenney_future.ttf")
 var _narrow_font: Font = preload("res://assets/fonts/kenney_future_narrow.ttf")
 
@@ -25,7 +31,6 @@ var _narrow_font: Font = preload("res://assets/fonts/kenney_future_narrow.ttf")
 @onready var upgrade_container: VBoxContainer = %UpgradeContainer
 @onready var upgrade_panel: PanelContainer = %UpgradePanel
 @onready var shop_toggle: Button = %ShopToggle
-@onready var mute_button: Button = %MuteButton
 
 
 func _ready() -> void:
@@ -42,8 +47,7 @@ func _ready() -> void:
 	_on_currency_changed(GameManager.currency)
 	_create_upgrade_buttons()
 	shop_toggle.pressed.connect(_on_shop_toggle_pressed)
-	mute_button.pressed.connect(_on_mute_pressed)
-	_create_fullscreen_button()
+	_create_settings_ui()
 	# Start with shop hidden off-screen
 	upgrade_panel.visible = false
 	upgrade_panel.offset_top = 0.0
@@ -70,6 +74,9 @@ func _create_upgrade_buttons() -> void:
 func _on_shop_toggle_pressed() -> void:
 	if _shop_tween and _shop_tween.is_running():
 		return
+	# Close settings panel if open (mutual exclusion)
+	if _settings_open:
+		_close_settings()
 	_shop_open = not _shop_open
 	shop_toggle.text = "Close" if _shop_open else "Shop"
 	if _shop_open:
@@ -139,8 +146,8 @@ func _create_combo_multiplier_badge() -> void:
 	add_child(_combo_multiplier_label)
 	# Set anchors_preset after add_child so anchors resolve against parent size
 	_combo_multiplier_label.anchors_preset = Control.PRESET_TOP_RIGHT
-	_combo_multiplier_label.offset_left = -120.0
-	_combo_multiplier_label.offset_right = -20.0
+	_combo_multiplier_label.offset_left = -190.0
+	_combo_multiplier_label.offset_right = -80.0
 	_combo_multiplier_label.offset_top = 20.0
 	_combo_multiplier_label.offset_bottom = 60.0
 	# Wait one frame for layout to resolve, then set pivot for center-scaling
@@ -308,32 +315,156 @@ func _screen_shake(intensity: float, iterations: int, step_time: float) -> void:
 	_shake_tween.tween_property(main_node, "position", Vector2.ZERO, step_time)
 
 
-func _on_mute_pressed() -> void:
+func _create_settings_ui() -> void:
+	# Gear button (top-right, replacing mute button position)
+	_gear_button = Button.new()
+	_gear_button.theme = preload("res://assets/ui_theme.tres")
+	_gear_button.add_theme_font_size_override("font_size", 22)
+	_gear_button.text = "⚙"
+	_gear_button.pressed.connect(_on_gear_pressed)
+	add_child(_gear_button)
+	_gear_button.anchors_preset = Control.PRESET_TOP_RIGHT
+	_gear_button.anchor_left = 1.0
+	_gear_button.anchor_right = 1.0
+	_gear_button.offset_left = -70.0
+	_gear_button.offset_top = 15.0
+	_gear_button.offset_right = -15.0
+	_gear_button.offset_bottom = 55.0
+	_gear_button.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+
+	# Transparent backdrop for outside-tap detection
+	_settings_backdrop = Control.new()
+	_settings_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	_settings_backdrop.visible = false
+	_settings_backdrop.z_index = 159
+	add_child(_settings_backdrop)
+	_settings_backdrop.anchors_preset = Control.PRESET_FULL_RECT
+	_settings_backdrop.gui_input.connect(_on_backdrop_input)
+
+	# Settings panel
+	_settings_panel = PanelContainer.new()
+	_settings_panel.theme = preload("res://assets/ui_theme.tres")
+	_settings_panel.z_index = 160
+	_settings_panel.visible = false
+	_settings_panel.scale = Vector2(0.8, 0.8)
+	_settings_panel.modulate.a = 0.0
+	add_child(_settings_panel)
+	_settings_panel.anchors_preset = Control.PRESET_TOP_RIGHT
+	_settings_panel.anchor_left = 1.0
+	_settings_panel.anchor_right = 1.0
+	_settings_panel.offset_left = -220.0
+	_settings_panel.offset_top = 60.0
+	_settings_panel.offset_right = -15.0
+	_settings_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	_settings_panel.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 6)
+	margin.add_child(vbox)
+
+	# Sound toggle
+	_sound_toggle = Button.new()
+	_sound_toggle.theme = preload("res://assets/ui_theme.tres")
+	_sound_toggle.add_theme_font_override("font", _narrow_font)
+	_sound_toggle.add_theme_font_size_override("font_size", 14)
+	_update_sound_toggle_text()
+	_sound_toggle.pressed.connect(_on_sound_toggle_pressed)
+	vbox.add_child(_sound_toggle)
+
+	# Fullscreen toggle
+	_fullscreen_toggle = Button.new()
+	_fullscreen_toggle.theme = preload("res://assets/ui_theme.tres")
+	_fullscreen_toggle.add_theme_font_override("font", _narrow_font)
+	_fullscreen_toggle.add_theme_font_size_override("font_size", 14)
+	_update_fullscreen_toggle_text()
+	_fullscreen_toggle.pressed.connect(_on_fullscreen_toggle_pressed)
+	vbox.add_child(_fullscreen_toggle)
+
+	# Set pivot for scale animation (top-right corner)
+	await get_tree().process_frame
+	if is_instance_valid(_settings_panel):
+		_settings_panel.pivot_offset = Vector2(_settings_panel.size.x, 0.0)
+
+
+func _on_gear_pressed() -> void:
+	if _settings_tween and _settings_tween.is_running():
+		return
+	if _settings_open:
+		_close_settings()
+	else:
+		_open_settings()
+
+
+func _open_settings() -> void:
+	# Close shop if open (mutual exclusion)
+	if _shop_open:
+		_shop_open = false
+		shop_toggle.text = "Shop"
+		GameManager.shop_closed.emit()
+		if _shop_tween and _shop_tween.is_running():
+			_shop_tween.kill()
+		_shop_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+		_shop_tween.tween_property(upgrade_panel, "offset_top", 0.0, 0.2)
+		_shop_tween.tween_callback(func() -> void: upgrade_panel.visible = false)
+	_settings_open = true
+	_settings_backdrop.visible = true
+	_settings_panel.visible = true
+	_settings_panel.scale = Vector2(0.8, 0.8)
+	_settings_panel.modulate.a = 0.0
+	_settings_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	_settings_tween.tween_property(_settings_panel, "scale", Vector2(1.0, 1.0), 0.15)
+	_settings_tween.parallel().tween_property(_settings_panel, "modulate:a", 1.0, 0.15)
+
+
+func _close_settings() -> void:
+	_settings_open = false
+	_settings_backdrop.visible = false
+	_settings_tween = create_tween().set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	_settings_tween.tween_property(_settings_panel, "scale", Vector2(0.8, 0.8), 0.1)
+	_settings_tween.parallel().tween_property(_settings_panel, "modulate:a", 0.0, 0.1)
+	_settings_tween.tween_callback(func() -> void: _settings_panel.visible = false)
+
+
+func _on_backdrop_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		_close_settings()
+
+
+func _on_sound_toggle_pressed() -> void:
 	var bus_index := AudioServer.get_bus_index("Master")
 	var muted := not AudioServer.is_bus_mute(bus_index)
 	AudioServer.set_bus_mute(bus_index, muted)
-	mute_button.text = "🔇" if muted else "🔊"
+	_update_sound_toggle_text()
 
 
-func _create_fullscreen_button() -> void:
-	_fullscreen_button = Button.new()
-	_fullscreen_button.anchors_preset = Control.PRESET_TOP_RIGHT
-	_fullscreen_button.anchor_left = 1.0
-	_fullscreen_button.anchor_right = 1.0
-	_fullscreen_button.offset_left = -140.0
-	_fullscreen_button.offset_top = 15.0
-	_fullscreen_button.offset_right = -80.0
-	_fullscreen_button.offset_bottom = 55.0
-	_fullscreen_button.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	_fullscreen_button.add_theme_font_override("font", _narrow_font)
-	_fullscreen_button.add_theme_font_size_override("font_size", 14)
-	_update_fullscreen_button_text()
-	_fullscreen_button.pressed.connect(_on_fullscreen_pressed)
-	add_child(_fullscreen_button)
-
-
-func _on_fullscreen_pressed() -> void:
+func _on_fullscreen_toggle_pressed() -> void:
 	_toggle_fullscreen()
+
+
+func _update_sound_toggle_text() -> void:
+	var bus_index := AudioServer.get_bus_index("Master")
+	_sound_toggle.text = "Sound: OFF" if AudioServer.is_bus_mute(bus_index) else "Sound: ON"
+
+
+func _update_fullscreen_toggle_text() -> void:
+	var current_mode := DisplayServer.window_get_mode()
+	if current_mode == DisplayServer.WINDOW_MODE_FULLSCREEN or current_mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN:
+		_fullscreen_toggle.text = "Fullscreen: ON"
+	else:
+		_fullscreen_toggle.text = "Fullscreen: OFF"
+
+
+func _update_settings_toggles() -> void:
+	if _fullscreen_toggle:
+		_update_fullscreen_toggle_text()
+	if _sound_toggle:
+		_update_sound_toggle_text()
 
 
 func _toggle_fullscreen() -> void:
@@ -342,7 +473,7 @@ func _toggle_fullscreen() -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 	else:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
-	_update_fullscreen_button_text()
+	_update_settings_toggles()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -352,16 +483,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_SIZE_CHANGED and _fullscreen_button:
-		_update_fullscreen_button_text()
-
-
-func _update_fullscreen_button_text() -> void:
-	var current_mode := DisplayServer.window_get_mode()
-	if current_mode == DisplayServer.WINDOW_MODE_FULLSCREEN or current_mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN:
-		_fullscreen_button.text = "Window"
-	else:
-		_fullscreen_button.text = "Full"
+	if what == NOTIFICATION_WM_SIZE_CHANGED:
+		_update_settings_toggles()
 
 
 func _on_upgrade_purchased(_upgrade_id: String) -> void:
