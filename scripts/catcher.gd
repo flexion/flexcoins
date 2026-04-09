@@ -45,7 +45,6 @@ func _ready() -> void:
 	GameManager.bomb_hit.connect(_on_bomb_hit)
 	GameManager.shop_opened.connect(_on_shop_opened)
 	GameManager.shop_closed.connect(_on_shop_closed)
-	GameManager.game_loaded.connect(_on_game_loaded)
 	GameManager.ascended.connect(_on_ascension)
 
 
@@ -91,9 +90,6 @@ func _on_area_entered(area: Area2D) -> void:
 
 		# Coin value is now multiplied in GameManager.get_coin_value()
 		GameManager.coin_collected.emit(value, pos)
-		# Track quest progress
-		GameManager.update_quest_catch_coins(1)
-		GameManager.update_quest_combo(_combo)
 		_spawn_floating_text(pos, value)
 		_spawn_collect_burst(pos)
 		_squash_bounce()
@@ -170,6 +166,8 @@ func _squash_bounce() -> void:
 
 
 func _spawn_floating_text(at_position: Vector2, value: int) -> void:
+	if value == 0:
+		return
 	if floating_text_scene:
 		var ft: Label = floating_text_scene.instantiate()
 		ft.text = "+%d" % value
@@ -304,11 +302,6 @@ func _on_shop_closed() -> void:
 	_game_paused = false
 	monitoring = true
 	add_child(_trail_particles)
-
-
-func _on_game_loaded() -> void:
-	_combo_multiplier = 1.0
-	_update_combo_multiplier()
 
 
 func _on_ascension(count: int) -> void:

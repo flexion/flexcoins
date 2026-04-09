@@ -18,6 +18,7 @@ config/icon="res://flexcoin.png"
 [autoload]
 
 GameManager="*res://scripts/game_manager.gd"
+DevTools="*res://scripts/dev_tools.gd"
 
 [display]
 
