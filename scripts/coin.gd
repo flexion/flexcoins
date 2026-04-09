@@ -9,6 +9,10 @@ var coin_type: CoinType = CoinType.SILVER
 var _collected: bool = false
 var _current_speed: float = 0.0
 var _rotation_speed: float = 0.0
+var _wobble_time: float = 0.0
+var _wobble_amplitude: float = 10.0
+var _wobble_frequency: float = 3.0
+var _wobble_phase: float = 0.0
 
 @onready var sprite: Sprite2D = $Sprite2D
 
@@ -18,6 +22,9 @@ func _ready() -> void:
 	rotation = randf_range(0.0, TAU)
 	_rotation_speed = randf_range(-1.5, 1.5)
 	_current_speed = fall_speed * 0.15
+	_wobble_amplitude = randf_range(5.0, 15.0)
+	_wobble_frequency = randf_range(2.0, 4.0)
+	_wobble_phase = randf_range(0.0, TAU)
 
 	match coin_type:
 		CoinType.GOLD:
@@ -31,6 +38,8 @@ func _ready() -> void:
 			value = 0
 			fall_speed *= 0.8
 			modulate = Color(1.0, 0.25, 0.2, 1.0)
+			_wobble_amplitude = randf_range(15.0, 25.0)
+			_wobble_frequency = randf_range(3.0, 5.0)
 
 	_add_glow()
 	_add_trail()
@@ -42,6 +51,8 @@ func _process(delta: float) -> void:
 	_current_speed = move_toward(_current_speed, fall_speed, fall_speed * delta * 0.8)
 	position.y += _current_speed * delta
 	rotation += _rotation_speed * delta
+	_wobble_time += delta
+	position.x += cos(_wobble_time * _wobble_frequency * TAU + _wobble_phase) * _wobble_amplitude * _wobble_frequency * TAU * delta
 	_apply_magnet(delta)
 
 
