@@ -13,6 +13,8 @@ const UNAFFORD_COLOR := Color(0.5, 0.5, 0.5, 1.0)
 
 var upgrade_id: String = ""
 var _segment_rects: Array[ColorRect] = []
+var _display_font: Font = preload("res://assets/fonts/kenney_future.ttf")
+var _narrow_font: Font = preload("res://assets/fonts/kenney_future_narrow.ttf")
 var _was_affordable: bool = false
 var _pulse_tween: Tween
 
@@ -26,6 +28,9 @@ func setup(id: String) -> void:
 
 
 func _ready() -> void:
+	name_label.add_theme_font_override("font", _display_font)
+	effect_label.add_theme_font_override("font", _narrow_font)
+	buy_button.add_theme_font_override("font", _narrow_font)
 	buy_button.pressed.connect(_on_buy_pressed)
 	GameManager.currency_changed.connect(_on_currency_changed)
 	GameManager.upgrade_purchased.connect(_on_upgrade_changed)
