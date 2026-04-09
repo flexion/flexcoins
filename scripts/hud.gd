@@ -53,6 +53,7 @@ func _ready() -> void:
 
 func _on_currency_changed(new_amount: int) -> void:
 	currency_label.text = "Coins: %d" % new_amount
+	currency_label.pivot_offset = currency_label.size / 2.0
 	_update_ascend_button()
 
 
@@ -139,6 +140,11 @@ func _create_combo_multiplier_badge() -> void:
 	_combo_multiplier_label.offset_right = -20.0
 	_combo_multiplier_label.offset_top = 20.0
 	_combo_multiplier_label.offset_bottom = 60.0
+	# Wait one frame for layout to resolve, then set pivot for center-scaling
+	await get_tree().process_frame
+	if not is_instance_valid(_combo_multiplier_label):
+		return
+	_combo_multiplier_label.pivot_offset = _combo_multiplier_label.size / 2.0
 
 
 func _on_combo_multiplier_changed(new_multiplier: float) -> void:
@@ -216,6 +222,7 @@ func _pop_currency_label() -> void:
 		_currency_pop_tween.kill()
 	if _currency_flash_tween and _currency_flash_tween.is_running():
 		_currency_flash_tween.kill()
+	currency_label.pivot_offset = currency_label.size / 2.0
 	_currency_pop_tween = create_tween()
 	_currency_pop_tween.tween_property(currency_label, "scale", Vector2(1.15, 1.15), 0.06).set_ease(Tween.EASE_OUT)
 	_currency_pop_tween.tween_property(currency_label, "scale", Vector2(1.0, 1.0), 0.08).set_ease(Tween.EASE_IN)
@@ -243,6 +250,11 @@ func _on_frenzy_started() -> void:
 	lbl.offset_right = 200.0
 	lbl.offset_top = 80.0
 	_frenzy_label = lbl
+	# Wait one frame for layout to resolve, then set pivot for center-scaling
+	await get_tree().process_frame
+	if not is_instance_valid(lbl):
+		return
+	lbl.pivot_offset = lbl.size / 2.0
 	# Intro animation: scale pop
 	var intro_tween := create_tween()
 	intro_tween.tween_property(lbl, "scale", Vector2(1.2, 1.2), 0.15).from(Vector2(0.5, 0.5)).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
@@ -310,6 +322,7 @@ func _flash_currency_label() -> void:
 		_currency_flash_tween.kill()
 	if _currency_pop_tween and _currency_pop_tween.is_running():
 		_currency_pop_tween.kill()
+	currency_label.pivot_offset = currency_label.size / 2.0
 	_currency_flash_tween = create_tween()
 	currency_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 	_currency_flash_tween.tween_property(currency_label, "scale", Vector2(1.3, 1.3), 0.1).set_ease(Tween.EASE_OUT)
@@ -352,6 +365,11 @@ func _create_milestone_label() -> void:
 	_milestone_label.offset_right = 300.0
 	_milestone_label.offset_top = -60.0
 	_milestone_label.offset_bottom = 60.0
+	# Wait one frame for layout to resolve, then set pivot for center-scaling
+	await get_tree().process_frame
+	if not is_instance_valid(_milestone_label):
+		return
+	_milestone_label.pivot_offset = _milestone_label.size / 2.0
 
 
 func _on_milestone_reached(amount: int) -> void:
@@ -362,6 +380,12 @@ func _show_milestone_celebration(amount: int) -> void:
 	_milestone_label.visible = true
 	_milestone_label.text = "%d COINS!" % amount
 	_milestone_label.scale = Vector2(0.5, 0.5)
+
+	# Update pivot after text change for center-scaling
+	await get_tree().process_frame
+	if not is_instance_valid(_milestone_label):
+		return
+	_milestone_label.pivot_offset = _milestone_label.size / 2.0
 
 	# Big gold screen flash
 	if _flash_tween and _flash_tween.is_running():
