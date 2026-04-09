@@ -14,6 +14,9 @@ var _shop_open: bool = false
 var _shop_tween: Tween
 var _currency_pop_tween: Tween
 var _currency_flash_tween: Tween
+var _frenzy_label: Label
+var _frenzy_tween: Tween
+var _shake_tween: Tween
 var _display_font: Font = preload("res://assets/fonts/kenney_future.ttf")
 var _narrow_font: Font = preload("res://assets/fonts/kenney_future_narrow.ttf")
 
@@ -30,6 +33,7 @@ func _ready() -> void:
 	GameManager.milestone_reached.connect(_on_milestone_reached)
 	GameManager.coin_collected.connect(_on_coin_collected)
 	GameManager.frenzy_started.connect(_on_frenzy_started)
+	GameManager.frenzy_ended.connect(_on_frenzy_ended)
 	GameManager.bomb_hit.connect(_on_bomb_hit)
 	GameManager.combo_multiplier_changed.connect(_on_combo_multiplier_changed)
 	currency_label.add_theme_font_override("font", _display_font)
@@ -176,6 +180,8 @@ func _on_ascend_pressed() -> void:
 func _on_coin_collected(value: int, world_position: Vector2) -> void:
 	if value <= 0:
 		return
+	if GameManager.frenzy_active:
+		_screen_shake(4.0, 4, 0.03)
 	# Spawn a small gold circle that arcs up to the currency label
 	var icon := ColorRect.new()
 	icon.custom_minimum_size = Vector2(12.0, 12.0)
@@ -216,6 +222,12 @@ func _pop_currency_label() -> void:
 
 
 func _on_frenzy_started() -> void:
+	# Clean up any existing frenzy label (handles rapid re-frenzy)
+	if _frenzy_label:
+		if _frenzy_tween and _frenzy_tween.is_running():
+			_frenzy_tween.kill()
+		_frenzy_label.queue_free()
+		_frenzy_label = null
 	var lbl := Label.new()
 	lbl.text = "FRENZY!"
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -230,12 +242,31 @@ func _on_frenzy_started() -> void:
 	lbl.offset_left = -200.0
 	lbl.offset_right = 200.0
 	lbl.offset_top = 80.0
-	var tween := create_tween()
-	tween.tween_property(lbl, "scale", Vector2(1.2, 1.2), 0.15).from(Vector2(0.5, 0.5)).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	tween.tween_property(lbl, "scale", Vector2(1.0, 1.0), 0.1)
-	tween.tween_interval(1.5)
-	tween.tween_property(lbl, "modulate:a", 0.0, 0.5)
-	tween.tween_callback(lbl.queue_free)
+	_frenzy_label = lbl
+	# Intro animation: scale pop
+	var intro_tween := create_tween()
+	intro_tween.tween_property(lbl, "scale", Vector2(1.2, 1.2), 0.15).from(Vector2(0.5, 0.5)).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	intro_tween.tween_property(lbl, "scale", Vector2(1.0, 1.0), 0.1)
+	# Start looping pulse after intro
+	intro_tween.tween_callback(func() -> void:
+		_frenzy_tween = create_tween().set_loops()
+		_frenzy_tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+		_frenzy_tween.tween_property(lbl, "scale", Vector2(1.1, 1.1), 0.3)
+		_frenzy_tween.tween_property(lbl, "scale", Vector2(0.95, 0.95), 0.3)
+	)
+
+
+func _on_frenzy_ended() -> void:
+	if _frenzy_label:
+		if _frenzy_tween and _frenzy_tween.is_running():
+			_frenzy_tween.kill()
+		var fade_tween := create_tween()
+		var lbl_ref: Label = _frenzy_label
+		fade_tween.tween_property(lbl_ref, "modulate:a", 0.0, 0.4)
+		fade_tween.tween_callback(func() -> void:
+			lbl_ref.queue_free()
+		)
+		_frenzy_label = null
 
 
 func _on_bomb_hit() -> void:
@@ -245,14 +276,21 @@ func _on_bomb_hit() -> void:
 	_gold_flash.color = Color(1.0, 0.1, 0.0, 0.3)
 	_flash_tween = create_tween()
 	_flash_tween.tween_property(_gold_flash, "color:a", 0.0, 0.4).set_ease(Tween.EASE_OUT)
-	# Screen shake via camera or offset on the Main node
+	# Screen shake
+	_screen_shake(8.0, 8, 0.04)
+
+
+func _screen_shake(intensity: float, iterations: int, step_time: float) -> void:
+	if _shake_tween and _shake_tween.is_running():
+		_shake_tween.kill()
 	var main_node := get_tree().current_scene
-	if main_node:
-		var shake_tween := create_tween()
-		for i: int in range(8):
-			var offset := Vector2(randf_range(-8.0, 8.0), randf_range(-8.0, 8.0))
-			shake_tween.tween_property(main_node, "position", offset, 0.04)
-		shake_tween.tween_property(main_node, "position", Vector2.ZERO, 0.04)
+	if not main_node:
+		return
+	_shake_tween = create_tween()
+	for i: int in range(iterations):
+		var offset := Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
+		_shake_tween.tween_property(main_node, "position", offset, step_time)
+	_shake_tween.tween_property(main_node, "position", Vector2.ZERO, step_time)
 
 
 func _on_mute_pressed() -> void:
