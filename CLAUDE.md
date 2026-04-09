@@ -119,10 +119,13 @@ python3 tools/devtools.py performance
 python3 tools/devtools.py quit
 ```
 
-### Pre-change Validation Checklist
+### Pre-commit Validation Checklist (REQUIRED)
+**You MUST run runtime validation before every commit that modifies scripts or gameplay.** Do not skip this step — review sub-agents cannot catch runtime errors.
+
 1. After modifying scenes: `godot --headless --script res://tools/lint_project.gd`
-2. After modifying scripts: run game + `python3 tools/devtools.py validate-all`
-3. After modifying gameplay: run game + `python3 tools/devtools.py input sequence test/sequences/move_catcher.json`
+2. After modifying scripts: launch game + `python3 tools/devtools.py validate-all` + `python3 tools/devtools.py validate-ui`
+3. After modifying gameplay: launch game + test with `spawn-coin-on-catcher`, `input tap`, `screenshot`, and `performance`
+4. Verify: 0 orphan nodes, no FPS drops, no script errors in game output
 
 ### Key Files
 | File | Purpose |
