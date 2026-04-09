@@ -8,7 +8,7 @@ const TIER_COLORS: Array[Color] = [
 	Color(0.8, 0.4, 1.0, 1.0),    # Purple (tier 3+)
 ]
 const EMPTY_COLOR := Color(0.2, 0.2, 0.2, 1.0)
-const AFFORD_COLOR := Color(1.0, 0.84, 0.0, 1.0)
+const AFFORD_COLOR := Color(1.0, 1.0, 1.0, 1.0)
 const UNAFFORD_COLOR := Color(0.5, 0.5, 0.5, 1.0)
 const UPGRADE_ICONS: Dictionary = {
 	"spawn_rate": preload("res://assets/textures/icon_repeat.png"),
