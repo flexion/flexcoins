@@ -22,6 +22,7 @@ var _stripe: ColorRect
 var _catcher_tier: int = -1
 var _rainbow_time: float = 0.0
 var _game_paused: bool = false
+var _edge_tween: Tween
 
 @onready var color_rect: ColorRect = $ColorRect
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
@@ -52,10 +53,12 @@ func _process(delta: float) -> void:
 	if _game_paused:
 		return
 	var direction := Input.get_axis("move_left", "move_right")
-	position.x += direction * speed * delta
 	var half_width := GameManager.get_catcher_width() / 2.0
 	var viewport_width := get_viewport_rect().size.x
-	position.x = clamp(position.x, half_width, viewport_width - half_width)
+	var unclamped_x := position.x + direction * speed * delta
+	position.x = clamp(unclamped_x, half_width, viewport_width - half_width)
+	if unclamped_x != position.x and absf(direction) > 0.5:
+		_edge_squash()
 
 	# Motion trail intensity based on speed
 	var velocity := absf(position.x - _prev_x) / delta
@@ -163,6 +166,14 @@ func _squash_bounce() -> void:
 	tween.tween_property(color_rect, "scale", Vector2(1.2, 0.7), 0.06).set_ease(Tween.EASE_OUT)
 	tween.tween_property(color_rect, "scale", Vector2(0.95, 1.1), 0.08).set_ease(Tween.EASE_OUT)
 	tween.tween_property(color_rect, "scale", Vector2(1.0, 1.0), 0.1).set_ease(Tween.EASE_IN_OUT)
+
+
+func _edge_squash() -> void:
+	if _edge_tween and _edge_tween.is_valid():
+		_edge_tween.kill()
+	_edge_tween = create_tween()
+	_edge_tween.tween_property(self, "scale", Vector2(0.85, 1.2), 0.05).set_ease(Tween.EASE_OUT)
+	_edge_tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.1).set_ease(Tween.EASE_IN_OUT)
 
 
 func _spawn_floating_text(at_position: Vector2, value: int, coin_type: int = 0) -> void:
