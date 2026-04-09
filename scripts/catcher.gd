@@ -2,6 +2,21 @@ extends Area2D
 
 @export var floating_text_scene: PackedScene
 
+const BURST_COLORS: Dictionary = {
+	0: Color(1.0, 0.84, 0.0, 0.9),   # SILVER -> gold
+	1: Color(1.0, 0.95, 0.4, 0.9),   # GOLD -> bright yellow
+	2: Color(0.3, 1.0, 0.4, 0.9),    # FRENZY -> green
+	3: Color(1.0, 0.2, 0.1, 0.9),    # BOMB -> red
+}
+const BURST_TEXTURES: Dictionary = {
+	0: preload("res://assets/textures/star_yellow.png"),
+	1: preload("res://assets/textures/star_yellow.png"),
+	2: preload("res://assets/textures/star_green.png"),
+	3: preload("res://assets/textures/star_red.png"),
+}
+const TRAIL_TEXTURE_BLUE: Texture2D = preload("res://assets/textures/star_blue.png")
+const TRAIL_TEXTURE_GREEN: Texture2D = preload("res://assets/textures/star_green.png")
+
 const MAX_COMBO_PITCH: float = 2.0
 const PITCH_STEP: float = 0.08
 const COMBO_MULTIPLIER_50: float = 1.5
@@ -22,6 +37,7 @@ var _stripe: ColorRect
 var _catcher_tier: int = -1
 var _rainbow_time: float = 0.0
 var _game_paused: bool = false
+var _frenzy_active: bool = false
 var _edge_tween: Tween
 
 @onready var color_rect: ColorRect = $ColorRect
@@ -47,6 +63,8 @@ func _ready() -> void:
 	GameManager.shop_opened.connect(_on_shop_opened)
 	GameManager.shop_closed.connect(_on_shop_closed)
 	GameManager.ascended.connect(_on_ascension)
+	GameManager.frenzy_started.connect(_on_frenzy_started)
+	GameManager.frenzy_ended.connect(_on_frenzy_ended)
 
 
 func _process(delta: float) -> void:
@@ -66,7 +84,10 @@ func _process(delta: float) -> void:
 	var speed_ratio := clampf(velocity / speed, 0.0, 1.0)
 	if _trail_particles:
 		_trail_particles.emitting = speed_ratio > 0.3
-		_trail_particles.amount = int(lerpf(3.0, 12.0, speed_ratio))
+		if _frenzy_active:
+			_trail_particles.amount = int(lerpf(8.0, 20.0, speed_ratio))
+		else:
+			_trail_particles.amount = int(lerpf(3.0, 12.0, speed_ratio))
 
 	# Horizontal stretch when moving fast
 	var stretch_x := lerpf(1.0, 1.15, speed_ratio)
@@ -94,7 +115,7 @@ func _on_area_entered(area: Area2D) -> void:
 		# Coin value is now multiplied in GameManager.get_coin_value()
 		GameManager.coin_collected.emit(value, pos)
 		_spawn_floating_text(pos, value, area.coin_type)
-		_spawn_collect_burst(pos)
+		_spawn_collect_burst(pos, area.coin_type)
 		_squash_bounce()
 		_update_combo_label()
 		bling_sound.play()
@@ -188,25 +209,48 @@ func _spawn_floating_text(at_position: Vector2, value: int, coin_type: int = 0) 
 		get_parent().add_child(ft)
 
 
-func _spawn_collect_burst(at_position: Vector2) -> void:
+func _spawn_collect_burst(at_position: Vector2, coin_type: int = 0) -> void:
 	var burst := CPUParticles2D.new()
 	burst.emitting = true
 	burst.one_shot = true
 	burst.explosiveness = 1.0
-	burst.amount = 12
 	burst.lifetime = 0.5
 	burst.direction = Vector2(0, -1)
-	burst.spread = 180.0
-	burst.initial_velocity_min = 80.0
-	burst.initial_velocity_max = 180.0
 	burst.gravity = Vector2(0, 200)
-	burst.scale_amount_min = 2.0
-	burst.scale_amount_max = 5.0
-	burst.color = Color(1.0, 0.84, 0.0, 0.9)
 	burst.position = at_position
-	burst.z_index = 5
+	burst.z_index = 15
+	burst.color = BURST_COLORS.get(coin_type, BURST_COLORS[0])
+	if BURST_TEXTURES.has(coin_type):
+		burst.texture = BURST_TEXTURES[coin_type]
+		burst.scale_amount_min = 0.1
+		burst.scale_amount_max = 0.25
+	else:
+		burst.scale_amount_min = 2.0
+		burst.scale_amount_max = 5.0
+	# Per-type tuning
+	match coin_type:
+		1:  # GOLD — more particles
+			burst.amount = 18
+			burst.spread = 180.0
+			burst.initial_velocity_min = 80.0
+			burst.initial_velocity_max = 180.0
+		2:  # FRENZY — faster burst
+			burst.amount = 12
+			burst.spread = 180.0
+			burst.initial_velocity_min = 120.0
+			burst.initial_velocity_max = 250.0
+		3:  # BOMB — wider spread, heavier gravity
+			burst.amount = 12
+			burst.spread = 360.0
+			burst.initial_velocity_min = 60.0
+			burst.initial_velocity_max = 200.0
+			burst.gravity = Vector2(0, 400)
+		_:  # SILVER — default
+			burst.amount = 12
+			burst.spread = 180.0
+			burst.initial_velocity_min = 80.0
+			burst.initial_velocity_max = 180.0
 	get_parent().add_child(burst)
-	# Self-free after particles are done
 	get_tree().create_timer(burst.lifetime + 0.1).timeout.connect(burst.queue_free)
 
 
@@ -307,10 +351,27 @@ func _setup_trail() -> void:
 	_trail_particles.initial_velocity_min = 20.0
 	_trail_particles.initial_velocity_max = 50.0
 	_trail_particles.gravity = Vector2.ZERO
-	_trail_particles.scale_amount_min = 2.0
-	_trail_particles.scale_amount_max = 4.0
+	_trail_particles.texture = TRAIL_TEXTURE_BLUE
+	_trail_particles.scale_amount_min = 0.08
+	_trail_particles.scale_amount_max = 0.15
 	_trail_particles.color = Color(0.4, 0.65, 1.0, 0.4)
 	add_child(_trail_particles)
+
+
+func _on_frenzy_started() -> void:
+	_frenzy_active = true
+	if _trail_particles:
+		_trail_particles.texture = TRAIL_TEXTURE_GREEN
+		_trail_particles.color = Color(0.3, 1.0, 0.4, 0.6)
+		_trail_particles.lifetime = 0.5
+
+
+func _on_frenzy_ended() -> void:
+	_frenzy_active = false
+	if _trail_particles:
+		_trail_particles.texture = TRAIL_TEXTURE_BLUE
+		_trail_particles.color = Color(0.4, 0.65, 1.0, 0.4)
+		_trail_particles.lifetime = 0.3
 
 
 func _on_shop_opened() -> void:
