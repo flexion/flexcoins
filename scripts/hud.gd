@@ -111,11 +111,6 @@ func _update_ascend_button() -> void:
 func _create_combo_multiplier_badge() -> void:
 	# Combo multiplier badge (top-right)
 	_combo_multiplier_label = Label.new()
-	_combo_multiplier_label.anchors_preset = Control.PRESET_TOP_RIGHT
-	_combo_multiplier_label.offset_left = -120.0
-	_combo_multiplier_label.offset_right = -20.0
-	_combo_multiplier_label.offset_top = 20.0
-	_combo_multiplier_label.offset_bottom = 60.0
 	_combo_multiplier_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_combo_multiplier_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_combo_multiplier_label.add_theme_font_size_override("font_size", 24)
@@ -124,6 +119,12 @@ func _create_combo_multiplier_badge() -> void:
 	_combo_multiplier_label.visible = false
 	_combo_multiplier_label.z_index = 150
 	add_child(_combo_multiplier_label)
+	# Set anchors_preset after add_child so anchors resolve against parent size
+	_combo_multiplier_label.anchors_preset = Control.PRESET_TOP_RIGHT
+	_combo_multiplier_label.offset_left = -120.0
+	_combo_multiplier_label.offset_right = -20.0
+	_combo_multiplier_label.offset_top = 20.0
+	_combo_multiplier_label.offset_bottom = 60.0
 
 
 func _on_combo_multiplier_changed(new_multiplier: float) -> void:
@@ -197,14 +198,15 @@ func _on_frenzy_started() -> void:
 	var lbl := Label.new()
 	lbl.text = "FRENZY!"
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.anchors_preset = Control.PRESET_CENTER_TOP
-	lbl.offset_left = -200.0
-	lbl.offset_right = 200.0
-	lbl.offset_top = 80.0
 	lbl.add_theme_font_size_override("font_size", 42)
 	lbl.add_theme_color_override("font_color", Color(0.3, 1.0, 0.4, 1.0))
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(lbl)
+	# Set anchors_preset after add_child so anchors resolve against parent size
+	lbl.anchors_preset = Control.PRESET_CENTER_TOP
+	lbl.offset_left = -200.0
+	lbl.offset_right = 200.0
+	lbl.offset_top = 80.0
 	var tween := create_tween()
 	tween.tween_property(lbl, "scale", Vector2(1.2, 1.2), 0.15).from(Vector2(0.5, 0.5)).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	tween.tween_property(lbl, "scale", Vector2(1.0, 1.0), 0.1)
@@ -270,16 +272,17 @@ func _create_milestone_label() -> void:
 	_milestone_label = Label.new()
 	_milestone_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_milestone_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_milestone_label.anchors_preset = Control.PRESET_CENTER
-	_milestone_label.offset_left = -300.0
-	_milestone_label.offset_right = 300.0
-	_milestone_label.offset_top = -60.0
-	_milestone_label.offset_bottom = 60.0
 	_milestone_label.add_theme_font_size_override("font_size", 48)
 	_milestone_label.add_theme_color_override("font_color", Color(1.0, 0.84, 0.0, 1.0))
 	_milestone_label.modulate.a = 0.0
 	_milestone_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_milestone_label)
+	# Set anchors_preset after add_child so anchors resolve against parent size
+	_milestone_label.anchors_preset = Control.PRESET_CENTER
+	_milestone_label.offset_left = -300.0
+	_milestone_label.offset_right = 300.0
+	_milestone_label.offset_top = -60.0
+	_milestone_label.offset_bottom = 60.0
 
 
 func _on_milestone_reached(amount: int) -> void:

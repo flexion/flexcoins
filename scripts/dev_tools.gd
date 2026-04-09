@@ -900,7 +900,7 @@ func _validate_ui_recursive(node: Node, vp: Vector2, issues: Array) -> void:
 		# Check 5: Negative position
 		if rect.position.x < 0.0 or rect.position.y < 0.0:
 			issues.append({
-				"severity": "info",
+				"severity": "warning",
 				"code": "ui_negative_pos",
 				"message": "%s '%s' has negative position (%.0f, %.0f)" % [
 					control.get_class(), control.name, rect.position.x, rect.position.y,
