@@ -102,22 +102,48 @@ func _add_glow() -> void:
 func _add_trail() -> void:
 	var trail := CPUParticles2D.new()
 	trail.emitting = true
-	trail.amount = 5
-	trail.lifetime = 0.35
+	trail.amount = 8
+	trail.lifetime = 0.5
+	trail.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	trail.emission_rect_extents = Vector2(24.0, 4.0)
 	trail.direction = Vector2(0, -1)
-	trail.spread = 15.0
-	trail.initial_velocity_min = 8.0
-	trail.initial_velocity_max = 20.0
+	trail.spread = 45.0
+	trail.initial_velocity_min = 5.0
+	trail.initial_velocity_max = 15.0
 	trail.gravity = Vector2.ZERO
-	trail.scale_amount_min = 1.5
-	trail.scale_amount_max = 3.0
+	trail.scale_amount_min = 0.3
+	trail.scale_amount_max = 0.5
+	trail.scale_amount_curve = _make_shrink_curve()
+	trail.angular_velocity_min = -120.0
+	trail.angular_velocity_max = 120.0
 	match coin_type:
 		CoinType.GOLD:
-			trail.color = Color(1.0, 0.9, 0.3, 0.5)
+			trail.texture = preload("res://assets/textures/star_yellow.png")
+			trail.color_ramp = _make_sparkle_gradient(Color(1.0, 0.95, 0.5, 0.9), Color(1.0, 0.85, 0.3, 0.0))
 		CoinType.FRENZY:
-			trail.color = Color(0.3, 1.0, 0.4, 0.5)
+			trail.texture = preload("res://assets/textures/star_green.png")
+			trail.color_ramp = _make_sparkle_gradient(Color(0.4, 1.0, 0.6, 0.9), Color(0.2, 0.9, 0.3, 0.0))
 		CoinType.BOMB:
-			trail.color = Color(1.0, 0.2, 0.1, 0.5)
+			trail.texture = preload("res://assets/textures/star_red.png")
+			trail.color_ramp = _make_sparkle_gradient(Color(1.0, 0.4, 0.2, 0.9), Color(1.0, 0.2, 0.05, 0.0))
 		_:
-			trail.color = Color(1.0, 0.84, 0.0, 0.35)
+			trail.texture = preload("res://assets/textures/star_yellow.png")
+			trail.color_ramp = _make_sparkle_gradient(Color(1.0, 0.9, 0.3, 0.8), Color(1.0, 0.7, 0.1, 0.0))
 	add_child(trail)
+
+
+func _make_sparkle_gradient(start: Color, end: Color) -> Gradient:
+	var grad := Gradient.new()
+	grad.set_color(0, start)
+	grad.add_point(0.3, Color(start.r, start.g, start.b, start.a * 0.5))
+	grad.add_point(0.6, Color(end.r, end.g, end.b, start.a * 0.3))
+	grad.set_color(1, end)
+	return grad
+
+
+func _make_shrink_curve() -> Curve:
+	var curve := Curve.new()
+	curve.add_point(Vector2(0.0, 1.0))
+	curve.add_point(Vector2(0.3, 0.6))
+	curve.add_point(Vector2(1.0, 0.05))
+	return curve
