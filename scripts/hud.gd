@@ -100,6 +100,7 @@ func _create_ascension_ui() -> void:
 	_update_ascension_label()
 	# Ascend button in shop area
 	_ascend_button = Button.new()
+	_ascend_button.theme = preload("res://assets/ui_theme.tres")
 	_ascend_button.text = "ASCEND"
 	_ascend_button.custom_minimum_size = Vector2(200.0, 40.0)
 	_ascend_button.add_theme_font_size_override("font_size", 18)

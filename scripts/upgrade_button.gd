@@ -17,6 +17,9 @@ const UPGRADE_ICONS: Dictionary = {
 	"catcher_width": preload("res://assets/textures/icon_arrow_right.png"),
 	"magnet": preload("res://assets/textures/icon_circle.png"),
 }
+const BUY_STYLE_AFFORD: Texture2D = preload("res://UI Pack/PNG/Yellow/Default/button_rectangle_depth_flat.png")
+const BUY_STYLE_UNAFFORD: Texture2D = preload("res://UI Pack/PNG/Grey/Default/button_rectangle_depth_flat.png")
+const BUY_STYLE_GREEN: Texture2D = preload("res://UI Pack/PNG/Green/Default/button_rectangle_depth_flat.png")
 
 var upgrade_id: String = ""
 var _segment_rects: Array[ColorRect] = []
@@ -27,6 +30,9 @@ var _pulse_tween: Tween
 var _shake_tween: Tween
 var _purchase_sound: AudioStreamPlayer
 var _reject_sound: AudioStreamPlayer
+var _style_afford: StyleBoxTexture
+var _style_unafford: StyleBoxTexture
+var _style_green: StyleBoxTexture
 
 @onready var name_label: Label = %NameLabel
 @onready var effect_label: Label = %EffectLabel
@@ -48,6 +54,10 @@ func _ready() -> void:
 	_create_segment_bar()
 	_setup_icon()
 	_setup_sounds()
+	_style_afford = _create_buy_style(BUY_STYLE_AFFORD)
+	_style_unafford = _create_buy_style(BUY_STYLE_UNAFFORD)
+	_style_green = _create_buy_style(BUY_STYLE_GREEN)
+	_apply_buy_style(_style_unafford)
 	_update_display()
 
 
@@ -139,17 +149,38 @@ func _update_segments(level: int) -> void:
 		_segment_rects[i].color = fill_color if i < filled else EMPTY_COLOR
 
 
+func _create_buy_style(texture: Texture2D) -> StyleBoxTexture:
+	var style := StyleBoxTexture.new()
+	style.texture = texture
+	style.texture_margin_left = 10.0
+	style.texture_margin_top = 10.0
+	style.texture_margin_right = 10.0
+	style.texture_margin_bottom = 10.0
+	style.content_margin_left = 8.0
+	style.content_margin_top = 4.0
+	style.content_margin_right = 8.0
+	style.content_margin_bottom = 4.0
+	return style
+
+
+func _apply_buy_style(style: StyleBoxTexture) -> void:
+	buy_button.add_theme_stylebox_override("normal", style)
+	buy_button.add_theme_stylebox_override("hover", style)
+	buy_button.add_theme_stylebox_override("pressed", style)
+
+
 func _update_afford_cue(affordable: bool) -> void:
 	if affordable:
 		modulate.a = 1.0
 		buy_button.add_theme_color_override("font_color", AFFORD_COLOR)
+		_apply_buy_style(_style_afford)
 		if not _was_affordable:
-			# Just became affordable — start pulse
 			_was_affordable = true
 			_start_pulse()
 	else:
 		modulate.a = 0.7
 		buy_button.add_theme_color_override("font_color", UNAFFORD_COLOR)
+		_apply_buy_style(_style_unafford)
 		if _was_affordable:
 			_was_affordable = false
 			_stop_pulse()
@@ -169,6 +200,7 @@ func _stop_pulse() -> void:
 
 
 func _animate_purchase() -> void:
+	_apply_buy_style(_style_green)
 	var tween := create_tween()
 	tween.tween_property(self, "scale", Vector2(1.05, 1.05), 0.08).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.12).set_ease(Tween.EASE_IN_OUT)
@@ -176,6 +208,8 @@ func _animate_purchase() -> void:
 	buy_button.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 	tween.tween_callback(func() -> void:
 		buy_button.add_theme_color_override("font_color", original_color)
+		var affordable := GameManager.currency >= GameManager.get_upgrade_cost(upgrade_id)
+		_apply_buy_style(_style_afford if affordable else _style_unafford)
 	)
 	if _purchase_sound:
 		_purchase_sound.play()
