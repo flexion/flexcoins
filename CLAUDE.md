@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FlexCoins is a 2D idle falling-coin collector game built with **Godot 4.6** using **GDScript**. Coins spawn at the top of a portrait viewport (720x1280), fall downward, and the player moves a catcher left/right to collect them for currency. Includes an upgrade shop, save/load persistence, and offline earnings.
+FlexCoins is a 2D idle falling-coin collector game built with **Godot 4.6** using **GDScript**. Coins spawn at the top of a portrait viewport (720x1280), fall downward, and the player moves a catcher left/right to collect them for currency. Includes an upgrade shop and combo multiplier system. Every session starts fresh.
 
 ## Engine & Language
 
@@ -14,11 +14,11 @@ FlexCoins is a 2D idle falling-coin collector game built with **Godot 4.6** usin
 
 ## Development Commands
 
+- **Godot binary (macOS)**: `/Applications/Godot.app/Contents/MacOS/Godot` — all `godot` commands below assume this is on PATH or aliased
 - **Open in Godot editor**: `godot project.godot` (or open via Godot Project Manager)
 - **Run the game**: Press F5 in editor (main scene: `res://scenes/main.tscn`)
 - **Run a specific scene**: Press F6 in editor, or `godot --path . scenes/coin.tscn`
 - **Input actions**: `move_left` (Left arrow / A), `move_right` (Right arrow / D)
-- **Save file location**: `user://save.json` (auto-saves every 30s + on quit)
 
 ## Validation & Testing Infrastructure
 
@@ -77,6 +77,22 @@ python3 tools/devtools.py logs --tail 20
 python3 tools/devtools.py logs --category input
 ```
 
+### Runtime Validation Workflow (from CLI)
+```bash
+# Launch game in background
+/Applications/Godot.app/Contents/MacOS/Godot --path . &
+
+# Wait for startup, then validate
+sleep 5 && python3 tools/devtools.py ping
+python3 tools/devtools.py validate-all
+python3 tools/devtools.py get-state --node "/root/GameManager"
+python3 tools/devtools.py input sequence test/sequences/move_catcher.json
+python3 tools/devtools.py performance
+
+# Clean shutdown
+python3 tools/devtools.py quit
+```
+
 ### Pre-change Validation Checklist
 1. After modifying scenes: `godot --headless --script res://tools/lint_project.gd`
 2. After modifying scripts: run game + `python3 tools/devtools.py validate-all`
@@ -103,8 +119,7 @@ Main (Node2D)
 │   └── spawns FloatingText on coin collection
 └── HUD (instanced, CanvasLayer)
     ├── TopBar > %CurrencyLabel (gold, font 32)
-    ├── UpgradePanel (bottom 260px, 4 upgrade buttons)
-    └── WelcomePanel (centered popup for offline earnings)
+    └── UpgradePanel (bottom 260px, 4 upgrade buttons)
 ```
 
 ### Autoloads
@@ -114,13 +129,11 @@ Main (Node2D)
   - Currency: `currency`, `add_currency()`, signal `currency_changed`
   - Upgrades: `UPGRADE_DATA` dict, `try_purchase_upgrade()`, `get_upgrade_cost()`, signal `upgrade_purchased`
   - Derived values: `get_spawn_interval()`, `get_coin_value()`, `get_catcher_speed()`, `get_catcher_width()`, `get_earn_rate()`
-  - Persistence: `save_game()`, `load_game()`, auto-save Timer (30s), save-on-quit via `NOTIFICATION_WM_CLOSE_REQUEST`
-  - Offline: `get_offline_earnings()`, `clear_offline_earnings()`, 50% efficiency, 8hr cap, 60s minimum threshold
 
 ### Key Scenes
 - **coin.tscn**: Area2D + Sprite2D (flexcoin.png @ 0.4 scale) + CollisionShape2D (circle r=24) + VisibleOnScreenNotifier2D. Value set from `GameManager.get_coin_value()` in `_ready()`.
 - **catcher.tscn**: Area2D + ColorRect (dynamic width, blue) + CollisionShape2D (duplicated shape for safe resizing). Reads speed/width from GameManager, spawns floating text on catch.
-- **hud.tscn**: CanvasLayer with currency label, upgrade panel (4 buttons created programmatically), and welcome-back popup.
+- **hud.tscn**: CanvasLayer with currency label and upgrade panel (4 buttons created programmatically).
 - **upgrade_button.tscn**: Reusable PanelContainer — name/level label, description, buy button. Setup via `setup(id)` before `add_child()`.
 - **floating_text.tscn**: Label that tweens up 60px + fades out over 0.7s, then self-frees. Spawned by Catcher with `z_index: 10` (world layer).
 
@@ -160,11 +173,11 @@ Tier progression is automatic and triggered in `catcher.gd:_update_catcher_visua
 - Visible indicator in top-left HUD shows current ascension count and multiplier (e.g., "Ascension 2  (2.25x)")
 
 **Ascension Effects:**
-- **Currency reset:** Resets to 0 coins (offline earnings and welcome panel not affected)
+- **Currency reset:** Resets to 0 coins
 - **Upgrade reset:** All core upgrades return to level 0 (magnet upgrade is **not** reset)
 - **Multiplier bonus:** Subsequent coins are worth `1.5^ascension_count` times base value
   - Example: After 3 ascensions, each coin is worth 1.5^3 = 3.375x multiplier applied to `get_coin_value()`
-- **Ascension count:** Increments by 1 and persists across saves (stored in save file)
+- **Ascension count:** Increments by 1 (session-only, resets on restart)
 
 **Constants:**
 - `ASCEND_MIN_LEVEL`: 15 (minimum upgrade level required for all core upgrades)
@@ -189,7 +202,7 @@ Tier progression is automatic and triggered in `catcher.gd:_update_catcher_visua
 Spawner → instantiates Coins (value from GameManager) → Coins fall → Catcher detects overlap → GameManager.add_currency() → emits currency_changed → HUD updates label. Upgrades: UpgradeButton → GameManager.try_purchase_upgrade() → emits upgrade_purchased → Catcher/Spawner react.
 
 ### Important: Signal Timing
-GameManager `_ready()` runs before scene nodes (autoload ordering). The `currency_changed` emit in `load_game()` fires before listeners connect. All consumers must read `GameManager.currency` directly in their own `_ready()`.
+GameManager `_ready()` runs before scene nodes (autoload ordering). All consumers must read `GameManager.currency` directly in their own `_ready()` for the initial value.
 
 ## GDScript Conventions
 
@@ -210,6 +223,7 @@ GameManager `_ready()` runs before scene nodes (autoload ordering). The `currenc
 - Use `set_process(false)` on nodes that don't need per-frame updates
 - Duck-type checks (`has_method`) for cross-scene interactions
 - Duplicate shared sub-resources before modifying (e.g., collision shapes)
+- **Never reference `class_name` types directly in autoload scripts** — the parser resolves identifiers before all scripts are loaded, causing "not declared in current scope" errors. Use `load("res://path/to/script.gd")` to get the script, then call static methods on it.
 
 ## UI Layering & Scene Tree Organization
 
@@ -222,7 +236,7 @@ GameManager `_ready()` runs before scene nodes (autoload ordering). The `currenc
 Follow these ranges to maintain visual hierarchy:
 - **0–99**: Game world (coins, catcher, backgrounds)
 - **100–199**: Base UI (currency label, upgrade buttons)
-- **200–299**: Overlays (welcome panel, floating text)
+- **200–299**: Overlays (floating text)
 - **1000+**: Debuggers or temporary overlays
 
 Assign `z_index` explicitly in `_ready()` or via the inspector for any node that needs to break tree order. Example:
@@ -234,7 +248,7 @@ floating_text.z_index = 250  # Floats above upgrade buttons
 
 **CanvasLayer** (`layer` property: 0–128) is a scene tree node that offloads rendering to its own stack, independent of `z_index`. Its `layer` property controls which CanvasLayer renders first globally. Use CanvasLayer for:
 - **HUD (layer 1)**: fixed on screen, above game world
-- **Transient popups (layer 2)**: welcome panel, pause menus
+- **Transient popups (layer 2)**: pause menus, modals
 - Each CanvasLayer's children still respect scene tree order and `z_index` internally
 
 **Control nodes** (buttons, labels) auto-anchor to their parent. Set `anchor_*` and `offset_*` to position them, or use `MarginContainer` / `VBoxContainer` for layout. Never set `global_position` on Controls inside a CanvasLayer—use anchors and offsets instead. If a Control must break free from anchoring, reparent it temporarily or use a Node2D wrapper.
@@ -264,11 +278,9 @@ Main (Node2D, z_index: 0)
 └── HUD (CanvasLayer, layer: 1)
     ├── TopBar (Control, anchors: top|left)
     │   └── CurrencyLabel (Label, gold font 32, z_index: 100)
-    ├── UpgradePanel (PanelContainer, anchors: bottom|left|right, z_index: 100)
-    │   └── VBoxContainer
-    │       └── [UpgradeButton instances, created programmatically]
-    └── WelcomePanel (PanelContainer, anchors: center, z_index: 200)
-        └── [Popup content for offline earnings]
+    └── UpgradePanel (PanelContainer, anchors: bottom|left|right, z_index: 100)
+        └── VBoxContainer
+            └── [UpgradeButton instances, created programmatically]
 ```
 
 **Ordering Rationale:**
@@ -276,7 +288,7 @@ Main (Node2D, z_index: 0)
 - Coins (`z_index: 10`) and Catcher (`z_index: 20`) render in world space above background.
 - HUD on CanvasLayer (layer 1) floats above the world.
 - Upgrade buttons (`z_index: 100`) are visible but below popups.
-- Welcome panel (`z_index: 200`) and floating text (`z_index: 250`) appear on top.
+- Floating text (`z_index: 250`) appears on top.
 
 **Node Placement Rules:**
 - All world nodes (coins, catcher) are direct children of Main (Node2D).
@@ -289,9 +301,8 @@ Main (Node2D, z_index: 0)
 ## UI Testing Protocol
 
 1. **Visual verification in editor**: Press F5, spawn coins, verify they appear above background but below HUD. Move catcher left/right—ensure it stays on-screen. Buy an upgrade—panel should not shift.
-2. **Layering stress test**: Trigger welcome panel while coins are falling. Coins should pass behind panel if it has `z_index: 200`. Floating text spawned during this should appear above both.
+2. **Layering stress test**: Spawn coins while upgrade panel is open. Verify floating text appears above the panel.
 3. **Resolution scaling**: Resize the editor window; HUD elements should reflow via anchors without detaching.
-4. **Persistence**: Save, quit, relaunch. HUD should render identically. Check `user://save.json` to confirm state.
 
 ---
 

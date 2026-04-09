@@ -219,10 +219,11 @@ func _cmd_validate_scene(args: Dictionary) -> Dictionary:
 	if path.is_empty():
 		return {"success": false, "message": "No scene path provided"}
 
-	if not ClassDB.class_exists("SceneValidator") and not _class_name_exists("SceneValidator"):
-		return {"success": false, "message": "SceneValidator class not available"}
+	var validator_script: GDScript = load("res://scripts/scene_validator.gd") as GDScript
+	if validator_script == null:
+		return {"success": false, "message": "SceneValidator script not found"}
 
-	var issues: Array = SceneValidator.validate_scene(path)
+	var issues: Array = validator_script.validate_scene(path)
 	return {
 		"success": issues.is_empty(),
 		"message": "%d issues found" % issues.size() if not issues.is_empty() else "No issues found",
@@ -231,15 +232,16 @@ func _cmd_validate_scene(args: Dictionary) -> Dictionary:
 
 
 func _cmd_validate_all(_args: Dictionary) -> Dictionary:
-	if not ClassDB.class_exists("SceneValidator") and not _class_name_exists("SceneValidator"):
-		return {"success": false, "message": "SceneValidator class not available"}
+	var validator_script: GDScript = load("res://scripts/scene_validator.gd") as GDScript
+	if validator_script == null:
+		return {"success": false, "message": "SceneValidator script not found"}
 
 	var scenes: Array[String] = _find_all_scenes("res://")
 	var all_issues: Array = []
 	var scene_results: Array = []
 
 	for scene_path in scenes:
-		var issues: Array = SceneValidator.validate_scene(scene_path)
+		var issues: Array = validator_script.validate_scene(scene_path)
 		scene_results.append({
 			"path": scene_path,
 			"issues": issues,
@@ -662,13 +664,3 @@ func _clear_stale_files() -> void:
 		DirAccess.remove_absolute(_commands_abs_path)
 	if FileAccess.file_exists(RESULTS_PATH):
 		DirAccess.remove_absolute(_results_abs_path)
-
-
-func _class_name_exists(class_name_str: String) -> bool:
-	# Check if a script-defined class_name is registered in the project.
-	# ClassDB only knows engine classes; script classes use a different registry.
-	var script_classes: Array = ProjectSettings.get_global_class_list()
-	for entry in script_classes:
-		if entry is Dictionary and entry.get("class", "") == class_name_str:
-			return true
-	return false

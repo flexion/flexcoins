@@ -5,11 +5,6 @@ extends CanvasLayer
 var _gold_flash: ColorRect
 var _milestone_label: Label
 var _ascension_label: Label
-var _streak_label: Label
-var _quest_panel: PanelContainer
-var _quest_labels: Dictionary = {}
-var _quest_multiplier_timer_label: Label
-var _quest_multiplier_timer_tween: Tween
 var _ascend_button: Button
 var _combo_multiplier_label: Label
 var _combo_multiplier_glow_tween: Tween
@@ -20,9 +15,6 @@ var _shop_tween: Tween
 @onready var upgrade_container: VBoxContainer = %UpgradeContainer
 @onready var upgrade_panel: PanelContainer = %UpgradePanel
 @onready var shop_toggle: Button = %ShopToggle
-@onready var welcome_panel: PanelContainer = %WelcomePanel
-@onready var welcome_earnings_label: Label = %WelcomeEarningsLabel
-@onready var welcome_button: Button = %WelcomeButton
 @onready var mute_button: Button = %MuteButton
 
 
@@ -34,9 +26,6 @@ func _ready() -> void:
 	GameManager.frenzy_started.connect(_on_frenzy_started)
 	GameManager.bomb_hit.connect(_on_bomb_hit)
 	GameManager.combo_multiplier_changed.connect(_on_combo_multiplier_changed)
-	GameManager.streak_updated.connect(_on_streak_updated)
-	GameManager.quest_progress_updated.connect(_on_quest_progress_updated)
-	GameManager.quest_completed.connect(_on_quest_completed)
 	_on_currency_changed(GameManager.currency)
 	_create_upgrade_buttons()
 	shop_toggle.pressed.connect(_on_shop_toggle_pressed)
@@ -44,20 +33,10 @@ func _ready() -> void:
 	# Start with shop hidden off-screen
 	upgrade_panel.visible = false
 	upgrade_panel.offset_top = 0.0
-	_check_offline_earnings()
 	_create_gold_flash_overlay()
 	_create_milestone_label()
 	_create_ascension_ui()
 	_create_combo_multiplier_badge()
-	_create_streak_display()
-	_create_quest_panel()
-	_update_quest_multiplier_timer()
-	# Start timer to update quest multiplier countdown
-	var timer := Timer.new()
-	timer.wait_time = 1.0
-	timer.timeout.connect(_update_quest_multiplier_timer)
-	add_child(timer)
-	timer.start()
 
 
 func _on_currency_changed(new_amount: int) -> void:
@@ -71,16 +50,6 @@ func _create_upgrade_buttons() -> void:
 			var btn: PanelContainer = upgrade_button_scene.instantiate()
 			btn.setup(id)
 			upgrade_container.add_child(btn)
-
-
-func _check_offline_earnings() -> void:
-	var earnings := GameManager.get_offline_earnings()
-	if earnings > 0:
-		welcome_panel.visible = true
-		welcome_earnings_label.text = "You earned %d coins while away!" % earnings
-		welcome_button.pressed.connect(_on_welcome_dismissed, CONNECT_ONE_SHOT)
-	else:
-		welcome_panel.visible = false
 
 
 func _on_shop_toggle_pressed() -> void:
@@ -191,11 +160,6 @@ func _on_ascend_pressed() -> void:
 		_show_milestone_celebration(0)
 		_milestone_label.text = "ASCENDED!"
 		_milestone_label.add_theme_color_override("font_color", Color(0.8, 0.6, 1.0, 1.0))
-
-
-func _on_welcome_dismissed() -> void:
-	welcome_panel.visible = false
-	GameManager.clear_offline_earnings()
 
 
 func _on_coin_collected(value: int, world_position: Vector2) -> void:
@@ -371,141 +335,3 @@ func _spawn_celebration_particles() -> void:
 		add_child(wrapper)
 		wrapper.add_child(burst)
 		get_tree().create_timer(burst.lifetime + 0.2).timeout.connect(wrapper.queue_free)
-
-
-# ============= Streak & Quest UI =============
-
-func _create_streak_display() -> void:
-	_streak_label = Label.new()
-	_streak_label.anchors_preset = Control.PRESET_TOP_LEFT
-	_streak_label.offset_left = 20.0
-	_streak_label.offset_top = 80.0
-	_streak_label.offset_right = 400.0
-	_streak_label.add_theme_font_size_override("font_size", 16)
-	_streak_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.3, 1.0))
-	_streak_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_streak_label.z_index = 150
-	add_child(_streak_label)
-	_update_streak_label()
-
-
-func _update_streak_label() -> void:
-	var streak: int = GameManager.get_streak_count()
-	if streak > 1:
-		_streak_label.text = "Streak: %d 🔥" % streak
-		_streak_label.visible = true
-	else:
-		_streak_label.visible = false
-
-
-func _on_streak_updated(new_streak_count: int) -> void:
-	_update_streak_label()
-	# Milestone celebration for streak milestones
-	if new_streak_count in [7, 14, 21, 30]:
-		_show_streak_milestone(new_streak_count)
-
-
-func _show_streak_milestone(streak: int) -> void:
-	_milestone_label.text = "Streak %d!" % streak
-	_milestone_label.scale = Vector2(0.5, 0.5)
-	_milestone_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.3, 1.0))
-
-	# Gold screen flash
-	_gold_flash.color.a = 0.2
-	var flash_tween := create_tween()
-	flash_tween.tween_property(_gold_flash, "color:a", 0.0, 0.4).set_ease(Tween.EASE_OUT)
-
-	# Animated text
-	var tween := create_tween()
-	tween.tween_property(_milestone_label, "modulate:a", 1.0, 0.15)
-	tween.parallel().tween_property(_milestone_label, "scale", Vector2(1.2, 1.2), 0.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	tween.tween_property(_milestone_label, "scale", Vector2(1.0, 1.0), 0.15)
-	tween.tween_interval(1.2)
-	tween.tween_property(_milestone_label, "modulate:a", 0.0, 0.3)
-
-
-func _create_quest_panel() -> void:
-	_quest_panel = PanelContainer.new()
-	_quest_panel.anchors_preset = Control.PRESET_BOTTOM_LEFT
-	_quest_panel.offset_left = 10.0
-	_quest_panel.offset_right = 250.0
-	_quest_panel.offset_top = -130.0
-	_quest_panel.offset_bottom = -10.0
-	_quest_panel.z_index = 100
-	add_child(_quest_panel)
-
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 2)
-	_quest_panel.add_child(vbox)
-
-	# Quest title
-	var title := Label.new()
-	title.text = "Daily Quests"
-	title.add_theme_font_size_override("font_size", 14)
-	title.add_theme_color_override("font_color", Color(1.0, 0.84, 0.0, 1.0))
-	vbox.add_child(title)
-
-	# Quest progress labels
-	for quest_id: String in GameManager.QUEST_DEFINITIONS:
-		var def: Dictionary = GameManager.QUEST_DEFINITIONS[quest_id]
-		var label := Label.new()
-		label.add_theme_font_size_override("font_size", 12)
-		label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.8))
-		_quest_labels[quest_id] = label
-		vbox.add_child(label)
-
-	# Quest multiplier timer label
-	_quest_multiplier_timer_label = Label.new()
-	_quest_multiplier_timer_label.add_theme_font_size_override("font_size", 12)
-	_quest_multiplier_timer_label.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5, 1.0))
-	_quest_multiplier_timer_label.visible = false
-	vbox.add_child(_quest_multiplier_timer_label)
-
-	_update_quest_displays()
-
-
-func _update_quest_displays() -> void:
-	for quest_id: String in GameManager.QUEST_DEFINITIONS:
-		var def: Dictionary = GameManager.QUEST_DEFINITIONS[quest_id]
-		var progress: int = GameManager.get_quest_progress(quest_id)
-		var target: int = def.target
-		var label: Label = _quest_labels.get(quest_id)
-		if label:
-			var is_complete := progress >= target
-			var status_symbol := "✓" if is_complete else "○"
-			label.text = "%s %s: %d/%d" % [status_symbol, def.name, progress, target]
-
-
-func _on_quest_progress_updated(quest_id: String, progress: int, target: int) -> void:
-	_update_quest_displays()
-
-
-func _on_quest_completed(quest_id: String, reward_multiplier: float) -> void:
-	# Show celebration when all quests complete
-	_milestone_label.text = "QUESTS COMPLETE!\n1.25x for 1 hour!"
-	_milestone_label.scale = Vector2(0.5, 0.5)
-	_milestone_label.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5, 1.0))
-
-	# Green screen flash
-	_gold_flash.color = Color(0.2, 1.0, 0.4, 0.3)
-	var flash_tween := create_tween()
-	flash_tween.tween_property(_gold_flash, "color:a", 0.0, 0.5).set_ease(Tween.EASE_OUT)
-
-	# Animated text
-	var tween := create_tween()
-	tween.tween_property(_milestone_label, "modulate:a", 1.0, 0.15)
-	tween.parallel().tween_property(_milestone_label, "scale", Vector2(1.3, 1.3), 0.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	tween.tween_property(_milestone_label, "scale", Vector2(1.0, 1.0), 0.15)
-	tween.tween_interval(1.5)
-	tween.tween_property(_milestone_label, "modulate:a", 0.0, 0.3)
-
-
-func _update_quest_multiplier_timer() -> void:
-	var remaining: int = GameManager.get_quest_multiplier_time_remaining()
-	if remaining > 0:
-		var minutes: int = remaining / 60
-		var seconds: int = remaining % 60
-		_quest_multiplier_timer_label.text = "1.25x for %d:%02d" % [minutes, seconds]
-		_quest_multiplier_timer_label.visible = true
-	else:
-		_quest_multiplier_timer_label.visible = false
