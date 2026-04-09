@@ -1,0 +1,151 @@
+name: Story
+description: Report a bug or request a feature for FlexCoins
+labels:
+  - triage
+assignees: []
+
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      description: Is this a bug report or a feature request?
+      options:
+        - Bug
+        - Feature
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug or feature.
+      placeholder: Describe the issue or feature...
+    validations:
+      required: true
+
+  - type: textarea
+    id: context-motivation
+    attributes:
+      label: Context & Motivation
+      description: Why is this important? What problem does it solve or what value does it add?
+      placeholder: Explain the context behind this story...
+    validations:
+      required: false
+
+  - type: textarea
+    id: steps-or-behavior
+    attributes:
+      label: Steps to Reproduce / Proposed Behavior
+      description: |
+        For bugs: describe how to reproduce the issue.
+        For features: describe the desired behavior.
+      placeholder: |
+        Describe the steps or behavior here...
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: |
+        What conditions must be met for this story to be considered done?
+        Pre-filled defaults include the project's standard validation gates.
+        Edit, add, or remove criteria as needed.
+      value: |
+        - [ ] Criteria 1
+        - [ ] Criteria 2
+        - [ ] Headless lint passes: `godot --headless --script res://tools/lint_project.gd`
+        - [ ] Runtime validation passes: `python3 tools/devtools.py validate-all`
+        - [ ] UI validation passes: `python3 tools/devtools.py validate-ui`
+    validations:
+      required: false
+
+  - type: textarea
+    id: devtools-verification
+    attributes:
+      label: DevTools Verification
+      description: |
+        For bugs: commands to reproduce the issue.
+        For features: commands to verify the implementation.
+      placeholder: |
+        python3 tools/devtools.py <command>
+    validations:
+      required: false
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: Which platform(s) does this affect?
+      options:
+        - All platforms
+        - macOS
+        - Windows
+        - Linux
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Screenshots, logs, mockups, or any other relevant information.
+      placeholder: Add any other context here...
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: "---\n### Reflection"
+
+  - type: checkboxes
+    id: devtools-reflection
+    attributes:
+      label: DevTools Reflection
+      description: |
+        Consider whether this story suggests improvements to project tooling.
+        Examples of past tooling gaps that led to bugs:
+        - Magnet upgrade had no runtime state query — added `get-catcher-state`
+        - Bomb-frenzy overlap was untestable — added `spawn-coin-on-catcher --type BOMB` during frenzy
+        - Combo reset edge case found only via `set-game-speed 10.0` + `spawn-coin-on-catcher`
+        - Ascension multiplier drift caught by `get-state --node /root/GameManager --property ascension_count`
+        - CollisionShape2D duplication bug found by `validate-all` checking for shared sub-resources
+      options:
+        - label: New devtools.py command or flag useful here?
+          required: false
+        - label: New input sequence in test/sequences/?
+          required: false
+        - label: Lint rule update for lint_project.gd?
+          required: false
+        - label: Screenshot or UI snapshot useful in validation?
+          required: false
+
+  - type: markdown
+    attributes:
+      value: >
+        **Note:** Fill the Session Reflection section when closing the issue or
+        PR, not when opening it.
+
+  - type: checkboxes
+    id: session-reflection
+    attributes:
+      label: Session Reflection
+      description: |
+        Capture what you learned while working on this story.
+        Examples of past learnings that improved the project:
+        - Discovered autoload parse-order bug: never reference `class_name` types directly in autoload scripts
+        - Found that `set_process(false)` on idle coins saved 12% frame time
+        - CollisionShape2D must be duplicated before modifying or all instances share the shape
+        - Ascension multiplier formula `1.5^count` drifts at high counts — consider capping or rounding
+      options:
+        - label: Did you discover anything surprising about the codebase?
+          required: false
+        - label: Any new pattern, convention, or workaround worth noting?
+          required: false
+        - label: Should CLAUDE.md be updated with what you learned?
+          required: false
+        - label: Anything to flag for a future story?
+          required: false
