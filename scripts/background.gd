@@ -22,6 +22,14 @@ func _ready() -> void:
 	GameManager.frenzy_started.connect(_on_frenzy_started)
 	GameManager.frenzy_ended.connect(_on_frenzy_ended)
 	_set_palette(GameManager.ascension_count)
+	_resize_to_viewport()
+	get_viewport().size_changed.connect(_resize_to_viewport)
+
+
+func _resize_to_viewport() -> void:
+	var vp_size := get_viewport_rect().size
+	position = Vector2.ZERO
+	size = vp_size
 
 
 func _process(delta: float) -> void:

@@ -17,6 +17,7 @@ var _currency_flash_tween: Tween
 var _frenzy_label: Label
 var _frenzy_tween: Tween
 var _shake_tween: Tween
+var _fullscreen_button: Button
 var _display_font: Font = preload("res://assets/fonts/kenney_future.ttf")
 var _narrow_font: Font = preload("res://assets/fonts/kenney_future_narrow.ttf")
 
@@ -42,6 +43,7 @@ func _ready() -> void:
 	_create_upgrade_buttons()
 	shop_toggle.pressed.connect(_on_shop_toggle_pressed)
 	mute_button.pressed.connect(_on_mute_pressed)
+	_create_fullscreen_button()
 	# Start with shop hidden off-screen
 	upgrade_panel.visible = false
 	upgrade_panel.offset_top = 0.0
@@ -313,6 +315,55 @@ func _on_mute_pressed() -> void:
 	mute_button.text = "🔇" if muted else "🔊"
 
 
+func _create_fullscreen_button() -> void:
+	_fullscreen_button = Button.new()
+	_fullscreen_button.anchors_preset = Control.PRESET_TOP_RIGHT
+	_fullscreen_button.anchor_left = 1.0
+	_fullscreen_button.anchor_right = 1.0
+	_fullscreen_button.offset_left = -140.0
+	_fullscreen_button.offset_top = 15.0
+	_fullscreen_button.offset_right = -80.0
+	_fullscreen_button.offset_bottom = 55.0
+	_fullscreen_button.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_fullscreen_button.add_theme_font_override("font", _narrow_font)
+	_fullscreen_button.add_theme_font_size_override("font_size", 14)
+	_update_fullscreen_button_text()
+	_fullscreen_button.pressed.connect(_on_fullscreen_pressed)
+	add_child(_fullscreen_button)
+
+
+func _on_fullscreen_pressed() -> void:
+	_toggle_fullscreen()
+
+
+func _toggle_fullscreen() -> void:
+	var current_mode := DisplayServer.window_get_mode()
+	if current_mode == DisplayServer.WINDOW_MODE_FULLSCREEN or current_mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	else:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+	_update_fullscreen_button_text()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and event.keycode == KEY_F11:
+		_toggle_fullscreen()
+		get_viewport().set_input_as_handled()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_SIZE_CHANGED and _fullscreen_button:
+		_update_fullscreen_button_text()
+
+
+func _update_fullscreen_button_text() -> void:
+	var current_mode := DisplayServer.window_get_mode()
+	if current_mode == DisplayServer.WINDOW_MODE_FULLSCREEN or current_mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN:
+		_fullscreen_button.text = "Window"
+	else:
+		_fullscreen_button.text = "Full"
+
+
 func _on_upgrade_purchased(_upgrade_id: String) -> void:
 	_flash_currency_label()
 	_flash_gold_overlay()
@@ -431,7 +482,8 @@ func _spawn_celebration_particles() -> void:
 		# Use offset positions by setting emission shape
 		burst.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
 		burst.emission_rect_extents = Vector2(200.0, 20.0)
-		burst.position = Vector2(360.0, 640.0 + i * 200.0 - 200.0)
+		var vp_size := get_viewport().get_visible_rect().size
+		burst.position = Vector2(vp_size.x / 2.0, vp_size.y / 2.0 + i * 200.0 - 200.0)
 		# CanvasLayer children need a Control or Node2D wrapper
 		var wrapper := Node2D.new()
 		wrapper.position = Vector2.ZERO
