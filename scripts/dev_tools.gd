@@ -9,6 +9,12 @@ extends Node
 const COMMANDS_PATH: String = "user://devtools_commands.json"
 const RESULTS_PATH: String = "user://devtools_results.json"
 const LOG_PATH: String = "user://devtools_log.jsonl"
+const COIN_TYPE_MAP: Dictionary = {
+	"SILVER": 0,
+	"GOLD": 1,
+	"FRENZY": 2,
+	"BOMB": 3,
+}
 
 # --- Variables ---
 
@@ -43,6 +49,15 @@ func _ready() -> void:
 	_handlers["input_clear"] = _cmd_input_clear
 	_handlers["input_actions"] = _cmd_input_actions
 	_handlers["input_sequence"] = _cmd_input_sequence
+	_handlers["spawn_coin"] = _cmd_spawn_coin
+	_handlers["spawn_coin_on_catcher"] = _cmd_spawn_coin_on_catcher
+	_handlers["get_active_coins"] = _cmd_get_active_coins
+	_handlers["clear_coins"] = _cmd_clear_coins
+	_handlers["set_upgrade_levels"] = _cmd_set_upgrade_levels
+	_handlers["reset_session"] = _cmd_reset_session
+	_handlers["set_game_speed"] = _cmd_set_game_speed
+	_handlers["wait_frames"] = _cmd_wait_frames
+	_handlers["get_catcher_state"] = _cmd_get_catcher_state
 
 	_clear_stale_files()
 	_write_log("system", "DevTools initialized", {
@@ -98,7 +113,7 @@ func _check_for_commands() -> void:
 	_write_log("command", "Executing: %s" % action, args)
 
 	var handler: Callable = _handlers[action]
-	var result: Dictionary = handler.call(args)
+	var result: Dictionary = await handler.call(args)
 	_write_result(action, result)
 
 
@@ -567,6 +582,206 @@ func _execute_sequence(sequence_id: String, steps: Array, timeout: float) -> voi
 				_clear_all_simulated_inputs()
 
 	_write_log("input", "Sequence %s completed (%d steps)" % [sequence_id, steps.size()])
+
+
+# --- Debug Command Handlers ---
+
+
+func _cmd_spawn_coin(args: Dictionary) -> Dictionary:
+	var type_str: String = args.get("type", "SILVER").to_upper()
+	if not COIN_TYPE_MAP.has(type_str):
+		return {"success": false, "message": "Unknown coin type: %s" % type_str}
+
+	if get_tree().current_scene == null:
+		return {"success": false, "message": "No current scene"}
+
+	var coin_scene: PackedScene = load("res://scenes/coin.tscn")
+	var coin: Area2D = coin_scene.instantiate()
+	coin.coin_type = COIN_TYPE_MAP[type_str]
+
+	var viewport_width := get_tree().root.size.x
+	var x: float = args.get("x", randf_range(40.0, viewport_width - 40.0))
+	var y: float = args.get("y", -50.0)
+	coin.position = Vector2(x, y)
+
+	get_tree().current_scene.add_child(coin)
+
+	return {
+		"success": true,
+		"message": "Spawned %s coin at (%.0f, %.0f)" % [type_str, x, y],
+		"data": {
+			"type": type_str,
+			"position": {"x": coin.position.x, "y": coin.position.y},
+			"value": coin.value,
+		},
+	}
+
+
+func _cmd_spawn_coin_on_catcher(args: Dictionary) -> Dictionary:
+	var catchers := get_tree().get_nodes_in_group("catcher")
+	if catchers.is_empty():
+		return {"success": false, "message": "No catcher node found"}
+
+	var catcher: Node2D = catchers[0]
+	var type_str: String = args.get("type", "SILVER").to_upper()
+	if not COIN_TYPE_MAP.has(type_str):
+		return {"success": false, "message": "Unknown coin type: %s" % type_str}
+
+	if get_tree().current_scene == null:
+		return {"success": false, "message": "No current scene"}
+
+	var coin_scene: PackedScene = load("res://scenes/coin.tscn")
+	var coin: Area2D = coin_scene.instantiate()
+	coin.coin_type = COIN_TYPE_MAP[type_str]
+	coin.position = Vector2(catcher.position.x, catcher.position.y - 100)
+
+	get_tree().current_scene.add_child(coin)
+
+	return {
+		"success": true,
+		"message": "Spawned %s coin above catcher at (%.0f, %.0f)" % [type_str, coin.position.x, coin.position.y],
+		"data": {
+			"type": type_str,
+			"position": {"x": coin.position.x, "y": coin.position.y},
+			"value": coin.value,
+		},
+	}
+
+
+func _cmd_get_active_coins(_args: Dictionary) -> Dictionary:
+	var coins: Array = []
+	for child in get_tree().current_scene.get_children():
+		if child.has_method("collect"):
+			var type_name: String = "SILVER"
+			for key: String in COIN_TYPE_MAP:
+				if COIN_TYPE_MAP[key] == child.coin_type:
+					type_name = key
+					break
+			coins.append({
+				"type": type_name,
+				"position": {"x": child.position.x, "y": child.position.y},
+				"value": child.value,
+				"collected": child.get("_collected"),
+			})
+
+	return {
+		"success": true,
+		"message": "%d active coins" % coins.size(),
+		"data": {"count": coins.size(), "coins": coins},
+	}
+
+
+func _cmd_clear_coins(_args: Dictionary) -> Dictionary:
+	var cleared: int = 0
+	for child in get_tree().current_scene.get_children():
+		if child.has_method("collect"):
+			child.queue_free()
+			cleared += 1
+
+	return {
+		"success": true,
+		"message": "Cleared %d coins" % cleared,
+		"data": {"cleared": cleared},
+	}
+
+
+func _cmd_set_upgrade_levels(args: Dictionary) -> Dictionary:
+	var warnings: Array = []
+	for key: String in args:
+		if GameManager.UPGRADE_DATA.has(key):
+			GameManager._upgrade_levels[key] = maxi(0, int(args[key]))
+			GameManager.upgrade_purchased.emit(key)
+		else:
+			warnings.append("Unknown upgrade key: %s" % key)
+
+	var result: Dictionary = {
+		"success": true,
+		"message": "Upgrade levels updated",
+		"data": {"levels": GameManager._upgrade_levels.duplicate()},
+	}
+	if not warnings.is_empty():
+		result["data"]["warnings"] = warnings
+	return result
+
+
+func _cmd_reset_session(_args: Dictionary) -> Dictionary:
+	var previous: Dictionary = {
+		"currency": GameManager.currency,
+		"upgrade_levels": GameManager._upgrade_levels.duplicate(),
+		"ascension_count": GameManager.ascension_count,
+		"combo_multiplier": GameManager._combo_multiplier,
+	}
+
+	GameManager.currency = 0
+	for id: String in GameManager._upgrade_levels:
+		GameManager._upgrade_levels[id] = 0
+	GameManager.ascension_count = 0
+	GameManager._combo_multiplier = 1.0
+	GameManager._last_milestone = 0
+
+	if GameManager.frenzy_active and GameManager._frenzy_timer != null:
+		GameManager._frenzy_timer.stop()
+		GameManager.frenzy_active = false
+		GameManager.frenzy_ended.emit()
+
+	GameManager.currency_changed.emit(0)
+	GameManager.upgrade_purchased.emit("")
+	GameManager.combo_multiplier_changed.emit(1.0)
+
+	return {
+		"success": true,
+		"message": "Session reset to fresh state",
+		"data": {"previous": previous},
+	}
+
+
+func _cmd_set_game_speed(args: Dictionary) -> Dictionary:
+	var prev: float = Engine.time_scale
+	var scale: float = clampf(float(args.get("scale", 1.0)), 0.0, 100.0)
+	Engine.time_scale = scale
+
+	return {
+		"success": true,
+		"message": "Game speed: %.1f -> %.1f" % [prev, scale],
+		"data": {"previous_scale": prev, "current_scale": scale},
+	}
+
+
+func _cmd_wait_frames(args: Dictionary) -> Dictionary:
+	var count: int = int(args.get("count", 1))
+	var start_time := Time.get_ticks_msec()
+	for i in range(count):
+		await get_tree().process_frame
+	var elapsed_ms := Time.get_ticks_msec() - start_time
+
+	return {
+		"success": true,
+		"message": "Waited %d frames" % count,
+		"data": {"frames": count, "elapsed_ms": elapsed_ms},
+	}
+
+
+func _cmd_get_catcher_state(_args: Dictionary) -> Dictionary:
+	var catchers := get_tree().get_nodes_in_group("catcher")
+	if catchers.is_empty():
+		return {"success": false, "message": "No catcher node found"}
+
+	var catcher: Node2D = catchers[0]
+
+	return {
+		"success": true,
+		"message": "Catcher state retrieved",
+		"data": {
+			"position_x": catcher.position.x,
+			"width": GameManager.get_catcher_width(),
+			"speed": GameManager.get_catcher_speed(),
+			"tier": catcher.get("_catcher_tier"),
+			"combo": catcher.get("_combo"),
+			"combo_multiplier": catcher.get("_combo_multiplier"),
+			"bomb_shrink_active": catcher.get("_bomb_shrink_active"),
+			"game_paused": catcher.get("_game_paused"),
+		},
+	}
 
 
 # --- Utility Functions ---

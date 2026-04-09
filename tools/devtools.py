@@ -408,6 +408,138 @@ def cmd_input_sequence(args, project_path: Path):
         sys.exit(1)
 
 
+# ==================== DEBUG COMMANDS ====================
+
+
+def cmd_spawn_coin(args, project_path: Path):
+    """Spawn a coin at a specific position."""
+    cmd_args = {"type": args.type}
+    if args.x is not None:
+        cmd_args["x"] = args.x
+    if args.y is not None:
+        cmd_args["y"] = args.y
+
+    result = send_command(project_path, "spawn_coin", cmd_args)
+    if result["success"]:
+        data = result["data"]
+        print(f"Spawned {data['type']} coin at ({data['position']['x']:.0f}, {data['position']['y']:.0f}), value={data['value']}")
+    else:
+        print(f"Failed: {result['message']}", file=sys.stderr)
+        sys.exit(1)
+
+
+def cmd_spawn_coin_on_catcher(args, project_path: Path):
+    """Spawn a coin directly above the catcher."""
+    cmd_args = {"type": args.type}
+
+    result = send_command(project_path, "spawn_coin_on_catcher", cmd_args)
+    if result["success"]:
+        data = result["data"]
+        print(f"Spawned {data['type']} coin above catcher at ({data['position']['x']:.0f}, {data['position']['y']:.0f}), value={data['value']}")
+    else:
+        print(f"Failed: {result['message']}", file=sys.stderr)
+        sys.exit(1)
+
+
+def cmd_get_active_coins(args, project_path: Path):
+    """List all active coins in the scene."""
+    result = send_command(project_path, "get_active_coins")
+    if result["success"]:
+        data = result["data"]
+        print(f"Active coins: {data['count']}")
+        for coin in data.get("coins", []):
+            print(f"  {coin['type']} at ({coin['position']['x']:.0f}, {coin['position']['y']:.0f}) value={coin['value']} collected={coin['collected']}")
+    else:
+        print(f"Failed: {result['message']}", file=sys.stderr)
+        sys.exit(1)
+
+
+def cmd_clear_coins(args, project_path: Path):
+    """Remove all active coins."""
+    result = send_command(project_path, "clear_coins")
+    if result["success"]:
+        print(f"Cleared {result['data']['cleared']} coins")
+    else:
+        print(f"Failed: {result['message']}", file=sys.stderr)
+        sys.exit(1)
+
+
+def cmd_set_upgrade_levels(args, project_path: Path):
+    """Bulk-set upgrade levels."""
+    cmd_args = {}
+    for key in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width", "magnet"]:
+        val = getattr(args, key, None)
+        if val is not None:
+            cmd_args[key] = val
+
+    if not cmd_args:
+        print("Error: Specify at least one upgrade level", file=sys.stderr)
+        sys.exit(1)
+
+    result = send_command(project_path, "set_upgrade_levels", cmd_args)
+    if result["success"]:
+        data = result["data"]
+        print("Upgrade levels:")
+        for key, level in data["levels"].items():
+            print(f"  {key}: {level}")
+        for warn in data.get("warnings", []):
+            print(f"  WARNING: {warn}")
+    else:
+        print(f"Failed: {result['message']}", file=sys.stderr)
+        sys.exit(1)
+
+
+def cmd_reset_session(args, project_path: Path):
+    """Reset game to fresh state."""
+    result = send_command(project_path, "reset_session")
+    if result["success"]:
+        print("Session reset")
+    else:
+        print(f"Failed: {result['message']}", file=sys.stderr)
+        sys.exit(1)
+
+
+def cmd_set_game_speed(args, project_path: Path):
+    """Set game speed (time scale)."""
+    result = send_command(project_path, "set_game_speed", {"scale": args.scale})
+    if result["success"]:
+        data = result["data"]
+        print(f"Game speed: {data['previous_scale']:.1f} -> {data['current_scale']:.1f}")
+    else:
+        print(f"Failed: {result['message']}", file=sys.stderr)
+        sys.exit(1)
+
+
+def cmd_wait_frames(args, project_path: Path):
+    """Wait for N physics frames."""
+    timeout = max(30, args.count / 10)
+    result = send_command(project_path, "wait_frames", {"count": args.count}, timeout=timeout)
+    if result["success"]:
+        data = result["data"]
+        print(f"Waited {data['frames']} frames ({data['elapsed_ms']}ms)")
+    else:
+        print(f"Failed: {result['message']}", file=sys.stderr)
+        sys.exit(1)
+
+
+def cmd_get_catcher_state(args, project_path: Path):
+    """Get catcher state."""
+    result = send_command(project_path, "get_catcher_state")
+    if result["success"]:
+        data = result["data"]
+        print(f"Position X:         {data['position_x']:.1f}")
+        print(f"Width:              {data['width']:.1f}")
+        print(f"Speed:              {data['speed']:.1f}")
+        print(f"Tier:               {data['tier']}")
+        print(f"Combo:              {data['combo']}")
+        print(f"Combo multiplier:   {data['combo_multiplier']:.1f}")
+        print(f"Bomb shrink:        {data['bomb_shrink_active']}")
+        print(f"Game paused:        {data['game_paused']}")
+    else:
+        print(f"Failed: {result['message']}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(description="DevTools CLI - interact with running Godot instance")
     parser.add_argument("--project", "-p", help="Path to Godot project", default=".")
@@ -507,6 +639,55 @@ def main():
     p.add_argument("file", help="Path to sequence JSON file")
     p.add_argument("--timeout", type=float, default=60, help="Sequence timeout in seconds (default: 60)")
     p.set_defaults(func=cmd_input_sequence)
+
+    # ==================== DEBUG COMMANDS ====================
+
+    # spawn-coin
+    p = subparsers.add_parser("spawn-coin", help="Spawn a coin at a position")
+    p.add_argument("--type", "-t", default="SILVER", help="Coin type: SILVER, GOLD, FRENZY, BOMB")
+    p.add_argument("--x", type=float, help="X position (default: random)")
+    p.add_argument("--y", type=float, help="Y position (default: -50)")
+    p.set_defaults(func=cmd_spawn_coin)
+
+    # spawn-coin-on-catcher
+    p = subparsers.add_parser("spawn-coin-on-catcher", help="Spawn a coin above the catcher")
+    p.add_argument("--type", "-t", default="SILVER", help="Coin type: SILVER, GOLD, FRENZY, BOMB")
+    p.set_defaults(func=cmd_spawn_coin_on_catcher)
+
+    # get-active-coins
+    p = subparsers.add_parser("get-active-coins", help="List all active coins")
+    p.set_defaults(func=cmd_get_active_coins)
+
+    # clear-coins
+    p = subparsers.add_parser("clear-coins", help="Remove all active coins")
+    p.set_defaults(func=cmd_clear_coins)
+
+    # set-upgrade-levels
+    p = subparsers.add_parser("set-upgrade-levels", help="Bulk-set upgrade levels")
+    p.add_argument("--spawn-rate", type=int, help="Spawn rate level")
+    p.add_argument("--coin-value", type=int, help="Coin value level")
+    p.add_argument("--catcher-speed", type=int, help="Catcher speed level")
+    p.add_argument("--catcher-width", type=int, help="Catcher width level")
+    p.add_argument("--magnet", type=int, help="Magnet level")
+    p.set_defaults(func=cmd_set_upgrade_levels)
+
+    # reset-session
+    p = subparsers.add_parser("reset-session", help="Reset to fresh game state")
+    p.set_defaults(func=cmd_reset_session)
+
+    # set-game-speed
+    p = subparsers.add_parser("set-game-speed", help="Set game speed (time scale)")
+    p.add_argument("scale", type=float, help="Time scale (0=pause, 1=normal, 10=fast)")
+    p.set_defaults(func=cmd_set_game_speed)
+
+    # wait-frames
+    p = subparsers.add_parser("wait-frames", help="Wait for N physics frames")
+    p.add_argument("count", type=int, help="Number of frames to wait")
+    p.set_defaults(func=cmd_wait_frames)
+
+    # get-catcher-state
+    p = subparsers.add_parser("get-catcher-state", help="Get catcher state")
+    p.set_defaults(func=cmd_get_catcher_state)
 
     args = parser.parse_args()
 
