@@ -1,10 +1,24 @@
-[gd_scene load_steps=2 format=3 uid="uid://upgrade_btn_001"]
+[gd_scene load_steps=4 format=3 uid="uid://upgrade_btn_001"]
 
 [ext_resource type="Script" path="res://scripts/upgrade_button.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://UI Pack/PNG/Grey/Default/button_rectangle_depth_flat.png" id="2_card_bg"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_card"]
+texture = ExtResource("2_card_bg")
+texture_margin_left = 10.0
+texture_margin_top = 10.0
+texture_margin_right = 10.0
+texture_margin_bottom = 10.0
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+modulate_color = Color(0.2, 0.22, 0.32, 0.85)
 
 [node name="UpgradeButton" type="PanelContainer"]
 script = ExtResource("1_script")
 custom_minimum_size = Vector2(0, 50)
+theme_override_styles/panel = SubResource("StyleBoxTexture_card")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 2
@@ -38,5 +52,5 @@ unique_name_in_owner = true
 layout_mode = 2
 custom_minimum_size = Vector2(120, 40)
 theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(1, 0.84, 0, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 text = "Buy: 100"

@@ -1,13 +1,15 @@
-[gd_scene load_steps=3 format=3 uid="uid://hud_scene_001"]
+[gd_scene load_steps=4 format=3 uid="uid://hud_scene_001"]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1_script"]
 [ext_resource type="PackedScene" path="res://scenes/upgrade_button.tscn" id="2_upgrade_btn"]
+[ext_resource type="Theme" path="res://assets/ui_theme.tres" id="3_theme"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_script")
 upgrade_button_scene = ExtResource("2_upgrade_btn")
 
 [node name="TopBar" type="MarginContainer" parent="."]
+theme = ExtResource("3_theme")
 anchors_preset = 10
 anchor_right = 1.0
 offset_bottom = 70.0
@@ -26,6 +28,7 @@ horizontal_alignment = 1
 
 [node name="MuteButton" type="Button" parent="."]
 unique_name_in_owner = true
+theme = ExtResource("3_theme")
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
@@ -39,6 +42,7 @@ text = "🔊"
 
 [node name="UpgradePanel" type="PanelContainer" parent="."]
 unique_name_in_owner = true
+theme = ExtResource("3_theme")
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
@@ -61,6 +65,7 @@ theme_override_constants/separation = 6
 
 [node name="ShopToggle" type="Button" parent="."]
 unique_name_in_owner = true
+theme = ExtResource("3_theme")
 z_index = 1
 anchors_preset = 7
 anchor_left = 0.5
