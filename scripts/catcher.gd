@@ -90,7 +90,7 @@ func _on_area_entered(area: Area2D) -> void:
 
 		# Coin value is now multiplied in GameManager.get_coin_value()
 		GameManager.coin_collected.emit(value, pos)
-		_spawn_floating_text(pos, value)
+		_spawn_floating_text(pos, value, area.coin_type)
 		_spawn_collect_burst(pos)
 		_squash_bounce()
 		_update_combo_label()
@@ -165,13 +165,14 @@ func _squash_bounce() -> void:
 	tween.tween_property(color_rect, "scale", Vector2(1.0, 1.0), 0.1).set_ease(Tween.EASE_IN_OUT)
 
 
-func _spawn_floating_text(at_position: Vector2, value: int) -> void:
+func _spawn_floating_text(at_position: Vector2, value: int, coin_type: int = 0) -> void:
 	if value == 0:
 		return
 	if floating_text_scene:
 		var ft: Label = floating_text_scene.instantiate()
 		ft.text = "+%d" % value
-		ft.position = at_position + Vector2(0.0, -20.0)
+		ft.coin_type = coin_type
+		ft.position = at_position + Vector2(randf_range(-10.0, 10.0), -10.0)
 		ft.z_index = 250
 		get_parent().add_child(ft)
 
