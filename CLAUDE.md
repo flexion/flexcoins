@@ -122,6 +122,9 @@ python3 tools/devtools.py quit
 ### Pre-commit Validation Checklist (REQUIRED)
 **You MUST run runtime validation before every commit that modifies scripts or gameplay.** Do not skip this step — review sub-agents cannot catch runtime errors.
 
+**Preferred:** Use the `/verify` command (`.claude/commands/verify.md`) which automates the full 5-phase workflow below.
+
+**Manual steps (if `/verify` is unavailable):**
 1. After modifying scenes: `godot --headless --script res://tools/lint_project.gd`
 2. After modifying scripts: launch game + `python3 tools/devtools.py validate-all` + `python3 tools/devtools.py validate-ui`
 3. After modifying gameplay: launch game + test with `spawn-coin-on-catcher`, `input tap`, `screenshot`, and `performance`
@@ -134,6 +137,7 @@ python3 tools/devtools.py quit
 | `scripts/scene_validator.gd` | Runtime scene validation (static + instantiation) |
 | `tools/lint_project.gd` | Headless UID/NodePath linter |
 | `tools/devtools.py` | Python CLI client for DevTools |
+| `.claude/commands/verify.md` | `/verify` command — automated pre-commit validation |
 | `test/sequences/*.json` | Input sequence test scripts |
 
 ## Architecture
