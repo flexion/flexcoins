@@ -179,15 +179,15 @@ func _apply_buy_style(style: StyleBoxTexture) -> void:
 func _update_afford_cue(affordable: bool) -> void:
 	if affordable:
 		modulate.a = 1.0
-		buy_button.add_theme_color_override("font_color", AFFORD_COLOR)
-		buy_button.self_modulate = COLOR_CTA_ORANGE
+		buy_button.add_theme_color_override("font_color", COLOR_CTA_ORANGE)
+		buy_button.self_modulate = Color.WHITE
 		_apply_buy_style(_style_afford)
 		if not _was_affordable:
 			_was_affordable = true
 			_start_pulse()
 	else:
 		modulate.a = 0.7
-		buy_button.add_theme_color_override("font_color", UNAFFORD_COLOR)
+		buy_button.add_theme_color_override("font_color", COLOR_CHARCOAL)
 		buy_button.self_modulate = Color.WHITE
 		_apply_buy_style(_style_unafford)
 		if _was_affordable:
@@ -209,20 +209,17 @@ func _stop_pulse() -> void:
 
 
 func _animate_purchase() -> void:
-	_apply_buy_style(_style_green)
-	buy_button.self_modulate = COLOR_GREEN
+	_apply_buy_style(_style_afford)
+	buy_button.add_theme_color_override("font_color", COLOR_GREEN)
 	pivot_offset = size / 2.0
 	var tween := create_tween()
 	tween.tween_property(self, "scale", Vector2(1.05, 1.05), 0.08).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.12).set_ease(Tween.EASE_IN_OUT)
-	var original_color: Color = buy_button.get_theme_color("font_color")
-	buy_button.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 	tween.tween_callback(func() -> void:
 		scale = Vector2(1.0, 1.0)
-		buy_button.add_theme_color_override("font_color", original_color)
 		var affordable := GameManager.currency >= GameManager.get_upgrade_cost(upgrade_id)
+		buy_button.add_theme_color_override("font_color", COLOR_CTA_ORANGE if affordable else COLOR_CHARCOAL)
 		_apply_buy_style(_style_afford if affordable else _style_unafford)
-		buy_button.self_modulate = COLOR_CTA_ORANGE if affordable else Color.WHITE
 	)
 	if _purchase_sound:
 		_purchase_sound.play()
@@ -242,7 +239,7 @@ func _animate_reject() -> void:
 	_shake_tween.tween_callback(func() -> void:
 		buy_button.get_parent().queue_sort()
 		var affordable := GameManager.currency >= GameManager.get_upgrade_cost(upgrade_id)
-		buy_button.add_theme_color_override("font_color", AFFORD_COLOR if affordable else UNAFFORD_COLOR)
+		buy_button.add_theme_color_override("font_color", COLOR_CTA_ORANGE if affordable else COLOR_CHARCOAL)
 	)
 	if _reject_sound:
 		_reject_sound.play()
