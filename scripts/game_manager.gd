@@ -25,7 +25,7 @@ const UPGRADE_DATA: Dictionary = {
 	"coin_value": {"name": "Coin Value", "description": "Each coin worth more", "base_cost": 15, "cost_growth": 1.12},
 	"catcher_speed": {"name": "Catcher Speed", "description": "Move faster", "base_cost": 10, "cost_growth": 1.15},
 	"catcher_width": {"name": "Catcher Width", "description": "Wider catcher", "base_cost": 20, "cost_growth": 1.18},
-	"magnet": {"name": "Magnet", "description": "Attract nearby coins", "base_cost": 25, "cost_growth": 1.20},
+	"auto_catcher": {"name": "Auto Platform", "description": "Auto-catching platforms", "base_cost": 500, "cost_growth": 1.35},
 }
 
 var currency: int = 0
@@ -81,17 +81,9 @@ func get_catcher_speed() -> float:
 func get_catcher_width() -> float:
 	return 100.0 + _upgrade_levels.get("catcher_width", 0) * 15.0
 
-func get_magnet_radius() -> float:
-	var level: int = _upgrade_levels.get("magnet", 0)
-	if level == 0:
-		return 0.0
-	return 80.0 + level * 30.0
+func get_auto_catcher_count() -> int:
+	return _upgrade_levels.get("auto_catcher", 0)
 
-func get_magnet_strength() -> float:
-	var level: int = _upgrade_levels.get("magnet", 0)
-	if level == 0:
-		return 0.0
-	return 100.0 + level * 40.0
 
 func start_frenzy() -> void:
 	if not _frenzy_timer:

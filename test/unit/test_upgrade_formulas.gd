@@ -206,51 +206,6 @@ func test_catcher_width_cost_level_20() -> String:
 	return result
 
 
-# ============= Magnet Cost Formula: int(25 * 1.20^level) =============
-
-func test_magnet_cost_level_0() -> String:
-	var gm: Node = _make_gm()
-	var result: String = _T.assert_eq(gm.get_upgrade_cost("magnet"), 25, "magnet cost L0")
-	_free_gm(gm)
-	return result
-
-
-func test_magnet_cost_level_1() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["magnet"] = 1
-	var expected: int = int(25 * pow(1.20, 1))
-	var result: String = _T.assert_eq(gm.get_upgrade_cost("magnet"), expected, "magnet cost L1")
-	_free_gm(gm)
-	return result
-
-
-func test_magnet_cost_level_5() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["magnet"] = 5
-	var expected: int = int(25 * pow(1.20, 5))
-	var result: String = _T.assert_eq(gm.get_upgrade_cost("magnet"), expected, "magnet cost L5")
-	_free_gm(gm)
-	return result
-
-
-func test_magnet_cost_level_10() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["magnet"] = 10
-	var expected: int = int(25 * pow(1.20, 10))
-	var result: String = _T.assert_eq(gm.get_upgrade_cost("magnet"), expected, "magnet cost L10")
-	_free_gm(gm)
-	return result
-
-
-func test_magnet_cost_level_20() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["magnet"] = 20
-	var expected: int = int(25 * pow(1.20, 20))
-	var result: String = _T.assert_eq(gm.get_upgrade_cost("magnet"), expected, "magnet cost L20")
-	_free_gm(gm)
-	return result
-
-
 # ============= Spawn Interval Formula: max(0.1, 0.8 * 0.95^level) =============
 
 func test_spawn_interval_level_0() -> String:
@@ -450,88 +405,6 @@ func test_catcher_width_formula_level_20() -> String:
 	return result
 
 
-# ============= Magnet Radius Formula: level==0 ? 0 : 80 + level*30 =============
-
-func test_magnet_radius_formula_level_0() -> String:
-	var gm: Node = _make_gm()
-	var result: String = _T.assert_float_eq(gm.get_magnet_radius(), 0.0, 0.001, "magnet radius L0")
-	_free_gm(gm)
-	return result
-
-
-func test_magnet_radius_formula_level_1() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["magnet"] = 1
-	var result: String = _T.assert_float_eq(gm.get_magnet_radius(), 110.0, 0.001, "magnet radius L1")
-	_free_gm(gm)
-	return result
-
-
-func test_magnet_radius_formula_level_5() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["magnet"] = 5
-	var result: String = _T.assert_float_eq(gm.get_magnet_radius(), 230.0, 0.001, "magnet radius L5")
-	_free_gm(gm)
-	return result
-
-
-func test_magnet_radius_formula_level_10() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["magnet"] = 10
-	var result: String = _T.assert_float_eq(gm.get_magnet_radius(), 380.0, 0.001, "magnet radius L10")
-	_free_gm(gm)
-	return result
-
-
-func test_magnet_radius_formula_level_20() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["magnet"] = 20
-	var result: String = _T.assert_float_eq(gm.get_magnet_radius(), 680.0, 0.001, "magnet radius L20")
-	_free_gm(gm)
-	return result
-
-
-# ============= Magnet Strength Formula: level==0 ? 0 : 100 + level*40 =============
-
-func test_magnet_strength_formula_level_0() -> String:
-	var gm: Node = _make_gm()
-	var result: String = _T.assert_float_eq(gm.get_magnet_strength(), 0.0, 0.001, "magnet strength L0")
-	_free_gm(gm)
-	return result
-
-
-func test_magnet_strength_formula_level_1() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["magnet"] = 1
-	var result: String = _T.assert_float_eq(gm.get_magnet_strength(), 140.0, 0.001, "magnet strength L1")
-	_free_gm(gm)
-	return result
-
-
-func test_magnet_strength_formula_level_5() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["magnet"] = 5
-	var result: String = _T.assert_float_eq(gm.get_magnet_strength(), 300.0, 0.001, "magnet strength L5")
-	_free_gm(gm)
-	return result
-
-
-func test_magnet_strength_formula_level_10() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["magnet"] = 10
-	var result: String = _T.assert_float_eq(gm.get_magnet_strength(), 500.0, 0.001, "magnet strength L10")
-	_free_gm(gm)
-	return result
-
-
-func test_magnet_strength_formula_level_20() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["magnet"] = 20
-	var result: String = _T.assert_float_eq(gm.get_magnet_strength(), 900.0, 0.001, "magnet strength L20")
-	_free_gm(gm)
-	return result
-
-
 # ============= Ascension Multiplier Formula: 1.5^count =============
 
 func test_ascension_multiplier_0() -> String:
@@ -620,7 +493,7 @@ func test_earn_rate_with_ascension() -> String:
 func test_all_costs_monotonically_increase() -> String:
 	var gm: Node = _make_gm()
 	var result: String = ""
-	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width", "magnet"]:
+	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width", "auto_catcher"]:
 		var prev_cost: int = 0
 		for level: int in range(0, 25):
 			gm._upgrade_levels[id] = level
@@ -631,5 +504,73 @@ func test_all_costs_monotonically_increase() -> String:
 				return result
 			prev_cost = cost
 		gm._upgrade_levels[id] = 0
+	_free_gm(gm)
+	return result
+
+
+# ============= Auto Catcher Cost Formula: int(500 * 1.35^level) =============
+
+func test_auto_catcher_cost_level_0() -> String:
+	var gm: Node = _make_gm()
+	var result: String = _T.assert_eq(gm.get_upgrade_cost("auto_catcher"), 500, "auto_catcher cost L0")
+	_free_gm(gm)
+	return result
+
+
+func test_auto_catcher_cost_level_1() -> String:
+	var gm: Node = _make_gm()
+	gm._upgrade_levels["auto_catcher"] = 1
+	var expected: int = int(500 * pow(1.35, 1))
+	var result: String = _T.assert_eq(gm.get_upgrade_cost("auto_catcher"), expected, "auto_catcher cost L1")
+	_free_gm(gm)
+	return result
+
+
+func test_auto_catcher_cost_level_5() -> String:
+	var gm: Node = _make_gm()
+	gm._upgrade_levels["auto_catcher"] = 5
+	var expected: int = int(500 * pow(1.35, 5))
+	var result: String = _T.assert_eq(gm.get_upgrade_cost("auto_catcher"), expected, "auto_catcher cost L5")
+	_free_gm(gm)
+	return result
+
+
+func test_auto_catcher_cost_level_10() -> String:
+	var gm: Node = _make_gm()
+	gm._upgrade_levels["auto_catcher"] = 10
+	var expected: int = int(500 * pow(1.35, 10))
+	var result: String = _T.assert_eq(gm.get_upgrade_cost("auto_catcher"), expected, "auto_catcher cost L10")
+	_free_gm(gm)
+	return result
+
+
+func test_auto_catcher_cost_level_20() -> String:
+	var gm: Node = _make_gm()
+	gm._upgrade_levels["auto_catcher"] = 20
+	var expected: int = int(500 * pow(1.35, 20))
+	var result: String = _T.assert_eq(gm.get_upgrade_cost("auto_catcher"), expected, "auto_catcher cost L20")
+	_free_gm(gm)
+	return result
+
+
+func test_auto_catcher_count_level_0() -> String:
+	var gm: Node = _make_gm()
+	var result: String = _T.assert_eq(gm.get_auto_catcher_count(), 0, "auto_catcher count L0")
+	_free_gm(gm)
+	return result
+
+
+func test_auto_catcher_count_level_3() -> String:
+	var gm: Node = _make_gm()
+	gm._upgrade_levels["auto_catcher"] = 3
+	var result: String = _T.assert_eq(gm.get_auto_catcher_count(), 3, "auto_catcher count L3")
+	_free_gm(gm)
+	return result
+
+
+func test_auto_catcher_not_core_upgrade() -> String:
+	var gm: Node = _make_gm()
+	var is_core: bool = "auto_catcher" in gm.CORE_UPGRADES
+	var result: String = _T.assert_eq(is_core, false, "auto_catcher not in CORE_UPGRADES")
 	_free_gm(gm)
 	return result

@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3 uid="uid://auto_platform_001"]
+
+[ext_resource type="Script" path="res://scripts/auto_platform.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://bw0gx2y8a6tgd" path="res://assets/textures/platform.png" id="2_platform"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_auto"]
+size = Vector2(60, 14)
+
+[node name="AutoPlatform" type="Area2D"]
+script = ExtResource("1_script")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(0.47, 1.75)
+texture = ExtResource("2_platform")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_auto")
+
+[connection signal="area_entered" from="." to="." method="_on_area_entered"]

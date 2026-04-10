@@ -14,7 +14,7 @@ const UPGRADE_ICONS: Dictionary = {
 	"coin_value": preload("res://assets/textures/icon_star.png"),
 	"catcher_speed": preload("res://assets/textures/icon_arrow_up.png"),
 	"catcher_width": preload("res://assets/textures/icon_arrow_right.png"),
-	"magnet": preload("res://assets/textures/icon_circle.png"),
+	"auto_catcher": preload("res://assets/textures/icon_arrow_left.png"),
 }
 # Flexion brand colors for buy button states
 const COLOR_GREEN := Color(0.231, 0.698, 0.451, 1.0)            # #3BB273
