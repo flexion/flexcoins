@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "remotion studio",
+    "build": "remotion render FlexCoinsTrailer out/trailer.mp4",
+    "preview": "remotion preview"
   },
   "keywords": [],
   "author": "",

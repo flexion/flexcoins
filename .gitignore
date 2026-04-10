@@ -12,4 +12,11 @@
 # Trailer (Remotion project)
 trailer/node_modules/
 trailer/build/
+trailer/out/
 trailer/public/*.import
+
+# UI Pack asset library (only used files copied to assets/ui/)
+UI Pack/
+
+# Claude Code
+.claude/worktrees/

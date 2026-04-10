@@ -1,0 +1,124 @@
+name: Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  GODOT_VERSION: "4.6.2"
+
+jobs:
+  lint-and-unit:
+    name: Lint & Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Godot
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          unzip -q Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          sudo mv Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          chmod +x /usr/local/bin/godot
+
+      - name: Import project
+        run: godot --headless --import 2>&1 || true
+
+      - name: Lint all scenes
+        run: godot --headless --script res://tools/lint_project.gd -- --all --fail-on-warn
+
+      - name: Run unit tests
+        run: godot --headless --script res://tools/run_tests.gd
+
+  e2e:
+    name: E2E Sequences
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: lint-and-unit
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Godot
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          unzip -q Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          sudo mv Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          chmod +x /usr/local/bin/godot
+
+      - name: Install virtual display
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb
+
+      - name: Import project
+        run: godot --headless --import 2>&1 || true
+
+      - name: Launch game under Xvfb
+        run: |
+          xvfb-run --auto-servernum --server-args="-screen 0 2160x1280x24" godot --path . &
+          GODOT_PID=$!
+          echo "GODOT_PID=${GODOT_PID}" >> $GITHUB_ENV
+          echo "Waiting for game to start..."
+          for i in $(seq 1 30); do
+            if python3 tools/devtools.py ping > /dev/null 2>&1; then
+              echo "Game is running (attempt ${i})"
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "ERROR: Game failed to start after 30 retries"
+              kill $GODOT_PID 2>/dev/null || true
+              exit 1
+            fi
+            sleep 1
+          done
+
+      - name: Run E2E sequences
+        run: |
+          EXIT_CODE=0
+          PASS=0
+          FAIL=0
+          for SEQ_FILE in test/sequences/*.json; do
+            SEQ_NAME="$(basename "${SEQ_FILE}")"
+            echo "Running: ${SEQ_NAME}..."
+            if python3 tools/devtools.py input sequence "${SEQ_FILE}" 2>&1; then
+              echo "  ${SEQ_NAME}: PASSED"
+              PASS=$((PASS + 1))
+            else
+              echo "  ${SEQ_NAME}: FAILED"
+              FAIL=$((FAIL + 1))
+              EXIT_CODE=1
+            fi
+          done
+          echo ""
+          echo "E2E Results: ${PASS} passed, ${FAIL} failed"
+
+          echo "Running validate-all..."
+          python3 tools/devtools.py validate-all 2>&1 || EXIT_CODE=1
+
+          echo "Running performance check..."
+          PERF_OUTPUT=$(python3 tools/devtools.py performance 2>&1) || true
+          echo "${PERF_OUTPUT}"
+          FPS=$(echo "${PERF_OUTPUT}" | grep -oE '"fps":\s*[0-9.]+' | grep -oE '[0-9.]+' | head -1)
+          if [ -n "${FPS}" ]; then
+            FPS_INT=$(echo "${FPS}" | cut -d. -f1)
+            if [ "${FPS_INT}" -lt 30 ] 2>/dev/null; then
+              echo "FAIL: FPS ${FPS} below minimum 30"
+              EXIT_CODE=1
+            else
+              echo "Performance OK: ${FPS} FPS"
+            fi
+          fi
+
+          exit ${EXIT_CODE}
+
+      - name: Shutdown game
+        if: always()
+        run: |
+          python3 tools/devtools.py quit 2>/dev/null || true
+          sleep 2
+          kill ${{ env.GODOT_PID }} 2>/dev/null || true
