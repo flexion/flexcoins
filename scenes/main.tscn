@@ -1,6 +1,7 @@
-[gd_scene load_steps=8 format=3 uid="uid://main_scene_001"]
+[gd_scene load_steps=9 format=3 uid="uid://main_scene_001"]
 
 [ext_resource type="Script" path="res://scripts/coin_spawner.gd" id="1_spawner_script"]
+[ext_resource type="Texture2D" uid="uid://vrqw1mu1ogsh" path="res://assets/textures/bg-dark-abstract-wide.png" id="9_bg_texture"]
 [ext_resource type="PackedScene" path="res://scenes/coin.tscn" id="2_coin_scene"]
 [ext_resource type="PackedScene" path="res://scenes/catcher.tscn" id="3_catcher_scene"]
 [ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="4_hud_scene"]
@@ -11,10 +12,11 @@
 
 [node name="Main" type="Node2D"]
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="TextureRect" parent="."]
 offset_right = 2160.0
 offset_bottom = 1280.0
-color = Color(0.08, 0.08, 0.18, 1)
+texture = ExtResource("9_bg_texture")
+stretch_mode = 6
 script = ExtResource("6_bg_script")
 
 [node name="CoinSpawner" type="Node2D" parent="."]
