@@ -192,6 +192,8 @@ func _create_shop_popup_ui() -> void:
 	add_child(_shop_backdrop)
 	_shop_backdrop.anchors_preset = Control.PRESET_FULL_RECT
 	_shop_backdrop.gui_input.connect(_on_shop_backdrop_input)
+	# Move upgrade_panel after backdrop in tree so it receives input first
+	move_child(upgrade_panel, _shop_backdrop.get_index() + 1)
 	# Add header with title + close button inside upgrade panel
 	var margin_container: MarginContainer = upgrade_panel.get_child(0)
 	var scroll_container: ScrollContainer = margin_container.get_child(0)
