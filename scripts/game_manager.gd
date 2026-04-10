@@ -26,6 +26,7 @@ const UPGRADE_DATA: Dictionary = {
 	"catcher_speed": {"name": "Catcher Speed", "description": "Move faster", "base_cost": 10, "cost_growth": 1.15},
 	"catcher_width": {"name": "Catcher Width", "description": "Wider catcher", "base_cost": 20, "cost_growth": 1.18},
 	"auto_catcher": {"name": "Auto Platform", "description": "Auto-catching platforms", "base_cost": 500, "cost_growth": 1.35},
+	"coin_types": {"name": "Coin Types", "description": "Unlock new coin types", "base_cost": 50, "cost_growth": 2.5, "max_level": 4},
 }
 
 var currency: int = 0
@@ -57,6 +58,9 @@ func get_upgrade_cost(upgrade_id: String) -> int:
 	return int(data.base_cost * pow(data.cost_growth, _upgrade_levels[upgrade_id]))
 
 func try_purchase_upgrade(upgrade_id: String) -> bool:
+	var data: Dictionary = UPGRADE_DATA[upgrade_id]
+	if data.has("max_level") and _upgrade_levels[upgrade_id] >= data.max_level:
+		return false
 	var cost := get_upgrade_cost(upgrade_id)
 	if currency >= cost:
 		currency -= cost
@@ -83,6 +87,10 @@ func get_catcher_width() -> float:
 
 func get_auto_catcher_count() -> int:
 	return _upgrade_levels.get("auto_catcher", 0)
+
+
+func get_coin_type_unlock_level() -> int:
+	return _upgrade_levels.get("coin_types", 0)
 
 
 func start_frenzy() -> void:

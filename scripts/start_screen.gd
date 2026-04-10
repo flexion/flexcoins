@@ -120,7 +120,7 @@ func _ready() -> void:
 	# Click sound
 	_click_sound = AudioStreamPlayer.new()
 	_click_sound.stream = preload("res://assets/sounds/click-b.ogg")
-	_click_sound.volume_db = -6.0
+	_click_sound.volume_db = -30.0
 	add_child(_click_sound)
 
 	# Fade overlay
