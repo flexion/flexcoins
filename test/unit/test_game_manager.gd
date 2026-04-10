@@ -94,7 +94,7 @@ func test_add_currency_signal_emitted() -> String:
 func test_initial_upgrade_levels_zero() -> String:
 	var gm: Node = _make_gm()
 	var result: String = ""
-	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width", "magnet"]:
+	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width", "auto_catcher"]:
 		result = _T.assert_eq(gm.get_upgrade_level(id), 0, "Initial level for %s" % id)
 		if result != "":
 			break
@@ -302,41 +302,6 @@ func test_catcher_width_level_20() -> String:
 	return result
 
 
-# ============= Magnet Tests =============
-# NOTE: Level-0 magnet formula tests live in test_upgrade_formulas.gd
-
-func test_magnet_radius_level_1() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["magnet"] = 1
-	var result: String = _T.assert_float_eq(gm.get_magnet_radius(), 110.0, 0.001, "Magnet radius at level 1: 80+30")
-	_free_gm(gm)
-	return result
-
-
-func test_magnet_radius_level_5() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["magnet"] = 5
-	var result: String = _T.assert_float_eq(gm.get_magnet_radius(), 230.0, 0.001, "Magnet radius at level 5: 80+150")
-	_free_gm(gm)
-	return result
-
-
-func test_magnet_strength_level_1() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["magnet"] = 1
-	var result: String = _T.assert_float_eq(gm.get_magnet_strength(), 140.0, 0.001, "Magnet strength at level 1: 100+40")
-	_free_gm(gm)
-	return result
-
-
-func test_magnet_strength_level_5() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["magnet"] = 5
-	var result: String = _T.assert_float_eq(gm.get_magnet_strength(), 300.0, 0.001, "Magnet strength at level 5: 100+200")
-	_free_gm(gm)
-	return result
-
-
 # ============= Bomb Tests =============
 
 func test_bomb_deducts_10_percent() -> String:
@@ -422,12 +387,12 @@ func test_can_ascend_true_at_15() -> String:
 	return result
 
 
-func test_can_ascend_ignores_magnet() -> String:
+func test_can_ascend_ignores_auto_catcher() -> String:
 	var gm: Node = _make_gm()
 	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width"]:
 		gm._upgrade_levels[id] = 15
-	gm._upgrade_levels["magnet"] = 0  # Magnet at 0 should not prevent ascension
-	var result: String = _T.assert_true(gm.can_ascend(), "Magnet level should not affect ascension eligibility")
+	gm._upgrade_levels["auto_catcher"] = 0  # Auto catcher at 0 should not prevent ascension
+	var result: String = _T.assert_true(gm.can_ascend(), "Auto catcher level should not affect ascension eligibility")
 	_free_gm(gm)
 	return result
 
@@ -447,14 +412,11 @@ func test_try_ascend_resets_all_upgrades() -> String:
 	var gm: Node = _make_gm()
 	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width"]:
 		gm._upgrade_levels[id] = 15
-	gm._upgrade_levels["magnet"] = 10
+	gm._upgrade_levels["auto_catcher"] = 3
 	gm.currency = 50000
 	gm.try_ascend()
-	# NOTE: The code resets ALL _upgrade_levels including magnet.
-	# CLAUDE.md says magnet is excluded, but the implementation resets all.
-	# This test documents the ACTUAL behavior.
 	var result: String = ""
-	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width", "magnet"]:
+	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width", "auto_catcher"]:
 		result = _T.assert_eq(gm.get_upgrade_level(id), 0, "Upgrade %s reset after ascend" % id)
 		if result != "":
 			break
@@ -665,7 +627,7 @@ func test_milestones_sorted() -> String:
 
 func test_all_upgrade_data_present() -> String:
 	var gm: Node = _make_gm()
-	var expected_ids: Array[String] = ["spawn_rate", "coin_value", "catcher_speed", "catcher_width", "magnet"]
+	var expected_ids: Array[String] = ["spawn_rate", "coin_value", "catcher_speed", "catcher_width", "auto_catcher"]
 	var result: String = ""
 	for id: String in expected_ids:
 		if not gm.UPGRADE_DATA.has(id):

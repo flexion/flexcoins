@@ -279,6 +279,7 @@ Tier progression is automatic and triggered in `catcher.gd:_update_catcher_visua
 | catcher_speed | 600 + level × 50 px/s | 10 | 1.15 |
 | catcher_width | 100 + level × 15 px | 20 | 1.18 |
 | magnet | 80 + level × 30 px radius, 100 + level × 40 px/s strength | 25 | 1.20 |
+| auto_catcher | 1 auto platform per level | 500 | 1.35 |
 
 ### Data Flow
 Spawner → instantiates Coins (value from GameManager) → Coins fall → Catcher detects overlap → GameManager.add_currency() → emits currency_changed → HUD updates label. Upgrades: UpgradeButton → GameManager.try_purchase_upgrade() → emits upgrade_purchased → Catcher/Spawner react.

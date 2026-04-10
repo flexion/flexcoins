@@ -101,7 +101,8 @@ func _process(delta: float) -> void:
 
 
 func _on_area_entered(area: Area2D) -> void:
-	if area.has_method("collect"):
+	if area.has_method("collect") and not area.get("_collected"):
+		area._collected = true
 		var value: int = area.value
 		var pos: Vector2 = area.global_position
 		_combo += 1

@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://main_scene_001"]
+[gd_scene load_steps=10 format=3 uid="uid://main_scene_001"]
 
 [ext_resource type="Script" path="res://scripts/coin_spawner.gd" id="1_spawner_script"]
 [ext_resource type="Texture2D" uid="uid://vrqw1mu1ogsh" path="res://assets/textures/bg-dark-abstract-wide.png" id="9_bg_texture"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" path="res://scripts/background.gd" id="6_bg_script"]
 [ext_resource type="AudioStream" path="res://sounds/flexion-game-bonus.mp3" id="7_music"]
 [ext_resource type="Script" path="res://scripts/background_music.gd" id="8_music_script"]
+[ext_resource type="Script" path="res://scripts/auto_catcher_manager.gd" id="9_auto_mgr"]
 
 [node name="Main" type="Node2D"]
 
@@ -26,7 +27,11 @@ coin_scene = ExtResource("2_coin_scene")
 [node name="Timer" type="Timer" parent="CoinSpawner"]
 
 [node name="Catcher" parent="." instance=ExtResource("3_catcher_scene")]
-position = Vector2(1080, 960)
+position = Vector2(1080, 1040)
+floating_text_scene = ExtResource("5_float_text")
+
+[node name="AutoCatcherManager" type="Node2D" parent="."]
+script = ExtResource("9_auto_mgr")
 floating_text_scene = ExtResource("5_float_text")
 
 [node name="HUD" parent="." instance=ExtResource("4_hud_scene")]
