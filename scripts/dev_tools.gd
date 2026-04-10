@@ -55,6 +55,7 @@ func _ready() -> void:
 	_handlers["clear_coins"] = _cmd_clear_coins
 	_handlers["set_upgrade_levels"] = _cmd_set_upgrade_levels
 	_handlers["reset_session"] = _cmd_reset_session
+	_handlers["ascend"] = _cmd_ascend
 	_handlers["set_game_speed"] = _cmd_set_game_speed
 	_handlers["wait_frames"] = _cmd_wait_frames
 	_handlers["get_catcher_state"] = _cmd_get_catcher_state
@@ -578,7 +579,12 @@ func _execute_sequence(sequence_id: String, steps: Array, timeout: float) -> voi
 					return
 				var actual: Variant = target.get(step["property"])
 				var expected: Variant = step["equals"]
-				if str(actual) != str(expected):
+				var values_match: bool = false
+				if typeof(actual) in [TYPE_INT, TYPE_FLOAT] and typeof(expected) in [TYPE_INT, TYPE_FLOAT]:
+					values_match = is_equal_approx(float(actual), float(expected))
+				else:
+					values_match = str(actual) == str(expected)
+				if not values_match:
 					_write_log("input", "Sequence %s assert failed: %s.%s = %s, expected %s" % [
 						sequence_id, step["node"], step["property"], str(actual), str(expected)
 					])
@@ -762,6 +768,36 @@ func _cmd_reset_session(_args: Dictionary) -> Dictionary:
 		"success": true,
 		"message": "Session reset to fresh state",
 		"data": {"previous": previous},
+	}
+
+
+func _cmd_ascend(_args: Dictionary) -> Dictionary:
+	var eligible: bool = GameManager.can_ascend()
+	if not eligible:
+		var levels: Dictionary = {}
+		for id: String in GameManager.CORE_UPGRADES:
+			levels[id] = GameManager.get_upgrade_level(id)
+		return {
+			"success": false,
+			"message": "Cannot ascend — not all core upgrades at level %d" % GameManager.ASCEND_MIN_LEVEL,
+			"data": {
+				"eligible": false,
+				"required_level": GameManager.ASCEND_MIN_LEVEL,
+				"current_levels": levels,
+			},
+		}
+
+	var prev_count: int = GameManager.ascension_count
+	GameManager.try_ascend()
+	return {
+		"success": true,
+		"message": "Ascended! Count: %d -> %d" % [prev_count, GameManager.ascension_count],
+		"data": {
+			"eligible": true,
+			"ascension_count": GameManager.ascension_count,
+			"multiplier": GameManager.get_ascension_multiplier(),
+			"currency": GameManager.currency,
+		},
 	}
 
 

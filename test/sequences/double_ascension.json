@@ -1,6 +1,6 @@
 {
   "name": "Double Ascension Test",
-  "description": "Complete two ascensions and verify multiplier stacks: 1.5^1=1.5x then 1.5^2=2.25x",
+  "description": "Complete two ascensions, assert multiplier stacks: 1.5x then 2.25x, verify coin value boosted",
   "steps": [
     {"type": "wait", "seconds": 0.5, "comment": "Wait for game to stabilize"},
     {"type": "command", "name": "reset-session", "comment": "Reset to clean state"},
@@ -14,22 +14,19 @@
     {"type": "command", "name": "set-upgrade-levels", "spawn_rate": 15, "coin_value": 15, "catcher_speed": 15, "catcher_width": 15, "comment": "Set all core upgrades to 15"},
     {"type": "wait", "seconds": 0.3},
 
-    {"type": "command", "name": "run-method", "node_path": "/root/GameManager", "method": "can_ascend", "comment": "Should return true"},
-    {"type": "command", "name": "run-method", "node_path": "/root/GameManager", "method": "try_ascend", "comment": "First ascension"},
+    {"type": "command", "name": "ascend", "comment": "First ascension"},
     {"type": "wait", "seconds": 1.0, "comment": "Wait for ascension animation"},
 
     {"type": "screenshot", "filename": "double_asc_02_first_ascension.png"},
     {"type": "assert", "node": "/root/GameManager", "property": "ascension_count", "equals": 1},
     {"type": "assert", "node": "/root/GameManager", "property": "currency", "equals": 0},
-    {"type": "command", "name": "run-method", "node_path": "/root/GameManager", "method": "get_upgrade_level", "args": ["spawn_rate"], "comment": "Should be 0 after ascension"},
     {"type": "command", "name": "run-method", "node_path": "/root/GameManager", "method": "get_ascension_multiplier", "comment": "Should be 1.5"},
 
     {"type": "command", "name": "run-method", "node_path": "/root/GameManager", "method": "add_currency", "args": [100000], "comment": "Give currency for second ascension"},
     {"type": "command", "name": "set-upgrade-levels", "spawn_rate": 15, "coin_value": 15, "catcher_speed": 15, "catcher_width": 15, "comment": "Set all core upgrades to 15 again"},
     {"type": "wait", "seconds": 0.3},
 
-    {"type": "command", "name": "run-method", "node_path": "/root/GameManager", "method": "can_ascend", "comment": "Should return true again"},
-    {"type": "command", "name": "run-method", "node_path": "/root/GameManager", "method": "try_ascend", "comment": "Second ascension"},
+    {"type": "command", "name": "ascend", "comment": "Second ascension"},
     {"type": "wait", "seconds": 1.0, "comment": "Wait for ascension animation"},
 
     {"type": "screenshot", "filename": "double_asc_03_second_ascension.png"},
