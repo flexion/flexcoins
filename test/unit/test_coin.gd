@@ -30,8 +30,8 @@ func _free_gm(gm: Node) -> void:
 
 func test_silver_value_base() -> String:
 	var gm: Node = _make_gm()
-	# SILVER: value = get_coin_value() = 1 + 0 = 1
-	var result: String = _T.assert_eq(gm.get_coin_value(), 1, "Silver base value is 1")
+	# SILVER: value = get_coin_value() * 2 = 1 * 2 = 2
+	var result: String = _T.assert_eq(gm.get_coin_value() * 2, 2, "Silver base value is 2x copper")
 	_free_gm(gm)
 	return result
 
@@ -339,9 +339,9 @@ func test_frenzy_spawn_rate_3x() -> String:
 func test_frenzy_spawn_rate_with_upgrades() -> String:
 	var gm: Node = _make_gm()
 	gm._upgrade_levels["spawn_rate"] = 10
-	var normal: float = gm.get_spawn_interval()  # 0.8 * 0.95^10 ≈ 0.479
+	var normal: float = gm.get_spawn_interval()  # capped to 0.1 at level 10
 	var frenzy: float = normal / 3.0
-	var expected: float = 0.8 * pow(0.95, 10) / 3.0
+	var expected: float = maxf(0.1, 0.8 / pow(1.3, 10)) / 3.0
 	var result: String = _T.assert_float_eq(frenzy, expected, 0.001, "Frenzy spawn rate with upgraded spawn_rate")
 	_free_gm(gm)
 	return result

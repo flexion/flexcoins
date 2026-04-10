@@ -57,7 +57,6 @@ func _ready() -> void:
 	_handlers["clear_coins"] = _cmd_clear_coins
 	_handlers["set_upgrade_levels"] = _cmd_set_upgrade_levels
 	_handlers["reset_session"] = _cmd_reset_session
-	_handlers["ascend"] = _cmd_ascend
 	_handlers["set_game_speed"] = _cmd_set_game_speed
 	_handlers["wait_frames"] = _cmd_wait_frames
 	_handlers["get_catcher_state"] = _cmd_get_catcher_state
@@ -746,14 +745,12 @@ func _cmd_reset_session(_args: Dictionary) -> Dictionary:
 	var previous: Dictionary = {
 		"currency": GameManager.currency,
 		"upgrade_levels": GameManager._upgrade_levels.duplicate(),
-		"ascension_count": GameManager.ascension_count,
 		"combo_multiplier": GameManager._combo_multiplier,
 	}
 
 	GameManager.currency = 0
 	for id: String in GameManager._upgrade_levels:
 		GameManager._upgrade_levels[id] = 0
-	GameManager.ascension_count = 0
 	GameManager._combo_multiplier = 1.0
 	GameManager._last_milestone = 0
 
@@ -770,36 +767,6 @@ func _cmd_reset_session(_args: Dictionary) -> Dictionary:
 		"success": true,
 		"message": "Session reset to fresh state",
 		"data": {"previous": previous},
-	}
-
-
-func _cmd_ascend(_args: Dictionary) -> Dictionary:
-	var eligible: bool = GameManager.can_ascend()
-	if not eligible:
-		var levels: Dictionary = {}
-		for id: String in GameManager.CORE_UPGRADES:
-			levels[id] = GameManager.get_upgrade_level(id)
-		return {
-			"success": false,
-			"message": "Cannot ascend — not all core upgrades at level %d" % GameManager.ASCEND_MIN_LEVEL,
-			"data": {
-				"eligible": false,
-				"required_level": GameManager.ASCEND_MIN_LEVEL,
-				"current_levels": levels,
-			},
-		}
-
-	var prev_count: int = GameManager.ascension_count
-	GameManager.try_ascend()
-	return {
-		"success": true,
-		"message": "Ascended! Count: %d -> %d" % [prev_count, GameManager.ascension_count],
-		"data": {
-			"eligible": true,
-			"ascension_count": GameManager.ascension_count,
-			"multiplier": GameManager.get_ascension_multiplier(),
-			"currency": GameManager.currency,
-		},
 	}
 
 

@@ -221,17 +221,18 @@ Main (Node2D)
 
 ### Coin Types
 
-Coins have a `CoinType` enum with four variants, each with distinct behaviors and visual effects:
+Coins have a `CoinType` enum with six variants, progressively unlocked via the **coin_types** shop upgrade:
 
-| Type | Base Value | Speed | Color | Effect |
+| Type | Unlock Level | Base Value | Speed | Effect |
 |---|---|---|---|---|
-| **SILVER** | 1 (modified by coin_value upgrade) | 1.0x | Gold | Standard coin, primary income source |
-| **GOLD** | 5x base value | 1.5x | Yellow-gold | Rare high-value coins, fall faster |
-| **FRENZY** | 0 (no currency gain) | 1.0x | Green | Triggers 5-second frenzy mode, spawns increased coin rate |
-| **BOMB** | 0 (no currency gain) | 0.8x | Red | Reduces catcher width to 60% for 3 seconds, deducts 10% of current currency |
-| **MULTI** | 0 (split coins carry value) | 0.9x | Cyan/teal | Splits into 3 silver coins on collection that scatter and can be caught again |
+| **COPPER** | 0 (default) | 1 (modified by coin_value upgrade) | 1.0x | Default coin, always most common |
+| **SILVER** | 1 | 2x base value | 1.0x | Standard coin, worth double copper |
+| **FRENZY** | 2 | 0 (no currency gain) | 1.0x | Triggers 5-second frenzy mode, spawns increased coin rate |
+| **BOMB** | 2 | 0 (no currency gain) | 0.8x | Reduces catcher width to 60% for 3 seconds, deducts 10% of current currency |
+| **GOLD** | 3 | 5x base value | 1.5x | Rare high-value coins, fall faster |
+| **MULTI** | 4 | 0 (split coins carry value) | 0.9x | Splits into 3 silver coins mid-air that scatter and can be caught |
 
-All coin types display a glow effect and particle trail while falling. Coins spawn at random rotations and accelerate smoothly from 15% to full speed over the first frames. Spawn rates are controlled by the **spawn_rate** upgrade; actual coin type distribution is randomized at spawn time.
+All coin types display a glow effect and particle trail while falling. Coins spawn at random rotations and accelerate smoothly from 15% to full speed over the first frames. Spawn rates descend by unlock order (Copper is always most common). Coin type distribution is controlled by `coin_spawner.gd:_roll_coin_type()` based on the current **coin_types** upgrade level.
 
 ### Catcher Visual Tiers
 
@@ -246,41 +247,15 @@ The catcher progresses through four visual milestones as the **catcher_width** u
 
 Tier progression is automatic and triggered in `catcher.gd:_update_catcher_visual()` when `level / 10` changes. Tiers reset when a bomb hits, reverting the catcher to its current tier based on upgrade level after the 3-second penalty.
 
-### Prestige/Ascension System
-
-**Ascension** is the late-game progression mechanic that allows players to reset currency and upgrades in exchange for a permanent multiplier bonus:
-
-**Trigger Conditions:**
-- Available when all four core upgrades (spawn_rate, coin_value, catcher_speed, catcher_width) reach level 15 or higher
-- Ascend button appears in the upgrade shop panel only when `can_ascend()` condition is met
-- Visible indicator in top-left HUD shows current ascension count and multiplier (e.g., "Ascension 2  (2.25x)")
-
-**Ascension Effects:**
-- **Currency reset:** Resets to 0 coins
-- **Upgrade reset:** All upgrades return to level 0 (including magnet)
-- **Multiplier bonus:** Subsequent coins are worth `1.5^ascension_count` times base value
-  - Example: After 3 ascensions, each coin is worth 1.5^3 = 3.375x multiplier applied to `get_coin_value()`
-- **Ascension count:** Increments by 1 (session-only, resets on restart)
-
-**Constants:**
-- `ASCEND_MIN_LEVEL`: 15 (minimum upgrade level required for all core upgrades)
-- `ASCEND_MULTIPLIER`: 1.5 (exponent base for multiplier calculation)
-- `CORE_UPGRADES`: `["spawn_rate", "coin_value", "catcher_speed", "catcher_width"]` (magnet excluded from ascension requirements but still reset)
-
-**UI Integration:**
-- Ascend button created dynamically in `hud.gd:_create_ascension_ui()`
-- Ascension label displays purple text below currency (`Color(0.8, 0.6, 1.0)` in `_create_ascension_ui()`)
-- Ascension triggers milestone celebration with "ASCENDED!" text overlay and gold flash animation
-
 ### Upgrade System
 | ID | Effect | Base Cost | Growth |
 |---|---|---|---|
-| spawn_rate | 0.8s × 0.95^level (min 0.1s) | 10 | 1.15 |
-| coin_value | 1 + level per coin (affected by ascension multiplier) | 15 | 1.12 |
-| catcher_speed | 600 + level × 50 px/s | 10 | 1.15 |
-| catcher_width | 100 + level × 15 px | 20 | 1.18 |
-| magnet | 80 + level × 30 px radius, 100 + level × 40 px/s strength | 25 | 1.20 |
-| auto_catcher | 1 auto platform per level | 500 | 1.35 |
+| spawn_rate | 0.8s / 1.3^level (min 0.1s) — each level = 1.3x spawns | 25 | 1.50 |
+| coin_value | 1 + level per coin | 75 | 1.50 |
+| catcher_speed | 600 + level × 50 px/s | 15 | 1.20 |
+| catcher_width | 100 + level × 15 px | 30 | 1.25 |
+| coin_types | Unlocks Silver → Frenzy/Bomb → Gold → Multi (max level 4) | 100 | 2.50 |
+| auto_catcher | 1 auto platform per level | 750 | 1.60 |
 
 ### Data Flow
 Spawner → instantiates Coins (value from GameManager) → Coins fall → Catcher detects overlap → GameManager.add_currency() → emits currency_changed → HUD updates label. Upgrades: UpgradeButton → GameManager.try_purchase_upgrade() → emits upgrade_purchased → Catcher/Spawner react.
