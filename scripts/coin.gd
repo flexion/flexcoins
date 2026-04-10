@@ -49,7 +49,7 @@ func _ready() -> void:
 		CoinType.COPPER:
 			pass
 		CoinType.SILVER:
-			pass
+			value *= 2
 		CoinType.GOLD:
 			value *= 5
 			fall_speed *= 1.5

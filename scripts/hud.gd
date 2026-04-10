@@ -7,8 +7,6 @@ const CURRENCY_TICK_SNAP: float = 0.5
 
 var _gold_flash: ColorRect
 var _milestone_label: Label
-var _ascension_label: Label
-var _ascend_button: Button
 var _combo_multiplier_label: Label
 var _combo_multiplier_glow_tween: Tween
 var _combo_color_tween: Tween
@@ -83,7 +81,6 @@ func _ready() -> void:
 	upgrade_panel.modulate.a = 0.0
 	_create_gold_flash_overlay()
 	_create_milestone_label()
-	_create_ascension_ui()
 	_create_combo_multiplier_badge()
 	_create_combo_label()
 	_setup_ui_sounds()
@@ -122,7 +119,6 @@ func _on_currency_changed(new_amount: int) -> void:
 		_currency_ticking = true
 	currency_label.custom_minimum_size.x = 280.0
 	currency_label.pivot_offset = currency_label.size / 2.0
-	_update_ascend_button()
 
 
 func _create_upgrade_buttons() -> void:
@@ -261,44 +257,6 @@ func _create_shop_popup_ui() -> void:
 	await get_tree().process_frame
 	if is_instance_valid(upgrade_panel):
 		upgrade_panel.pivot_offset = upgrade_panel.size / 2.0
-
-
-func _create_ascension_ui() -> void:
-	# Ascension display label (top-left area, below currency)
-	_ascension_label = Label.new()
-	_ascension_label.add_theme_font_override("font", _display_font)
-	_ascension_label.add_theme_font_size_override("font_size", 18)
-	_ascension_label.add_theme_color_override("font_color", Color(0.8, 0.6, 1.0, 1.0))
-	_ascension_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_ascension_label)
-	_ascension_label.anchors_preset = Control.PRESET_TOP_LEFT
-	_ascension_label.offset_left = 20.0
-	_ascension_label.offset_top = 55.0
-	_ascension_label.offset_right = 400.0
-	_update_ascension_label()
-	# Ascend button in shop area
-	_ascend_button = Button.new()
-	_ascend_button.theme = preload("res://assets/ui_theme.tres")
-	_ascend_button.text = "ASCEND"
-	_ascend_button.custom_minimum_size = Vector2(200.0, 40.0)
-	_ascend_button.add_theme_font_size_override("font_size", 18)
-	_ascend_button.add_theme_color_override("font_color", Color(0.8, 0.6, 1.0, 1.0))
-	_ascend_button.pressed.connect(_on_ascend_pressed)
-	upgrade_container.add_child(_ascend_button)
-	_update_ascend_button()
-
-
-func _update_ascension_label() -> void:
-	if GameManager.ascension_count > 0:
-		_ascension_label.text = "Ascension %d  (%.1fx)" % [GameManager.ascension_count, GameManager.get_ascension_multiplier()]
-		_ascension_label.visible = true
-	else:
-		_ascension_label.visible = false
-
-
-func _update_ascend_button() -> void:
-	if _ascend_button:
-		_ascend_button.visible = GameManager.can_ascend()
 
 
 func _create_combo_multiplier_badge() -> void:
@@ -558,15 +516,6 @@ func _spawn_combo_threshold_particles() -> void:
 	add_child(wrapper)
 	wrapper.add_child(burst)
 	get_tree().create_timer(burst.lifetime + 0.2).timeout.connect(wrapper.queue_free)
-
-
-func _on_ascend_pressed() -> void:
-	if GameManager.try_ascend():
-		_update_ascension_label()
-		# Big celebration
-		_show_milestone_celebration(0)
-		_milestone_label.text = "ASCENDED!"
-		_milestone_label.add_theme_color_override("font_color", Color(0.8, 0.6, 1.0, 1.0))
 
 
 func _on_coin_collected(value: int, world_position: Vector2) -> void:

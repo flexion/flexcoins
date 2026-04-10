@@ -67,7 +67,6 @@ func _ready() -> void:
 	GameManager.bomb_hit.connect(_on_bomb_hit)
 	GameManager.shop_opened.connect(_on_shop_opened)
 	GameManager.shop_closed.connect(_on_shop_closed)
-	GameManager.ascended.connect(_on_ascension)
 	GameManager.frenzy_started.connect(_on_frenzy_started)
 	GameManager.frenzy_ended.connect(_on_frenzy_ended)
 
@@ -172,7 +171,7 @@ func _spawn_floating_text(at_position: Vector2, value: int, coin_type: int = 0) 
 		return
 	if floating_text_scene:
 		var ft: Label = floating_text_scene.instantiate()
-		ft.text = "%d" % value
+		ft.text = "+%d" % value
 		ft.coin_type = coin_type
 		if _combo_multiplier >= 2.0:
 			ft.combo_level = 2
@@ -332,8 +331,3 @@ func _on_shop_closed() -> void:
 	monitoring = true
 
 
-func _on_ascension(count: int) -> void:
-	_combo = 0
-	_reset_combo_multiplier()
-	GameManager.combo_changed.emit(0)
-	bling_sound.pitch_scale = 1.0

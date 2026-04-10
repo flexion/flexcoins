@@ -137,7 +137,7 @@ func test_purchase_successful() -> String:
 func test_purchase_deducts_currency() -> String:
 	var gm: Node = _make_gm()
 	gm.currency = 100
-	var cost: int = gm.get_upgrade_cost("spawn_rate")  # 10
+	var cost: int = gm.get_upgrade_cost("spawn_rate")  # 25
 	gm.try_purchase_upgrade("spawn_rate")
 	var result: String = _T.assert_eq(gm.currency, 100 - cost, "Currency after purchase")
 	_free_gm(gm)
@@ -155,7 +155,7 @@ func test_purchase_increments_level() -> String:
 
 func test_purchase_insufficient_funds() -> String:
 	var gm: Node = _make_gm()
-	gm.currency = 5  # spawn_rate costs 10
+	gm.currency = 5  # spawn_rate costs 25
 	var success: bool = gm.try_purchase_upgrade("spawn_rate")
 	var result: String = _T.assert_false(success, "Purchase should fail with insufficient funds")
 	if result != "":
@@ -172,7 +172,7 @@ func test_purchase_insufficient_funds() -> String:
 
 func test_purchase_exact_funds() -> String:
 	var gm: Node = _make_gm()
-	gm.currency = 10  # Exactly spawn_rate cost
+	gm.currency = 25  # Exactly spawn_rate cost
 	var success: bool = gm.try_purchase_upgrade("spawn_rate")
 	var result: String = _T.assert_true(success, "Purchase with exact funds")
 	if result != "":
@@ -189,7 +189,7 @@ func test_purchase_emits_currency_changed() -> String:
 	var received: Array = [-1]
 	gm.currency_changed.connect(func(amt: int) -> void: received[0] = amt)
 	gm.try_purchase_upgrade("spawn_rate")
-	var result: String = _T.assert_eq(received[0], 90, "currency_changed signal after purchase")
+	var result: String = _T.assert_eq(received[0], 75, "currency_changed signal after purchase")
 	_free_gm(gm)
 	return result
 
@@ -212,7 +212,7 @@ func test_spawn_interval_level_1() -> String:
 	var gm: Node = _make_gm()
 	gm.currency = 100000
 	gm.try_purchase_upgrade("spawn_rate")
-	var expected: float = 0.8 * pow(0.95, 1)
+	var expected: float = 0.8 / pow(1.3, 1)
 	var result: String = _T.assert_float_eq(gm.get_spawn_interval(), expected, 0.001, "Spawn interval at level 1")
 	_free_gm(gm)
 	return result
@@ -221,7 +221,7 @@ func test_spawn_interval_level_1() -> String:
 func test_spawn_interval_min_cap() -> String:
 	var gm: Node = _make_gm()
 	# At very high levels, interval should floor at 0.1
-	# 0.8 * 0.95^n < 0.1 when n > log(0.1/0.8)/log(0.95) ~ 40.6
+	# 0.8 / 1.3^n < 0.1 when n > log(8)/log(1.3) ~ 7.9
 	gm._upgrade_levels["spawn_rate"] = 100
 	var result: String = _T.assert_float_eq(gm.get_spawn_interval(), 0.1, 0.001, "Spawn interval min cap")
 	_free_gm(gm)
@@ -249,33 +249,12 @@ func test_coin_value_level_5() -> String:
 	return result
 
 
-func test_coin_value_with_ascension() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["coin_value"] = 5
-	gm.ascension_count = 1
-	# base=6, mult=1.5, combo=1.0 => int(6*1.5*1.0) = 9
-	var result: String = _T.assert_eq(gm.get_coin_value(), 9, "Coin value with 1 ascension")
-	_free_gm(gm)
-	return result
-
-
 func test_coin_value_with_combo() -> String:
 	var gm: Node = _make_gm()
 	gm._upgrade_levels["coin_value"] = 4  # base = 5
 	gm.set_combo_multiplier(2.0)
 	# int(5 * 1.0 * 2.0) = 10
 	var result: String = _T.assert_eq(gm.get_coin_value(), 10, "Coin value with 2x combo")
-	_free_gm(gm)
-	return result
-
-
-func test_coin_value_with_ascension_and_combo() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["coin_value"] = 4  # base = 5
-	gm.ascension_count = 2  # mult = 1.5^2 = 2.25
-	gm.set_combo_multiplier(2.0)
-	# int(5 * 2.25 * 2.0) = int(22.5) = 22
-	var result: String = _T.assert_eq(gm.get_coin_value(), 22, "Coin value with ascension+combo")
 	_free_gm(gm)
 	return result
 
@@ -354,136 +333,6 @@ func test_bomb_large_currency() -> String:
 	gm.currency = 100000
 	gm.trigger_bomb()
 	var result: String = _T.assert_eq(gm.currency, 90000, "Bomb on 100000 -> 90000")
-	_free_gm(gm)
-	return result
-
-
-# ============= Ascension Tests =============
-
-func test_can_ascend_false_initially() -> String:
-	var gm: Node = _make_gm()
-	var result: String = _T.assert_false(gm.can_ascend(), "Should not ascend at level 0")
-	_free_gm(gm)
-	return result
-
-
-func test_can_ascend_false_partial() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["spawn_rate"] = 15
-	gm._upgrade_levels["coin_value"] = 15
-	gm._upgrade_levels["catcher_speed"] = 15
-	gm._upgrade_levels["catcher_width"] = 14  # One short
-	var result: String = _T.assert_false(gm.can_ascend(), "Should not ascend with one upgrade < 15")
-	_free_gm(gm)
-	return result
-
-
-func test_can_ascend_true_at_15() -> String:
-	var gm: Node = _make_gm()
-	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width"]:
-		gm._upgrade_levels[id] = 15
-	var result: String = _T.assert_true(gm.can_ascend(), "Should ascend when all core at 15")
-	_free_gm(gm)
-	return result
-
-
-func test_can_ascend_ignores_auto_catcher() -> String:
-	var gm: Node = _make_gm()
-	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width"]:
-		gm._upgrade_levels[id] = 15
-	gm._upgrade_levels["auto_catcher"] = 0  # Auto catcher at 0 should not prevent ascension
-	var result: String = _T.assert_true(gm.can_ascend(), "Auto catcher level should not affect ascension eligibility")
-	_free_gm(gm)
-	return result
-
-
-func test_try_ascend_resets_currency() -> String:
-	var gm: Node = _make_gm()
-	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width"]:
-		gm._upgrade_levels[id] = 15
-	gm.currency = 50000
-	gm.try_ascend()
-	var result: String = _T.assert_eq(gm.currency, 0, "Currency reset after ascension")
-	_free_gm(gm)
-	return result
-
-
-func test_try_ascend_resets_all_upgrades() -> String:
-	var gm: Node = _make_gm()
-	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width"]:
-		gm._upgrade_levels[id] = 15
-	gm._upgrade_levels["auto_catcher"] = 3
-	gm.currency = 50000
-	gm.try_ascend()
-	var result: String = ""
-	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width", "auto_catcher", "coin_types"]:
-		result = _T.assert_eq(gm.get_upgrade_level(id), 0, "Upgrade %s reset after ascend" % id)
-		if result != "":
-			break
-	_free_gm(gm)
-	return result
-
-
-func test_try_ascend_increments_count() -> String:
-	var gm: Node = _make_gm()
-	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width"]:
-		gm._upgrade_levels[id] = 15
-	gm.currency = 50000
-	gm.try_ascend()
-	var result: String = _T.assert_eq(gm.ascension_count, 1, "Ascension count after first ascend")
-	_free_gm(gm)
-	return result
-
-
-func test_try_ascend_returns_true_when_eligible() -> String:
-	var gm: Node = _make_gm()
-	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width"]:
-		gm._upgrade_levels[id] = 15
-	gm.currency = 50000
-	var success: bool = gm.try_ascend()
-	var result: String = _T.assert_true(success, "try_ascend should return true when eligible")
-	_free_gm(gm)
-	return result
-
-
-func test_try_ascend_fails_when_ineligible() -> String:
-	var gm: Node = _make_gm()
-	var success: bool = gm.try_ascend()
-	var result: String = _T.assert_false(success, "try_ascend should fail when ineligible")
-	if result != "":
-		_free_gm(gm)
-		return result
-	result = _T.assert_eq(gm.ascension_count, 0, "Count unchanged on failed ascend")
-	_free_gm(gm)
-	return result
-
-
-func test_try_ascend_emits_ascended_signal() -> String:
-	var gm: Node = _make_gm()
-	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width"]:
-		gm._upgrade_levels[id] = 15
-	gm.currency = 50000
-	var received: Array = [-1]
-	gm.ascended.connect(func(count: int) -> void: received[0] = count)
-	gm.try_ascend()
-	var result: String = _T.assert_eq(received[0], 1, "ascended signal with count")
-	_free_gm(gm)
-	return result
-
-
-# NOTE: Ascension multiplier formula tests live in test_upgrade_formulas.gd
-
-func test_try_ascend_resets_milestones() -> String:
-	var gm: Node = _make_gm()
-	gm.add_currency(1000)
-	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width"]:
-		gm._upgrade_levels[id] = 15
-	gm.try_ascend()
-	# After ascension, milestones should re-trigger. Add currency past 100.
-	var flags: Array = [false]
-	gm.milestone_reached.connect(func(_m: int) -> void: flags[0] = true)
-	gm.add_currency(100)
-	var result: String = _T.assert_true(flags[0], "Milestone should re-trigger after ascension reset")
 	_free_gm(gm)
 	return result
 
@@ -575,8 +424,8 @@ func test_combo_affects_coin_value() -> String:
 func test_earn_rate_with_upgrades() -> String:
 	var gm: Node = _make_gm()
 	gm._upgrade_levels["coin_value"] = 4   # base value = 5
-	gm._upgrade_levels["spawn_rate"] = 5   # interval = 0.8 * 0.95^5
-	var expected_interval: float = 0.8 * pow(0.95, 5)
+	gm._upgrade_levels["spawn_rate"] = 5   # interval = 0.8 / 1.3^5
+	var expected_interval: float = 0.8 / pow(1.3, 5)
 	var expected_rate: float = 5.0 / expected_interval
 	var result: String = _T.assert_float_eq(gm.get_earn_rate(), expected_rate, 0.1, "Earn rate with upgrades")
 	_free_gm(gm)
@@ -637,17 +486,6 @@ func test_all_upgrade_data_present() -> String:
 	return result
 
 
-func test_core_upgrades_subset_of_upgrade_data() -> String:
-	var gm: Node = _make_gm()
-	var result: String = ""
-	for id: String in gm.CORE_UPGRADES:
-		if not gm.UPGRADE_DATA.has(id):
-			result = "Core upgrade %s not in UPGRADE_DATA" % id
-			break
-	_free_gm(gm)
-	return result
-
-
 # ============= Coin Types Upgrade Tests =============
 
 func test_coin_type_unlock_level_initial() -> String:
@@ -694,41 +532,21 @@ func test_coin_type_cost_progression() -> String:
 	for i: int in range(4):
 		costs.append(gm.get_upgrade_cost("coin_types"))
 		gm._upgrade_levels["coin_types"] = i + 1
-	# base_cost=50, cost_growth=2.5: 50, 125, 312, 781
-	var result: String = _T.assert_eq(costs[0], 50, "Coin types cost at level 0")
+	# base_cost=100, cost_growth=2.5: 100, 250, 625, 1562
+	var result: String = _T.assert_eq(costs[0], 100, "Coin types cost at level 0")
 	if result != "":
 		_free_gm(gm)
 		return result
-	result = _T.assert_eq(costs[1], 125, "Coin types cost at level 1")
+	result = _T.assert_eq(costs[1], 250, "Coin types cost at level 1")
 	if result != "":
 		_free_gm(gm)
 		return result
-	result = _T.assert_eq(costs[2], 312, "Coin types cost at level 2")
+	result = _T.assert_eq(costs[2], 625, "Coin types cost at level 2")
 	if result != "":
 		_free_gm(gm)
 		return result
-	result = _T.assert_eq(costs[3], 781, "Coin types cost at level 3")
+	result = _T.assert_eq(costs[3], 1562, "Coin types cost at level 3")
 	_free_gm(gm)
 	return result
 
 
-func test_can_ascend_ignores_coin_types() -> String:
-	var gm: Node = _make_gm()
-	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width"]:
-		gm._upgrade_levels[id] = 15
-	gm._upgrade_levels["coin_types"] = 0
-	var result: String = _T.assert_true(gm.can_ascend(), "coin_types at 0 should not prevent ascension")
-	_free_gm(gm)
-	return result
-
-
-func test_coin_types_resets_on_ascension() -> String:
-	var gm: Node = _make_gm()
-	for id: String in ["spawn_rate", "coin_value", "catcher_speed", "catcher_width"]:
-		gm._upgrade_levels[id] = 15
-	gm._upgrade_levels["coin_types"] = 3
-	gm.currency = 50000
-	gm.try_ascend()
-	var result: String = _T.assert_eq(gm.get_upgrade_level("coin_types"), 0, "coin_types reset after ascend")
-	_free_gm(gm)
-	return result

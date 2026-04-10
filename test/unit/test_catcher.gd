@@ -128,28 +128,6 @@ func test_coin_value_with_100_combo() -> String:
 	return result
 
 
-func test_coin_value_combo_plus_ascension() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["coin_value"] = 4  # base = 5
-	gm.ascension_count = 1  # 1.5x ascension
-	gm.set_combo_multiplier(1.5)  # 50-combo
-	# int(5 * 1.5 * 1.5) = int(11.25) = 11
-	var result: String = _T.assert_eq(gm.get_coin_value(), 11, "Coin value with ascension+combo: int(5*1.5*1.5)=11")
-	_free_gm(gm)
-	return result
-
-
-func test_coin_value_100_combo_plus_double_ascension() -> String:
-	var gm: Node = _make_gm()
-	gm._upgrade_levels["coin_value"] = 4  # base = 5
-	gm.ascension_count = 2  # 1.5^2 = 2.25x
-	gm.set_combo_multiplier(2.0)  # 100-combo
-	# int(5 * 2.25 * 2.0) = int(22.5) = 22
-	var result: String = _T.assert_eq(gm.get_coin_value(), 22, "Coin value with 2x ascension + 2x combo")
-	_free_gm(gm)
-	return result
-
-
 # ============= Bomb Resets Combo via GameManager =============
 
 func test_bomb_resets_combo_multiplier_in_gm() -> String:

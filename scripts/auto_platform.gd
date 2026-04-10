@@ -58,7 +58,7 @@ func _spawn_floating_text(at_position: Vector2, value: int, coin_type: int = 0) 
 		return
 	if floating_text_scene:
 		var ft: Label = floating_text_scene.instantiate()
-		ft.text = "%d" % value
+		ft.text = "+%d" % value
 		ft.coin_type = coin_type
 		ft.combo_level = 0
 		ft.position = at_position + Vector2(randf_range(-10.0, 10.0), -10.0)

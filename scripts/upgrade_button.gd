@@ -166,7 +166,7 @@ func _update_segments(level: int) -> void:
 	if level > 0 and filled == 0:
 		filled = SEGMENTS
 	var tier: int = (level - 1) / SEGMENTS if level > 0 else 0
-	var fill_color: Color = TIER_COLORS[mini(tier, TIER_COLORS.size() - 1)]
+	var fill_color: Color = TIER_COLORS[tier % TIER_COLORS.size()]
 	for i: int in range(SEGMENTS):
 		_segment_rects[i].color = fill_color if i < filled else EMPTY_COLOR
 
@@ -275,7 +275,7 @@ func _flash_segments() -> void:
 	if level > 0 and filled == 0:
 		filled = SEGMENTS
 	var tier: int = (level - 1) / SEGMENTS if level > 0 else 0
-	var fill_color: Color = TIER_COLORS[mini(tier, TIER_COLORS.size() - 1)]
+	var fill_color: Color = TIER_COLORS[tier % TIER_COLORS.size()]
 	for i: int in range(filled):
 		_segment_rects[i].color = Color.WHITE
 	var flash_tween := create_tween()

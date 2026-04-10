@@ -6,9 +6,9 @@ var combo_level: int = 0  # 0=no combo, 1=1.5x active, 2=2.0x active
 
 # Only COPPER, SILVER, and GOLD have colors — FRENZY/BOMB/MULTI have value=0 so no text is spawned
 const COIN_COLORS: Dictionary = {
-	0: Color(0.8, 0.5, 0.2),     # COPPER -> copper brown
-	1: Color(1.0, 0.84, 0.0),    # SILVER -> gold
-	2: Color(1.0, 0.95, 0.3),    # GOLD -> bright yellow-gold
+	0: Color(1.0, 1.0, 1.0),     # COPPER -> white
+	1: Color(1.0, 1.0, 1.0),     # SILVER -> white
+	2: Color(1.0, 1.0, 1.0),     # GOLD -> white
 }
 
 const FLOAT_COMBO_COLORS: Array[Color] = [
