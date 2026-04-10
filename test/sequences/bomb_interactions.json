@@ -1,0 +1,67 @@
+{
+  "name": "Bomb Interaction Test",
+  "description": "Verify bomb resets combo, shrinks catcher, and recovers after 3 seconds",
+  "steps": [
+    {"type": "wait", "seconds": 0.5, "comment": "Wait for game to stabilize"},
+    {"type": "command", "name": "reset-session", "comment": "Reset to clean state"},
+    {"type": "command", "name": "clear-coins", "comment": "Remove any falling coins"},
+    {"type": "wait", "seconds": 0.2},
+
+    {"type": "command", "name": "run-method", "node_path": "/root/GameManager", "method": "add_currency", "args": [5000], "comment": "Give currency"},
+    {"type": "command", "name": "set-game-speed", "speed": 3.0, "comment": "Speed up"},
+
+    {"type": "command", "name": "spawn-coin-on-catcher", "coin_type": "SILVER", "comment": "Build combo: coin 1"},
+    {"type": "wait", "seconds": 0.15},
+    {"type": "command", "name": "spawn-coin-on-catcher", "coin_type": "SILVER", "comment": "Coin 2"},
+    {"type": "wait", "seconds": 0.15},
+    {"type": "command", "name": "spawn-coin-on-catcher", "coin_type": "SILVER", "comment": "Coin 3"},
+    {"type": "wait", "seconds": 0.15},
+    {"type": "command", "name": "spawn-coin-on-catcher", "coin_type": "SILVER", "comment": "Coin 4"},
+    {"type": "wait", "seconds": 0.15},
+    {"type": "command", "name": "spawn-coin-on-catcher", "coin_type": "SILVER", "comment": "Coin 5"},
+    {"type": "wait", "seconds": 0.15},
+    {"type": "command", "name": "spawn-coin-on-catcher", "coin_type": "SILVER", "comment": "Coin 6"},
+    {"type": "wait", "seconds": 0.15},
+    {"type": "command", "name": "spawn-coin-on-catcher", "coin_type": "SILVER", "comment": "Coin 7"},
+    {"type": "wait", "seconds": 0.15},
+    {"type": "command", "name": "spawn-coin-on-catcher", "coin_type": "SILVER", "comment": "Coin 8"},
+    {"type": "wait", "seconds": 0.15},
+    {"type": "command", "name": "spawn-coin-on-catcher", "coin_type": "SILVER", "comment": "Coin 9"},
+    {"type": "wait", "seconds": 0.15},
+    {"type": "command", "name": "spawn-coin-on-catcher", "coin_type": "SILVER", "comment": "Coin 10"},
+    {"type": "wait", "seconds": 0.3},
+
+    {"type": "screenshot", "filename": "bomb_interact_01_combo_built.png"},
+    {"type": "command", "name": "get-catcher-state", "comment": "Should show combo=10"},
+
+    {"type": "command", "name": "get-state", "node_path": "/root/GameManager", "property": "currency", "comment": "Record currency before bomb"},
+    {"type": "screenshot", "filename": "bomb_interact_02_before_bomb.png"},
+
+    {"type": "command", "name": "spawn-coin-on-catcher", "coin_type": "BOMB", "comment": "BOMB — should reset combo and shrink catcher"},
+    {"type": "wait", "seconds": 0.5, "comment": "Wait for bomb collection"},
+
+    {"type": "screenshot", "filename": "bomb_interact_03_bomb_hit.png"},
+    {"type": "assert", "node": "/root/GameManager", "property": "_combo_multiplier", "equals": 1.0},
+    {"type": "command", "name": "get-catcher-state", "comment": "Verify combo reset to 0 and multiplier to 1.0"},
+
+    {"type": "command", "name": "spawn-coin-on-catcher", "coin_type": "BOMB", "comment": "Second bomb while shrink is active — should be ignored"},
+    {"type": "wait", "seconds": 0.5},
+
+    {"type": "screenshot", "filename": "bomb_interact_04_double_bomb.png"},
+    {"type": "command", "name": "get-catcher-state", "comment": "Catcher should still be in shrink state"},
+
+    {"type": "wait", "seconds": 3.5, "comment": "Wait for bomb recovery (3s at 3x speed = ~1s real time + margin)"},
+
+    {"type": "screenshot", "filename": "bomb_interact_05_recovered.png"},
+    {"type": "command", "name": "get-catcher-state", "comment": "Catcher should be back to normal width"},
+
+    {"type": "command", "name": "spawn-coin-on-catcher", "coin_type": "SILVER", "comment": "Verify can still collect after recovery"},
+    {"type": "wait", "seconds": 0.3},
+    {"type": "command", "name": "spawn-coin-on-catcher", "coin_type": "SILVER"},
+    {"type": "wait", "seconds": 0.3},
+    {"type": "command", "name": "get-catcher-state", "comment": "Should show new combo of 2"},
+
+    {"type": "command", "name": "set-game-speed", "speed": 1.0, "comment": "Restore normal speed"},
+    {"type": "command", "name": "clear-coins"}
+  ]
+}

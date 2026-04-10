@@ -95,10 +95,22 @@ else
     EXIT_CODE=1
 fi
 
-# Run performance check
+# Run performance check with FPS threshold
 echo ""
 echo "  Running performance check..."
-${DEVTOOLS} performance 2>&1 || true
+PERF_OUTPUT=$(${DEVTOOLS} performance 2>&1) || true
+echo "${PERF_OUTPUT}"
+# Extract FPS and fail if below 30
+FPS=$(echo "${PERF_OUTPUT}" | grep -oE '"fps":\s*[0-9.]+' | grep -oE '[0-9.]+' | head -1)
+if [ -n "${FPS}" ]; then
+    FPS_INT=$(echo "${FPS}" | cut -d. -f1)
+    if [ "${FPS_INT}" -lt 30 ] 2>/dev/null; then
+        echo "  FAIL: FPS ${FPS} is below minimum threshold of 30"
+        EXIT_CODE=1
+    else
+        echo "  Performance OK: ${FPS} FPS"
+    fi
+fi
 
 # --------------------------------------------
 # Shutdown
