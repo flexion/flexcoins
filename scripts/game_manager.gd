@@ -12,6 +12,7 @@ signal ascended(count: int)
 signal shop_opened
 signal shop_closed
 signal combo_multiplier_changed(new_multiplier: float)
+signal combo_changed(count: int)
 
 const MILESTONES: Array[int] = [100, 500, 1000, 5000, 10000, 50000, 100000]
 
