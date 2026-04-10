@@ -59,8 +59,11 @@ func _ready() -> void:
 	_handlers["wait_frames"] = _cmd_wait_frames
 	_handlers["get_catcher_state"] = _cmd_get_catcher_state
 	_handlers["validate_ui"] = _cmd_validate_ui
+	_handlers["validate_ui_interactive"] = _cmd_validate_ui_interactive
 	_handlers["get_ui_snapshot"] = _cmd_get_ui_snapshot
 	_handlers["get_node_bounds"] = _cmd_get_node_bounds
+	_handlers["save_ui_baseline"] = _cmd_save_ui_baseline
+	_handlers["ui_snapshot_diff"] = _cmd_ui_snapshot_diff
 
 	_clear_stale_files()
 	_write_log("system", "DevTools initialized", {
@@ -501,7 +504,7 @@ func _cmd_input_sequence(args: Dictionary) -> Dictionary:
 		var step_type: String = step_dict.get("type", "")
 		if step_type.is_empty():
 			return {"success": false, "message": "Step %d has no type" % i}
-		if step_type not in ["press", "release", "tap", "hold", "wait", "screenshot", "assert", "clear"]:
+		if step_type not in ["press", "release", "tap", "hold", "wait", "wait_frames", "screenshot", "assert", "clear", "command"]:
 			return {"success": false, "message": "Step %d has unknown type: %s" % [i, step_type]}
 		# Validate action exists for input steps.
 		if step_type in ["press", "release", "tap", "hold"]:
@@ -579,6 +582,30 @@ func _execute_sequence(sequence_id: String, steps: Array, timeout: float) -> voi
 					_write_log("input", "Sequence %s assert failed: %s.%s = %s, expected %s" % [
 						sequence_id, step["node"], step["property"], str(actual), str(expected)
 					])
+					return
+
+			"wait_frames":
+				var count: int = step.get("count", 1)
+				for _f: int in range(count):
+					await get_tree().process_frame
+
+			"command":
+				var cmd_name: String = step.get("name", "")
+				if cmd_name.is_empty():
+					_write_log("input", "Sequence %s step %d: command has no name" % [sequence_id, i])
+					return
+				var cmd_args: Dictionary = {}
+				for key: String in step:
+					if key not in ["type", "name", "comment"]:
+						cmd_args[key] = step[key]
+				var handler: String = "_cmd_" + cmd_name.replace("-", "_")
+				if has_method(handler):
+					var result: Variant = call(handler, cmd_args)
+					if result is Dictionary and result.get("status", "") == "error":
+						_write_log("input", "Sequence %s step %d: command '%s' failed: %s" % [sequence_id, i, cmd_name, result.get("message", "")])
+						return
+				else:
+					_write_log("input", "Sequence %s step %d: unknown command '%s'" % [sequence_id, i, cmd_name])
 					return
 
 			"clear":
@@ -828,8 +855,20 @@ func _get_control_text(node: Control) -> String:
 
 func _cmd_validate_ui(_args: Dictionary) -> Dictionary:
 	var issues: Array = []
+	var interactive_controls: Array = []
 	var vp: Vector2 = Vector2(get_tree().root.size)
-	_validate_ui_recursive(get_tree().current_scene, vp, issues)
+	_validate_ui_recursive(get_tree().current_scene, vp, issues, interactive_controls)
+
+	# Check for overlapping interactive controls
+	var overlaps: Array = _check_interactive_overlaps(interactive_controls)
+	for overlap: Dictionary in overlaps:
+		issues.append({
+			"severity": "warning",
+			"code": "interactive_overlap",
+			"message": "Interactive controls overlap: '%s' and '%s' (overlap area: %.0fpx)" % [
+				overlap["node_a"], overlap["node_b"], overlap["overlap_area"],
+			],
+		})
 
 	return {
 		"success": issues.is_empty(),
@@ -838,10 +877,14 @@ func _cmd_validate_ui(_args: Dictionary) -> Dictionary:
 	}
 
 
-func _validate_ui_recursive(node: Node, vp: Vector2, issues: Array) -> void:
+func _validate_ui_recursive(node: Node, vp: Vector2, issues: Array, interactive_controls: Array = []) -> void:
 	if node is Control and _is_effectively_visible(node):
 		var control: Control = node as Control
 		var rect: Rect2 = control.get_global_rect()
+
+		# Collect interactive controls for overlap detection
+		if (control is Button or control is TextureButton or control is LinkButton) and control.visible:
+			interactive_controls.append({"path": str(control.get_path()), "rect": rect})
 
 		# Check 1: Viewport overflow
 		if rect.position.x + rect.size.x > vp.x or rect.position.y + rect.size.y > vp.y:
@@ -907,8 +950,62 @@ func _validate_ui_recursive(node: Node, vp: Vector2, issues: Array) -> void:
 				],
 			})
 
+		# Check 6: Button text overflow
+		if control is Button and control.text.length() > 0:
+			var btn_font: Font = control.get_theme_font("font")
+			var btn_font_size: int = control.get_theme_font_size("font_size")
+			if btn_font:
+				var btn_text_width: float = btn_font.get_string_size(control.text, HORIZONTAL_ALIGNMENT_LEFT, -1, btn_font_size).x
+				var padding: float = 16.0
+				if btn_text_width + padding > control.size.x and control.size.x > 0.0:
+					issues.append({
+						"severity": "warning",
+						"code": "button_text_overflow",
+						"message": "Button '%s' text '%s' (%.0fpx) exceeds button width (%.0fpx)" % [
+							control.name, control.text, btn_text_width, control.size.x,
+						],
+					})
+
+		# Check 7: Minimum tap target size for interactive controls
+		if (control is Button or control is TextureButton or control is LinkButton) and control.visible:
+			var min_tap: float = 40.0
+			if control.size.x < min_tap or control.size.y < min_tap:
+				issues.append({
+					"severity": "warning",
+					"code": "small_tap_target",
+					"message": "Interactive control '%s' size %.0fx%.0f below minimum %.0fx%.0f" % [
+						control.name, control.size.x, control.size.y, min_tap, min_tap,
+					],
+				})
+
+		# Check 8: Container child position consistency
+		# If a node is inside a BoxContainer (HBox/VBox) with layout_mode 2,
+		# its position should be within the container's bounds
+		if node.get_parent() is BoxContainer:
+			var parent_container: BoxContainer = node.get_parent() as BoxContainer
+			var parent_rect: Rect2 = parent_container.get_global_rect()
+			var node_rect: Rect2 = control.get_global_rect()
+			var path: String = str(control.get_path())
+			# Check if child extends beyond parent bounds (layout corruption)
+			if node_rect.position.x < parent_rect.position.x - 2.0:
+				issues.append({
+					"severity": "warning",
+					"code": "container_layout_drift",
+					"message": "Node '%s' position (%.0f) is left of parent container (%.0f) - possible layout corruption" % [
+						path, node_rect.position.x, parent_rect.position.x,
+					],
+				})
+			if node_rect.end.x > parent_rect.end.x + 2.0:
+				issues.append({
+					"severity": "warning",
+					"code": "container_layout_drift",
+					"message": "Node '%s' extends past parent container right edge (%.0f > %.0f) - possible layout corruption" % [
+						path, node_rect.end.x, parent_rect.end.x,
+					],
+				})
+
 	for child in node.get_children():
-		_validate_ui_recursive(child, vp, issues)
+		_validate_ui_recursive(child, vp, issues, interactive_controls)
 
 
 func _cmd_get_ui_snapshot(_args: Dictionary) -> Dictionary:
@@ -993,6 +1090,253 @@ func _cmd_get_node_bounds(args: Dictionary) -> Dictionary:
 				and rect.position.y + rect.size.y <= vp.y,
 		},
 	}
+
+
+# --- Interactive UI Validation ---
+
+
+func _cmd_validate_ui_interactive(_args: Dictionary) -> Dictionary:
+	var results: Array = []
+	var errors: Array = []
+
+	# Step 1: Find HUD and shop toggle
+	var hud: Node = _find_hud_node()
+	if not hud:
+		return {"success": false, "message": "HUD not found"}
+
+	var shop_toggle: Button = hud.get_node_or_null("%ShopToggle")
+	if not shop_toggle:
+		return {"success": false, "message": "ShopToggle not found"}
+
+	# Record pre-state
+	var pre_currency: int = GameManager.currency
+
+	# Open shop
+	shop_toggle.pressed.emit()
+	await get_tree().create_timer(0.5).timeout
+
+	# Verify shop opened
+	var upgrade_panel: PanelContainer = hud.get_node_or_null("%UpgradePanel")
+	if upgrade_panel and upgrade_panel.visible:
+		results.append({"check": "shop_opens", "status": "pass"})
+	else:
+		errors.append({"check": "shop_opens", "status": "fail", "message": "Panel not visible after toggle"})
+
+	# Check button bounds
+	var upgrade_container: VBoxContainer = hud.get_node_or_null("%UpgradeContainer")
+	if upgrade_container:
+		for child in upgrade_container.get_children():
+			if child is PanelContainer:
+				var rect: Rect2 = child.get_global_rect()
+				if rect.size.x < 44.0 or rect.size.y < 44.0:
+					errors.append({"check": "min_tap_target", "status": "fail", "node": str(child.name), "size": [rect.size.x, rect.size.y]})
+				# Check button text fits
+				var buy_btn: Button = child.get_node_or_null("%BuyButton")
+				if buy_btn:
+					var font: Font = buy_btn.get_theme_font("font")
+					var font_size: int = buy_btn.get_theme_font_size("font_size")
+					if font:
+						var text_width: float = font.get_string_size(buy_btn.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+						if text_width > buy_btn.size.x:
+							errors.append({"check": "button_text_overflow", "status": "fail", "node": str(buy_btn.name), "text": buy_btn.text, "text_width": text_width, "button_width": buy_btn.size.x})
+		results.append({"check": "button_bounds", "status": "pass" if errors.size() == 0 else "fail"})
+
+	# Give currency and attempt purchase
+	GameManager.add_currency(10000)
+	await get_tree().process_frame
+	var post_add_currency: int = GameManager.currency
+
+	# Try purchase
+	var purchased: bool = GameManager.try_purchase_upgrade("spawn_rate")
+	await get_tree().create_timer(0.3).timeout
+
+	if purchased:
+		var post_purchase_currency: int = GameManager.currency
+		if post_purchase_currency < post_add_currency:
+			results.append({"check": "purchase_deducts_currency", "status": "pass"})
+		else:
+			errors.append({"check": "purchase_deducts_currency", "status": "fail", "message": "Currency did not decrease after purchase"})
+
+		# Check button text updated (cost should have changed)
+		if upgrade_container:
+			for child in upgrade_container.get_children():
+				if child is PanelContainer and child.has_method("setup"):
+					var buy_btn: Button = child.get_node_or_null("%BuyButton")
+					if buy_btn and buy_btn.text.length() > 0:
+						results.append({"check": "button_text_updated", "status": "pass", "text": buy_btn.text})
+						break
+
+		# Check for layout corruption after purchase animation
+		var post_purchase_ui: Dictionary = _cmd_validate_ui({})
+		var layout_drift_issues: Array = []
+		for issue: Dictionary in post_purchase_ui.get("data", {}).get("issues", []):
+			if issue.get("code", "") == "container_layout_drift":
+				layout_drift_issues.append(issue)
+		if layout_drift_issues.is_empty():
+			results.append({"check": "post_purchase_layout", "status": "pass"})
+		else:
+			for drift_issue: Dictionary in layout_drift_issues:
+				errors.append({"check": "post_purchase_layout", "status": "fail", "message": drift_issue.get("message", "Layout drift detected")})
+	else:
+		errors.append({"check": "purchase_attempt", "status": "fail", "message": "Purchase failed despite adding currency"})
+
+	# Close shop
+	shop_toggle.pressed.emit()
+	await get_tree().create_timer(0.5).timeout
+
+	# Verify shop closed
+	if upgrade_panel and not upgrade_panel.visible:
+		results.append({"check": "shop_closes", "status": "pass"})
+	else:
+		errors.append({"check": "shop_closes", "status": "fail", "message": "Panel still visible after toggle"})
+
+	return {
+		"success": errors.size() == 0,
+		"message": "%d checks passed, %d failed" % [results.size(), errors.size()],
+		"data": {
+			"status": "pass" if errors.size() == 0 else "fail",
+			"results": results,
+			"errors": errors,
+			"checks_run": results.size() + errors.size(),
+		},
+	}
+
+
+func _find_hud_node() -> Node:
+	var scene: Node = get_tree().current_scene
+	if not scene:
+		return null
+	for child in scene.get_children():
+		if child is CanvasLayer and child.name == "HUD":
+			return child
+	# Also check autoloads / root children
+	for child in get_tree().root.get_children():
+		if child is CanvasLayer and child.name == "HUD":
+			return child
+	return null
+
+
+# --- UI Baseline & Diff ---
+
+
+func _cmd_save_ui_baseline(_args: Dictionary) -> Dictionary:
+	var snapshot: Array = _capture_ui_snapshot_flat()
+	var json_str: String = JSON.stringify(snapshot, "\t")
+	var file: FileAccess = FileAccess.open("user://ui_baseline.json", FileAccess.WRITE)
+	if file == null:
+		return {"success": false, "message": "Failed to write baseline file"}
+	file.store_string(json_str)
+	file.close()
+	return {
+		"success": true,
+		"message": "Baseline saved with %d nodes" % snapshot.size(),
+		"data": {"nodes_saved": snapshot.size()},
+	}
+
+
+func _cmd_ui_snapshot_diff(_args: Dictionary) -> Dictionary:
+	if not FileAccess.file_exists("user://ui_baseline.json"):
+		return {"success": false, "message": "No baseline found. Run save_ui_baseline first."}
+
+	var file: FileAccess = FileAccess.open("user://ui_baseline.json", FileAccess.READ)
+	var baseline_text: String = file.get_as_text()
+	file.close()
+	var baseline: Variant = JSON.parse_string(baseline_text)
+	if baseline == null or not baseline is Array:
+		return {"success": false, "message": "Failed to parse baseline JSON"}
+
+	var current: Array = _capture_ui_snapshot_flat()
+	var diffs: Array = []
+	var threshold: float = 5.0
+
+	# Build lookup by node path
+	var baseline_map: Dictionary = {}
+	for node_data: Dictionary in baseline:
+		baseline_map[node_data["path"]] = node_data
+
+	for node_data: Dictionary in current:
+		var path: String = node_data["path"]
+		if baseline_map.has(path):
+			var base: Dictionary = baseline_map[path]
+			var dx: float = absf(node_data["x"] - base["x"])
+			var dy: float = absf(node_data["y"] - base["y"])
+			var dw: float = absf(node_data["w"] - base["w"])
+			var dh: float = absf(node_data["h"] - base["h"])
+			if dx > threshold or dy > threshold or dw > threshold or dh > threshold:
+				diffs.append({
+					"path": path,
+					"type": "changed",
+					"position_delta": [dx, dy],
+					"size_delta": [dw, dh],
+					"baseline": {"x": base["x"], "y": base["y"], "w": base["w"], "h": base["h"]},
+					"current": {"x": node_data["x"], "y": node_data["y"], "w": node_data["w"], "h": node_data["h"]},
+				})
+		else:
+			diffs.append({"path": path, "type": "new_node"})
+
+	for path: String in baseline_map:
+		var found: bool = false
+		for node_data: Dictionary in current:
+			if node_data["path"] == path:
+				found = true
+				break
+		if not found:
+			diffs.append({"path": path, "type": "removed_node"})
+
+	return {
+		"success": diffs.size() == 0,
+		"message": "%d diffs found" % diffs.size() if diffs.size() > 0 else "No layout drift detected",
+		"data": {
+			"status": "pass" if diffs.size() == 0 else "drift_detected",
+			"diffs": diffs,
+		},
+	}
+
+
+func _capture_ui_snapshot_flat() -> Array:
+	var elements: Array = []
+	var scene: Node = get_tree().current_scene
+	if scene:
+		_snapshot_flat_recursive(scene, elements)
+	return elements
+
+
+func _snapshot_flat_recursive(node: Node, elements: Array) -> void:
+	if node is Control and _is_effectively_visible(node):
+		var control: Control = node as Control
+		var rect: Rect2 = control.get_global_rect()
+		elements.append({
+			"path": str(control.get_path()),
+			"name": str(control.name),
+			"type": control.get_class(),
+			"x": rect.position.x,
+			"y": rect.position.y,
+			"w": rect.size.x,
+			"h": rect.size.y,
+		})
+	for child in node.get_children():
+		_snapshot_flat_recursive(child, elements)
+
+
+# --- UI Overlap Detection ---
+
+
+func _check_interactive_overlaps(controls: Array) -> Array:
+	var overlaps: Array = []
+	for i in range(controls.size()):
+		for j in range(i + 1, controls.size()):
+			var rect_a: Rect2 = controls[i]["rect"]
+			var rect_b: Rect2 = controls[j]["rect"]
+			if rect_a.intersects(rect_b):
+				var intersection: Rect2 = rect_a.intersection(rect_b)
+				overlaps.append({
+					"type": "interactive_overlap",
+					"node_a": controls[i]["path"],
+					"node_b": controls[j]["path"],
+					"overlap_area": intersection.get_area(),
+					"overlap_rect": {"x": intersection.position.x, "y": intersection.position.y, "w": intersection.size.x, "h": intersection.size.y},
+				})
+	return overlaps
 
 
 # --- Utility Functions ---

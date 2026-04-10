@@ -549,6 +549,65 @@ def cmd_validate_ui(args, project_path: Path):
     print_validation_result(result)
 
 
+def cmd_validate_ui_interactive(args, project_path: Path):
+    """Run interactive UI flow validation."""
+    result = send_command(project_path, "validate_ui_interactive", timeout=30.0)
+    if not result["success"]:
+        print(f"[FAIL] {result['message']}")
+        data = result.get("data", {})
+        for err in data.get("errors", []):
+            check = err.get("check", "?")
+            msg = err.get("message", "")
+            if check == "post_purchase_layout":
+                print(f"  FAIL: {check}: LAYOUT DRIFT - {msg}")
+            else:
+                print(f"  FAIL: {check}: {msg}")
+        for res in data.get("results", []):
+            print(f"  PASS: {res.get('check', '?')}")
+        print(f"Checks run: {data.get('checks_run', 0)}")
+        sys.exit(1)
+    else:
+        print(f"[OK] {result['message']}")
+        data = result.get("data", {})
+        for res in data.get("results", []):
+            print(f"  PASS: {res.get('check', '?')}")
+        print(f"Checks run: {data.get('checks_run', 0)}")
+
+
+def cmd_save_ui_baseline(args, project_path: Path):
+    """Save current UI layout as baseline for diff comparison."""
+    result = send_command(project_path, "save_ui_baseline")
+    if result["success"]:
+        print(f"Baseline saved: {result['data']['nodes_saved']} nodes")
+    else:
+        print(f"Failed: {result['message']}", file=sys.stderr)
+        sys.exit(1)
+
+
+def cmd_ui_snapshot_diff(args, project_path: Path):
+    """Compare current UI layout against saved baseline."""
+    result = send_command(project_path, "ui_snapshot_diff")
+    if not result["success"]:
+        if result.get("data", {}).get("status") == "drift_detected":
+            print(f"[DRIFT] {result['message']}")
+            for diff in result["data"].get("diffs", []):
+                diff_type = diff.get("type", "changed")
+                if diff_type == "new_node":
+                    print(f"  + NEW: {diff['path']}")
+                elif diff_type == "removed_node":
+                    print(f"  - REMOVED: {diff['path']}")
+                else:
+                    print(f"  ~ CHANGED: {diff['path']}")
+                    if "position_delta" in diff:
+                        print(f"    pos delta: {diff['position_delta']}, size delta: {diff['size_delta']}")
+            sys.exit(1)
+        else:
+            print(f"Failed: {result['message']}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print(f"[OK] {result['message']}")
+
+
 def cmd_ui_snapshot(args, project_path: Path):
     """Get snapshot of all visible UI elements."""
     result = send_command(project_path, "get_ui_snapshot")
@@ -747,6 +806,18 @@ def main():
     # validate-ui
     p = subparsers.add_parser("validate-ui", help="Run UI layout validation checks")
     p.set_defaults(func=cmd_validate_ui)
+
+    # validate-ui-interactive
+    p = subparsers.add_parser("validate-ui-interactive", help="Run interactive UI flow validation")
+    p.set_defaults(func=cmd_validate_ui_interactive)
+
+    # save-ui-baseline
+    p = subparsers.add_parser("save-ui-baseline", help="Save current UI layout as baseline")
+    p.set_defaults(func=cmd_save_ui_baseline)
+
+    # ui-snapshot-diff
+    p = subparsers.add_parser("ui-snapshot-diff", help="Compare UI layout against saved baseline")
+    p.set_defaults(func=cmd_ui_snapshot_diff)
 
     # ui-snapshot
     p = subparsers.add_parser("ui-snapshot", help="Get snapshot of all visible UI elements")

@@ -84,7 +84,7 @@ func _update_display() -> void:
 	var cost: int = GameManager.get_upgrade_cost(upgrade_id)
 	name_label.text = data.name
 	effect_label.text = data.description
-	buy_button.text = "Buy: %d" % cost
+	buy_button.text = _format_cost(cost)
 	var affordable := GameManager.currency >= cost
 	_update_afford_cue(affordable)
 	_update_segments(level)
@@ -201,12 +201,14 @@ func _stop_pulse() -> void:
 
 func _animate_purchase() -> void:
 	_apply_buy_style(_style_green)
+	pivot_offset = size / 2.0
 	var tween := create_tween()
 	tween.tween_property(self, "scale", Vector2(1.05, 1.05), 0.08).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.12).set_ease(Tween.EASE_IN_OUT)
 	var original_color: Color = buy_button.get_theme_color("font_color")
 	buy_button.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
 	tween.tween_callback(func() -> void:
+		scale = Vector2(1.0, 1.0)
 		buy_button.add_theme_color_override("font_color", original_color)
 		var affordable := GameManager.currency >= GameManager.get_upgrade_cost(upgrade_id)
 		_apply_buy_style(_style_afford if affordable else _style_unafford)
@@ -219,21 +221,28 @@ func _animate_purchase() -> void:
 func _animate_reject() -> void:
 	if _shake_tween and _shake_tween.is_running():
 		_shake_tween.kill()
-	buy_button.position.x = 0.0
-	_shake_tween = create_tween()
 	var original_x: float = buy_button.position.x
+	_shake_tween = create_tween()
 	for i: int in range(4):
 		_shake_tween.tween_property(buy_button, "position:x", original_x + 6.0, 0.037)
 		_shake_tween.tween_property(buy_button, "position:x", original_x - 6.0, 0.037)
 	_shake_tween.tween_property(buy_button, "position:x", original_x, 0.037)
-	# Flash red
 	buy_button.add_theme_color_override("font_color", Color(1.0, 0.3, 0.2, 1.0))
 	_shake_tween.tween_callback(func() -> void:
+		buy_button.get_parent().queue_sort()
 		var affordable := GameManager.currency >= GameManager.get_upgrade_cost(upgrade_id)
 		buy_button.add_theme_color_override("font_color", AFFORD_COLOR if affordable else UNAFFORD_COLOR)
 	)
 	if _reject_sound:
 		_reject_sound.play()
+
+
+func _format_cost(cost: int) -> String:
+	if cost >= 1000000:
+		return "Buy: %.1fM" % (cost / 1000000.0)
+	elif cost >= 10000:
+		return "Buy: %.1fK" % (cost / 1000.0)
+	return "Buy: %d" % cost
 
 
 func _flash_segments() -> void:
