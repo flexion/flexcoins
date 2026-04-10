@@ -34,7 +34,8 @@ var _catcher_tier: int = -1
 var _rainbow_time: float = 0.0
 var _game_paused: bool = false
 var _frenzy_active: bool = false
-var _edge_tween: Tween
+var _base_scale: Vector2 = Vector2.ONE
+var _squash_tween: Tween
 
 const SPRITE_NATIVE_W: float = 128.0
 const SPRITE_NATIVE_H: float = 8.0
@@ -75,8 +76,8 @@ func _process(delta: float) -> void:
 	var viewport_width := get_viewport_rect().size.x
 	var unclamped_x := position.x + direction * speed * delta
 	position.x = clamp(unclamped_x, half_width, viewport_width - half_width)
-	if unclamped_x != position.x and absf(direction) > 0.5:
-		_edge_squash()
+	if unclamped_x != position.x:
+		scale = Vector2.ONE
 
 	# Motion trail intensity based on speed
 	var velocity := absf(position.x - _prev_x) / delta
@@ -89,14 +90,9 @@ func _process(delta: float) -> void:
 		else:
 			_trail_particles.amount = int(lerpf(3.0, 12.0, speed_ratio))
 
-	# Horizontal stretch when moving fast (apply on top of base scale)
-	var w := GameManager.get_catcher_width()
-	var base_sx := w / SPRITE_NATIVE_W
-	var base_sy := CATCHER_HEIGHT / SPRITE_NATIVE_H
-	var stretch_x := lerpf(1.0, 1.15, speed_ratio)
-	var stretch_y := lerpf(1.0, 0.85, speed_ratio)
-	var target := Vector2(base_sx * stretch_x, base_sy * stretch_y)
-	sprite.scale = sprite.scale.lerp(target, 10.0 * delta)
+	# Reset to base scale when no squash is active
+	if not (_squash_tween and _squash_tween.is_running()):
+		sprite.scale = _base_scale
 
 	# Rainbow animation for tier 3+
 	if _catcher_tier >= 3:
@@ -131,7 +127,8 @@ func _on_upgrade_purchased(_upgrade_id: String) -> void:
 func _apply_upgrades() -> void:
 	speed = GameManager.get_catcher_speed()
 	var w := GameManager.get_catcher_width()
-	sprite.scale = Vector2(w / SPRITE_NATIVE_W, CATCHER_HEIGHT / SPRITE_NATIVE_H)
+	_base_scale = Vector2(w / SPRITE_NATIVE_W, CATCHER_HEIGHT / SPRITE_NATIVE_H)
+	sprite.scale = _base_scale
 	collision_shape.shape.size = Vector2(w, CATCHER_HEIGHT)
 	_update_catcher_visual()
 
@@ -156,19 +153,13 @@ func _update_catcher_visual() -> void:
 
 
 func _squash_bounce() -> void:
-	var base := sprite.scale
-	var tween := create_tween()
-	tween.tween_property(sprite, "scale", base * Vector2(1.2, 0.7), 0.06).set_ease(Tween.EASE_OUT)
-	tween.tween_property(sprite, "scale", base * Vector2(0.95, 1.1), 0.08).set_ease(Tween.EASE_OUT)
-	tween.tween_property(sprite, "scale", base, 0.1).set_ease(Tween.EASE_IN_OUT)
+	if _squash_tween and _squash_tween.is_running():
+		_squash_tween.kill()
+	_squash_tween = create_tween()
+	_squash_tween.tween_property(sprite, "scale", _base_scale * Vector2(1.2, 0.7), 0.06).set_ease(Tween.EASE_OUT)
+	_squash_tween.tween_property(sprite, "scale", _base_scale * Vector2(0.95, 1.1), 0.08).set_ease(Tween.EASE_OUT)
+	_squash_tween.tween_property(sprite, "scale", _base_scale, 0.1).set_ease(Tween.EASE_IN_OUT)
 
-
-func _edge_squash() -> void:
-	if _edge_tween and _edge_tween.is_valid():
-		_edge_tween.kill()
-	_edge_tween = create_tween()
-	_edge_tween.tween_property(self, "scale", Vector2(0.85, 1.2), 0.05).set_ease(Tween.EASE_OUT)
-	_edge_tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.1).set_ease(Tween.EASE_IN_OUT)
 
 
 func _spawn_floating_text(at_position: Vector2, value: int, coin_type: int = 0) -> void:
@@ -253,7 +244,8 @@ func _on_bomb_hit() -> void:
 	# Shrink to 60% width
 	var normal_w := GameManager.get_catcher_width()
 	var shrunk_w := normal_w * 0.6
-	sprite.scale = Vector2(shrunk_w / SPRITE_NATIVE_W, CATCHER_HEIGHT / SPRITE_NATIVE_H)
+	_base_scale = Vector2(shrunk_w / SPRITE_NATIVE_W, CATCHER_HEIGHT / SPRITE_NATIVE_H)
+	sprite.scale = _base_scale
 	collision_shape.shape.size = Vector2(shrunk_w, CATCHER_HEIGHT)
 	# Flash red (restore happens via _apply_upgrades after timer)
 	sprite.modulate = Color(1.0, 0.2, 0.1, 1.0)
