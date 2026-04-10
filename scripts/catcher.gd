@@ -30,14 +30,17 @@ var _trail_particles: CPUParticles2D
 var _combo: int = 0
 var _combo_multiplier: float = 1.0
 var _bomb_shrink_active: bool = false
-var _stripe: ColorRect
 var _catcher_tier: int = -1
 var _rainbow_time: float = 0.0
 var _game_paused: bool = false
 var _frenzy_active: bool = false
 var _edge_tween: Tween
 
-@onready var color_rect: ColorRect = $ColorRect
+const SPRITE_NATIVE_W: float = 128.0
+const SPRITE_NATIVE_H: float = 8.0
+const CATCHER_HEIGHT: float = 20.0
+
+@onready var sprite: Sprite2D = $Sprite2D
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
 @onready var bling_sound: AudioStreamPlayer = $BlingSound
 
@@ -86,17 +89,19 @@ func _process(delta: float) -> void:
 		else:
 			_trail_particles.amount = int(lerpf(3.0, 12.0, speed_ratio))
 
-	# Horizontal stretch when moving fast
+	# Horizontal stretch when moving fast (apply on top of base scale)
+	var w := GameManager.get_catcher_width()
+	var base_sx := w / SPRITE_NATIVE_W
+	var base_sy := CATCHER_HEIGHT / SPRITE_NATIVE_H
 	var stretch_x := lerpf(1.0, 1.15, speed_ratio)
 	var stretch_y := lerpf(1.0, 0.85, speed_ratio)
-	color_rect.scale = color_rect.scale.lerp(Vector2(stretch_x, stretch_y), 10.0 * delta)
+	var target := Vector2(base_sx * stretch_x, base_sy * stretch_y)
+	sprite.scale = sprite.scale.lerp(target, 10.0 * delta)
 
 	# Rainbow animation for tier 3+
 	if _catcher_tier >= 3:
 		_rainbow_time += delta * 1.5
-		color_rect.color = Color.from_hsv(fmod(_rainbow_time, 1.0), 0.7, 0.9)
-		if _stripe:
-			_stripe.color = Color.from_hsv(fmod(_rainbow_time + 0.3, 1.0), 0.5, 1.0, 0.5)
+		sprite.modulate = Color.from_hsv(fmod(_rainbow_time, 1.0), 0.7, 0.9)
 
 
 func _on_area_entered(area: Area2D) -> void:
@@ -126,12 +131,8 @@ func _on_upgrade_purchased(_upgrade_id: String) -> void:
 func _apply_upgrades() -> void:
 	speed = GameManager.get_catcher_speed()
 	var w := GameManager.get_catcher_width()
-	color_rect.offset_left = -w / 2.0
-	color_rect.offset_right = w / 2.0
-	color_rect.offset_top = -10.0
-	color_rect.offset_bottom = 10.0
-	color_rect.pivot_offset = Vector2(w / 2.0, 10.0)
-	collision_shape.shape.size = Vector2(w, 20.0)
+	sprite.scale = Vector2(w / SPRITE_NATIVE_W, CATCHER_HEIGHT / SPRITE_NATIVE_H)
+	collision_shape.shape.size = Vector2(w, CATCHER_HEIGHT)
 	_update_catcher_visual()
 
 
@@ -141,50 +142,25 @@ func _update_catcher_visual() -> void:
 	if new_tier == _catcher_tier:
 		return
 	_catcher_tier = new_tier
-	# Remove old stripe
-	if _stripe:
-		_stripe.queue_free()
-		_stripe = null
 
 	match _catcher_tier:
 		0:
-			# Blue (default)
-			color_rect.color = Color(0.29, 0.56, 0.85, 1.0)
+			sprite.modulate = Color(0.29, 0.56, 0.85, 1.0)
 		1:
-			# Wooden brown with grain stripe
-			color_rect.color = Color(0.55, 0.35, 0.17, 1.0)
-			_stripe = ColorRect.new()
-			_stripe.color = Color(0.65, 0.45, 0.25, 0.6)
-			_stripe.offset_left = color_rect.offset_left
-			_stripe.offset_right = color_rect.offset_right
-			_stripe.offset_top = -2.0
-			_stripe.offset_bottom = 2.0
-			add_child(_stripe)
+			sprite.modulate = Color(0.55, 0.35, 0.17, 1.0)
 		2:
-			# Chrome/silver metallic with white highlight
-			color_rect.color = Color(0.7, 0.72, 0.75, 1.0)
-			_stripe = ColorRect.new()
-			_stripe.color = Color(1.0, 1.0, 1.0, 0.4)
-			_stripe.offset_left = color_rect.offset_left
-			_stripe.offset_right = color_rect.offset_right
-			_stripe.offset_top = -6.0
-			_stripe.offset_bottom = -2.0
-			add_child(_stripe)
+			sprite.modulate = Color(0.7, 0.72, 0.75, 1.0)
 		_:
 			# Rainbow (animated in _process)
-			_stripe = ColorRect.new()
-			_stripe.offset_left = color_rect.offset_left
-			_stripe.offset_right = color_rect.offset_right
-			_stripe.offset_top = -3.0
-			_stripe.offset_bottom = 3.0
-			add_child(_stripe)
+			sprite.modulate = Color.WHITE
 
 
 func _squash_bounce() -> void:
+	var base := sprite.scale
 	var tween := create_tween()
-	tween.tween_property(color_rect, "scale", Vector2(1.2, 0.7), 0.06).set_ease(Tween.EASE_OUT)
-	tween.tween_property(color_rect, "scale", Vector2(0.95, 1.1), 0.08).set_ease(Tween.EASE_OUT)
-	tween.tween_property(color_rect, "scale", Vector2(1.0, 1.0), 0.1).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_property(sprite, "scale", base * Vector2(1.2, 0.7), 0.06).set_ease(Tween.EASE_OUT)
+	tween.tween_property(sprite, "scale", base * Vector2(0.95, 1.1), 0.08).set_ease(Tween.EASE_OUT)
+	tween.tween_property(sprite, "scale", base, 0.1).set_ease(Tween.EASE_IN_OUT)
 
 
 func _edge_squash() -> void:
@@ -277,11 +253,10 @@ func _on_bomb_hit() -> void:
 	# Shrink to 60% width
 	var normal_w := GameManager.get_catcher_width()
 	var shrunk_w := normal_w * 0.6
-	color_rect.offset_left = -shrunk_w / 2.0
-	color_rect.offset_right = shrunk_w / 2.0
-	collision_shape.shape.size = Vector2(shrunk_w, 20.0)
+	sprite.scale = Vector2(shrunk_w / SPRITE_NATIVE_W, CATCHER_HEIGHT / SPRITE_NATIVE_H)
+	collision_shape.shape.size = Vector2(shrunk_w, CATCHER_HEIGHT)
 	# Flash red (restore happens via _apply_upgrades after timer)
-	color_rect.color = Color(1.0, 0.2, 0.1, 1.0)
+	sprite.modulate = Color(1.0, 0.2, 0.1, 1.0)
 	# Restore after 3 seconds
 	get_tree().create_timer(3.0).timeout.connect(func() -> void:
 		_bomb_shrink_active = false
