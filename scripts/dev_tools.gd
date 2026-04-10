@@ -10,11 +10,12 @@ const COMMANDS_PATH: String = "user://devtools_commands.json"
 const RESULTS_PATH: String = "user://devtools_results.json"
 const LOG_PATH: String = "user://devtools_log.jsonl"
 const COIN_TYPE_MAP: Dictionary = {
-	"SILVER": 0,
-	"GOLD": 1,
-	"FRENZY": 2,
-	"BOMB": 3,
-	"MULTI": 4,
+	"COPPER": 0,
+	"SILVER": 1,
+	"GOLD": 2,
+	"FRENZY": 3,
+	"BOMB": 4,
+	"MULTI": 5,
 }
 
 # --- Variables ---

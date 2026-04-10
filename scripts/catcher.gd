@@ -3,18 +3,20 @@ extends Area2D
 @export var floating_text_scene: PackedScene
 
 const BURST_COLORS: Dictionary = {
-	0: Color(1.0, 0.84, 0.0, 0.9),   # SILVER -> gold
-	1: Color(1.0, 0.95, 0.4, 0.9),   # GOLD -> bright yellow
-	2: Color(0.3, 1.0, 0.4, 0.9),    # FRENZY -> green
-	3: Color(1.0, 0.2, 0.1, 0.9),    # BOMB -> red
-	4: Color(0.3, 0.85, 1.0, 0.9),   # MULTI -> cyan
+	0: Color(0.8, 0.5, 0.2, 0.9),    # COPPER -> copper brown
+	1: Color(1.0, 0.84, 0.0, 0.9),   # SILVER -> gold
+	2: Color(1.0, 0.95, 0.4, 0.9),   # GOLD -> bright yellow
+	3: Color(0.3, 1.0, 0.4, 0.9),    # FRENZY -> green
+	4: Color(1.0, 0.2, 0.1, 0.9),    # BOMB -> red
+	5: Color(0.3, 0.85, 1.0, 0.9),   # MULTI -> cyan
 }
 const BURST_TEXTURES: Dictionary = {
 	0: preload("res://assets/textures/star_yellow.png"),
 	1: preload("res://assets/textures/star_yellow.png"),
-	2: preload("res://assets/textures/star_green.png"),
-	3: preload("res://assets/textures/star_red.png"),
-	4: preload("res://assets/textures/star_blue.png"),
+	2: preload("res://assets/textures/star_yellow.png"),
+	3: preload("res://assets/textures/star_green.png"),
+	4: preload("res://assets/textures/star_red.png"),
+	5: preload("res://assets/textures/star_blue.png"),
 }
 const TRAIL_TEXTURE_BLUE: Texture2D = preload("res://assets/textures/star_blue.png")
 const TRAIL_TEXTURE_GREEN: Texture2D = preload("res://assets/textures/star_green.png")
@@ -203,28 +205,28 @@ func _spawn_collect_burst(at_position: Vector2, coin_type: int = 0) -> void:
 		burst.scale_amount_max = 5.0
 	# Per-type tuning
 	match coin_type:
-		1:  # GOLD — more particles
+		2:  # GOLD — more particles
 			burst.amount = 18
 			burst.spread = 180.0
 			burst.initial_velocity_min = 80.0
 			burst.initial_velocity_max = 180.0
-		2:  # FRENZY — faster burst
+		3:  # FRENZY — faster burst
 			burst.amount = 12
 			burst.spread = 180.0
 			burst.initial_velocity_min = 120.0
 			burst.initial_velocity_max = 250.0
-		3:  # BOMB — wider spread, heavier gravity
+		4:  # BOMB — wider spread, heavier gravity
 			burst.amount = 12
 			burst.spread = 360.0
 			burst.initial_velocity_min = 60.0
 			burst.initial_velocity_max = 200.0
 			burst.gravity = Vector2(0, 400)
-		4:  # MULTI — wide cyan burst
+		5:  # MULTI — wide cyan burst
 			burst.amount = 20
 			burst.spread = 360.0
 			burst.initial_velocity_min = 100.0
 			burst.initial_velocity_max = 220.0
-		_:  # SILVER — default
+		_:  # COPPER/SILVER — default
 			burst.amount = 12
 			burst.spread = 180.0
 			burst.initial_velocity_min = 80.0

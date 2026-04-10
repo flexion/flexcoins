@@ -15,6 +15,7 @@ const UPGRADE_ICONS: Dictionary = {
 	"catcher_speed": preload("res://assets/textures/icon_arrow_up.png"),
 	"catcher_width": preload("res://assets/textures/icon_arrow_right.png"),
 	"auto_catcher": preload("res://assets/textures/icon_arrow_left.png"),
+	"coin_types": preload("res://assets/textures/icon_circle.png"),
 }
 # Flexion brand colors for buy button states
 const COLOR_GREEN := Color(0.231, 0.698, 0.451, 1.0)            # #3BB273
@@ -80,13 +81,35 @@ func _update_display() -> void:
 		return
 	var data: Dictionary = GameManager.UPGRADE_DATA[upgrade_id]
 	var level: int = GameManager.get_upgrade_level(upgrade_id)
-	var cost: int = GameManager.get_upgrade_cost(upgrade_id)
+	var is_maxed: bool = data.has("max_level") and level >= data.max_level
 	name_label.text = data.name
-	effect_label.text = data.description
-	buy_button.text = _format_cost(cost)
-	var affordable := GameManager.currency >= cost
-	_update_afford_cue(affordable)
+	effect_label.text = _get_effect_description(data, level, is_maxed)
+	if is_maxed:
+		buy_button.text = "MAXED"
+		buy_button.disabled = true
+		modulate.a = 0.85
+		_apply_buy_style(_style_unafford)
+		_stop_pulse()
+	else:
+		buy_button.disabled = false
+		var cost: int = GameManager.get_upgrade_cost(upgrade_id)
+		buy_button.text = _format_cost(cost)
+		var affordable := GameManager.currency >= cost
+		_update_afford_cue(affordable)
 	_update_segments(level)
+
+
+func _get_effect_description(data: Dictionary, level: int, is_maxed: bool) -> String:
+	if upgrade_id != "coin_types":
+		return data.description
+	if is_maxed:
+		return "All coins unlocked!"
+	match level:
+		0: return "Next: Silver coins"
+		1: return "Next: Frenzy & Bomb coins"
+		2: return "Next: Gold coins"
+		3: return "Next: Multi coins"
+	return data.description
 
 
 func _setup_icon() -> void:
@@ -111,12 +134,12 @@ func _setup_icon() -> void:
 func _setup_sounds() -> void:
 	_purchase_sound = AudioStreamPlayer.new()
 	_purchase_sound.stream = preload("res://assets/sounds/tap-a.ogg")
-	_purchase_sound.volume_db = -6.0
+	_purchase_sound.volume_db = -30.0
 	add_child(_purchase_sound)
 
 	_reject_sound = AudioStreamPlayer.new()
 	_reject_sound.stream = preload("res://assets/sounds/tap-b.ogg")
-	_reject_sound.volume_db = -6.0
+	_reject_sound.volume_db = -30.0
 	add_child(_reject_sound)
 
 

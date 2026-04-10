@@ -1,10 +1,11 @@
 extends Area2D
 
-enum CoinType { SILVER, GOLD, FRENZY, BOMB, MULTI }
+enum CoinType { COPPER, SILVER, GOLD, FRENZY, BOMB, MULTI }
 
 const TEXTURE_GOLD: Texture2D = preload("res://flexcoin.png")
 const TEXTURE_SILVER: Texture2D = preload("res://flexcoin-silver.png")
 const TEXTURE_MULTI: Texture2D = preload("res://flexcoin-multi.png")
+const TEXTURE_COPPER: Texture2D = preload("res://flexcoin-copper.png")
 const COIN_SCENE: PackedScene = preload("res://scenes/coin.tscn")
 const SHIMMER_MIN_INTERVAL: float = 2.0
 const SHIMMER_MAX_INTERVAL: float = 4.0
@@ -13,7 +14,7 @@ const SHIMMER_DURATION: float = 0.25
 
 @export var fall_speed: float = 300.0
 var value: int = 1
-var coin_type: CoinType = CoinType.SILVER
+var coin_type: CoinType = CoinType.COPPER
 
 var _collected: bool = false
 var _current_speed: float = 0.0
@@ -37,27 +38,29 @@ func _ready() -> void:
 	_rotation_speed = randf_range(-1.5, 1.5)
 	_current_speed = fall_speed * 0.15
 
-	if coin_type == CoinType.SILVER:
+	if coin_type == CoinType.COPPER:
+		sprite.texture = TEXTURE_COPPER
+	elif coin_type == CoinType.SILVER:
 		sprite.texture = TEXTURE_SILVER
 	elif coin_type == CoinType.MULTI:
 		sprite.texture = TEXTURE_MULTI
 
 	match coin_type:
+		CoinType.COPPER:
+			pass
+		CoinType.SILVER:
+			pass
 		CoinType.GOLD:
 			value *= 5
 			fall_speed *= 1.5
-			modulate = Color(1.0, 0.9, 0.3, 1.0)
 		CoinType.FRENZY:
 			value = 0
-			modulate = Color(0.3, 1.0, 0.4, 1.0)
 		CoinType.BOMB:
 			value = 0
 			fall_speed *= 0.8
-			modulate = Color(1.0, 0.25, 0.2, 1.0)
 		CoinType.MULTI:
 			value = 0
 			fall_speed *= 0.9
-			modulate = Color(0.3, 0.85, 1.0, 1.0)
 			_split_delay = randf_range(1.5, 2.5)
 
 	_add_glow()
@@ -118,6 +121,8 @@ func _add_glow() -> void:
 	glow.texture = sprite.texture
 	glow.scale = Vector2(0.55, 0.55)
 	match coin_type:
+		CoinType.COPPER:
+			glow.modulate = Color(0.8, 0.5, 0.2, 0.25)
 		CoinType.GOLD:
 			glow.modulate = Color(1.0, 0.9, 0.3, 0.3)
 		CoinType.FRENZY:
@@ -126,8 +131,8 @@ func _add_glow() -> void:
 			glow.modulate = Color(1.0, 0.2, 0.1, 0.3)
 		CoinType.MULTI:
 			glow.modulate = Color(0.3, 0.85, 1.0, 0.35)
-		_:
-			glow.modulate = Color(1.0, 0.84, 0.0, 0.2)
+		CoinType.SILVER:
+			glow.modulate = Color(1.0, 0.84, 0.0, 0.25)
 	glow.z_index = -1
 	add_child(glow)
 	_glow_sprite = glow
@@ -165,6 +170,9 @@ func _add_trail() -> void:
 	trail.angular_velocity_min = -120.0
 	trail.angular_velocity_max = 120.0
 	match coin_type:
+		CoinType.COPPER:
+			trail.texture = preload("res://assets/textures/star_yellow.png")
+			trail.color_ramp = _make_sparkle_gradient(Color(0.9, 0.6, 0.3, 0.8), Color(0.7, 0.4, 0.1, 0.0))
 		CoinType.GOLD:
 			trail.texture = preload("res://assets/textures/star_yellow.png")
 			trail.color_ramp = _make_sparkle_gradient(Color(1.0, 0.95, 0.5, 0.9), Color(1.0, 0.85, 0.3, 0.0))
@@ -177,7 +185,7 @@ func _add_trail() -> void:
 		CoinType.MULTI:
 			trail.texture = preload("res://assets/textures/star_blue.png")
 			trail.color_ramp = _make_sparkle_gradient(Color(0.3, 0.85, 1.0, 0.9), Color(0.2, 0.7, 1.0, 0.0))
-		_:
+		CoinType.SILVER:
 			trail.texture = preload("res://assets/textures/star_yellow.png")
 			trail.color_ramp = _make_sparkle_gradient(Color(1.0, 0.9, 0.3, 0.8), Color(1.0, 0.7, 0.1, 0.0))
 	trail.show_behind_parent = true
@@ -219,12 +227,7 @@ func _update_split_buildup(progress: float) -> void:
 	# Final flash — coin goes white-hot in the last 15%
 	if t > 0.85:
 		var flash: float = (t - 0.85) / 0.15
-		modulate = Color(
-			lerpf(0.3, 1.0, flash),
-			lerpf(0.85, 1.0, flash),
-			1.0,
-			1.0
-		)
+		modulate = Color(1.0, 1.0, 1.0, lerpf(1.0, 1.5, flash))
 
 
 func _spawn_split_burst() -> void:

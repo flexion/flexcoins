@@ -4,9 +4,14 @@ extends Node2D
 @export var margin: float = 40.0
 
 var _normal_interval: float = 0.0
+var _spawn_sound: AudioStreamPlayer
 
 
 func _ready() -> void:
+	_spawn_sound = AudioStreamPlayer.new()
+	_spawn_sound.stream = preload("res://sounds/coin.wav")
+	_spawn_sound.volume_db = -30.0
+	add_child(_spawn_sound)
 	_normal_interval = GameManager.get_spawn_interval()
 	$Timer.wait_time = _normal_interval
 	$Timer.start()
@@ -39,18 +44,53 @@ func _on_timer_timeout() -> void:
 	var viewport_width := get_viewport_rect().size.x
 	coin.position = Vector2(randf_range(margin, viewport_width - margin), -50.0)
 
-	# Determine coin type: 5% frenzy, 8% bomb, 5% multi, 10% gold, rest silver
-	var roll := randf()
-	if roll < 0.05:
-		coin.coin_type = coin.CoinType.FRENZY
-	elif roll < 0.13:
-		coin.coin_type = coin.CoinType.BOMB
-	elif roll < 0.18:
-		coin.coin_type = coin.CoinType.MULTI
-	elif roll < 0.28:
-		coin.coin_type = coin.CoinType.GOLD
+	coin.coin_type = _roll_coin_type(coin)
 
 	get_parent().add_child(coin)
+	_spawn_sound.play()
+
+
+func _roll_coin_type(coin: Area2D) -> int:
+	var level: int = GameManager.get_coin_type_unlock_level()
+	var roll := randf()
+	# Rates descend by unlock order: Copper > Silver > Frenzy/Bomb > Gold > Multi
+	match level:
+		0:
+			return coin.CoinType.COPPER
+		1:
+			if roll < 0.70:
+				return coin.CoinType.COPPER
+			return coin.CoinType.SILVER
+		2:
+			if roll < 0.12:
+				return coin.CoinType.FRENZY
+			elif roll < 0.20:
+				return coin.CoinType.BOMB
+			elif roll < 0.75:
+				return coin.CoinType.COPPER
+			return coin.CoinType.SILVER
+		3:
+			if roll < 0.10:
+				return coin.CoinType.FRENZY
+			elif roll < 0.18:
+				return coin.CoinType.BOMB
+			elif roll < 0.25:
+				return coin.CoinType.GOLD
+			elif roll < 0.70:
+				return coin.CoinType.COPPER
+			return coin.CoinType.SILVER
+		_:
+			if roll < 0.10:
+				return coin.CoinType.FRENZY
+			elif roll < 0.18:
+				return coin.CoinType.BOMB
+			elif roll < 0.23:
+				return coin.CoinType.MULTI
+			elif roll < 0.30:
+				return coin.CoinType.GOLD
+			elif roll < 0.70:
+				return coin.CoinType.COPPER
+			return coin.CoinType.SILVER
 
 
 func _on_shop_opened() -> void:

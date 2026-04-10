@@ -92,11 +92,11 @@ func _ready() -> void:
 func _setup_ui_sounds() -> void:
 	_snd_click = AudioStreamPlayer.new()
 	_snd_click.stream = preload("res://assets/sounds/click-a.ogg")
-	_snd_click.volume_db = -6.0
+	_snd_click.volume_db = -30.0
 	add_child(_snd_click)
 	_snd_switch = AudioStreamPlayer.new()
 	_snd_switch.stream = preload("res://assets/sounds/switch-a.ogg")
-	_snd_switch.volume_db = -6.0
+	_snd_switch.volume_db = -30.0
 	add_child(_snd_switch)
 
 

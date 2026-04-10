@@ -139,79 +139,189 @@ func test_speed_ramp_converges() -> String:
 # From coin.gd:87-90 — coin_missed emits only for SILVER and GOLD
 
 func _should_emit_missed(collected: bool, coin_type: int) -> bool:
-	return not collected and coin_type != 2 and coin_type != 3 and coin_type != 4
+	return not collected and coin_type != 3 and coin_type != 4 and coin_type != 5
+
+
+func test_copper_emits_missed_on_exit() -> String:
+	return _T.assert_true(_should_emit_missed(false, 0), "Copper should emit coin_missed on screen exit")
 
 
 func test_silver_emits_missed_on_exit() -> String:
-	return _T.assert_true(_should_emit_missed(false, 0), "Silver should emit coin_missed on screen exit")
+	return _T.assert_true(_should_emit_missed(false, 1), "Silver should emit coin_missed on screen exit")
 
 
 func test_gold_emits_missed_on_exit() -> String:
-	return _T.assert_true(_should_emit_missed(false, 1), "Gold should emit coin_missed on screen exit")
+	return _T.assert_true(_should_emit_missed(false, 2), "Gold should emit coin_missed on screen exit")
 
 
 func test_frenzy_does_not_emit_missed() -> String:
-	return _T.assert_false(_should_emit_missed(false, 2), "Frenzy should NOT emit coin_missed")
+	return _T.assert_false(_should_emit_missed(false, 3), "Frenzy should NOT emit coin_missed")
 
 
 func test_bomb_does_not_emit_missed() -> String:
-	return _T.assert_false(_should_emit_missed(false, 3), "Bomb should NOT emit coin_missed")
+	return _T.assert_false(_should_emit_missed(false, 4), "Bomb should NOT emit coin_missed")
 
 
 func test_multi_does_not_emit_missed() -> String:
-	return _T.assert_false(_should_emit_missed(false, 4), "Multi should NOT emit coin_missed")
+	return _T.assert_false(_should_emit_missed(false, 5), "Multi should NOT emit coin_missed")
 
 
 func test_collected_coin_does_not_emit_missed() -> String:
 	var collected: bool = true
-	var coin_type: int = 0  # SILVER
-	var should_emit: bool = not collected and coin_type != 2 and coin_type != 3
+	var coin_type: int = 1  # SILVER
+	var should_emit: bool = not collected and coin_type != 3 and coin_type != 4 and coin_type != 5
 	return _T.assert_false(should_emit, "Collected coin should NOT emit coin_missed")
 
 
 # ============= Coin Spawner Type Distribution =============
-# From coin_spawner.gd:42-49 — 5% frenzy, 8% bomb, 10% gold, 77% silver
+# From coin_spawner.gd — coin type distribution varies by unlock level (0-4)
 
-func _roll_coin_type(roll: float) -> String:
-	if roll < 0.05:
-		return "FRENZY"
-	elif roll < 0.13:
-		return "BOMB"
-	elif roll < 0.23:
-		return "GOLD"
-	return "SILVER"
+func _roll_coin_type(roll: float, unlock_level: int) -> String:
+	# Rates descend by unlock order: Copper > Silver > Frenzy/Bomb > Gold > Multi
+	match unlock_level:
+		0:
+			return "COPPER"
+		1:
+			if roll < 0.70:
+				return "COPPER"
+			return "SILVER"
+		2:
+			if roll < 0.12:
+				return "FRENZY"
+			elif roll < 0.20:
+				return "BOMB"
+			elif roll < 0.75:
+				return "COPPER"
+			return "SILVER"
+		3:
+			if roll < 0.10:
+				return "FRENZY"
+			elif roll < 0.18:
+				return "BOMB"
+			elif roll < 0.25:
+				return "GOLD"
+			elif roll < 0.70:
+				return "COPPER"
+			return "SILVER"
+		_:
+			if roll < 0.10:
+				return "FRENZY"
+			elif roll < 0.18:
+				return "BOMB"
+			elif roll < 0.23:
+				return "MULTI"
+			elif roll < 0.30:
+				return "GOLD"
+			elif roll < 0.70:
+				return "COPPER"
+			return "SILVER"
 
 
-func test_spawn_roll_frenzy_at_0() -> String:
-	return _T.assert_eq(_roll_coin_type(0.0), "FRENZY", "Roll 0.0 -> FRENZY")
+func test_spawn_roll_level0_all_copper() -> String:
+	return _T.assert_eq(_roll_coin_type(0.0, 0), "COPPER", "Level 0: all rolls -> COPPER")
 
 
-func test_spawn_roll_frenzy_at_edge() -> String:
-	return _T.assert_eq(_roll_coin_type(0.049), "FRENZY", "Roll 0.049 -> FRENZY")
+func test_spawn_roll_level0_high_roll_copper() -> String:
+	return _T.assert_eq(_roll_coin_type(0.99, 0), "COPPER", "Level 0: roll 0.99 -> COPPER")
 
 
-func test_spawn_roll_bomb_at_0_05() -> String:
-	return _T.assert_eq(_roll_coin_type(0.05), "BOMB", "Roll 0.05 -> BOMB")
+func test_spawn_roll_level1_copper() -> String:
+	return _T.assert_eq(_roll_coin_type(0.0, 1), "COPPER", "Level 1: roll 0.0 -> COPPER")
 
 
-func test_spawn_roll_bomb_at_edge() -> String:
-	return _T.assert_eq(_roll_coin_type(0.129), "BOMB", "Roll 0.129 -> BOMB")
+func test_spawn_roll_level1_silver() -> String:
+	return _T.assert_eq(_roll_coin_type(0.80, 1), "SILVER", "Level 1: roll 0.80 -> SILVER")
 
 
-func test_spawn_roll_gold_at_0_13() -> String:
-	return _T.assert_eq(_roll_coin_type(0.13), "GOLD", "Roll 0.13 -> GOLD")
+func test_spawn_roll_level2_frenzy() -> String:
+	return _T.assert_eq(_roll_coin_type(0.0, 2), "FRENZY", "Level 2: roll 0.0 -> FRENZY")
 
 
-func test_spawn_roll_gold_at_edge() -> String:
-	return _T.assert_eq(_roll_coin_type(0.229), "GOLD", "Roll 0.229 -> GOLD")
+func test_spawn_roll_level2_bomb() -> String:
+	return _T.assert_eq(_roll_coin_type(0.15, 2), "BOMB", "Level 2: roll 0.15 -> BOMB")
 
 
-func test_spawn_roll_silver_at_0_23() -> String:
-	return _T.assert_eq(_roll_coin_type(0.23), "SILVER", "Roll 0.23 -> SILVER")
+func test_spawn_roll_level2_copper() -> String:
+	return _T.assert_eq(_roll_coin_type(0.50, 2), "COPPER", "Level 2: roll 0.50 -> COPPER")
 
 
-func test_spawn_roll_silver_at_1() -> String:
-	return _T.assert_eq(_roll_coin_type(0.99), "SILVER", "Roll 0.99 -> SILVER")
+func test_spawn_roll_level2_silver() -> String:
+	return _T.assert_eq(_roll_coin_type(0.80, 2), "SILVER", "Level 2: roll 0.80 -> SILVER")
+
+
+func test_spawn_roll_level3_frenzy() -> String:
+	return _T.assert_eq(_roll_coin_type(0.0, 3), "FRENZY", "Level 3: roll 0.0 -> FRENZY")
+
+
+func test_spawn_roll_level3_bomb() -> String:
+	return _T.assert_eq(_roll_coin_type(0.12, 3), "BOMB", "Level 3: roll 0.12 -> BOMB")
+
+
+func test_spawn_roll_level3_gold() -> String:
+	return _T.assert_eq(_roll_coin_type(0.20, 3), "GOLD", "Level 3: roll 0.20 -> GOLD")
+
+
+func test_spawn_roll_level3_copper() -> String:
+	return _T.assert_eq(_roll_coin_type(0.50, 3), "COPPER", "Level 3: roll 0.50 -> COPPER")
+
+
+func test_spawn_roll_level3_silver() -> String:
+	return _T.assert_eq(_roll_coin_type(0.80, 3), "SILVER", "Level 3: roll 0.80 -> SILVER")
+
+
+func test_spawn_roll_level4_frenzy() -> String:
+	return _T.assert_eq(_roll_coin_type(0.0, 4), "FRENZY", "Level 4: roll 0.0 -> FRENZY")
+
+
+func test_spawn_roll_level4_bomb() -> String:
+	return _T.assert_eq(_roll_coin_type(0.12, 4), "BOMB", "Level 4: roll 0.12 -> BOMB")
+
+
+func test_spawn_roll_level4_multi() -> String:
+	return _T.assert_eq(_roll_coin_type(0.20, 4), "MULTI", "Level 4: roll 0.20 -> MULTI")
+
+
+func test_spawn_roll_level4_gold() -> String:
+	return _T.assert_eq(_roll_coin_type(0.25, 4), "GOLD", "Level 4: roll 0.25 -> GOLD")
+
+
+func test_spawn_roll_level4_copper() -> String:
+	return _T.assert_eq(_roll_coin_type(0.50, 4), "COPPER", "Level 4: roll 0.50 -> COPPER")
+
+
+func test_spawn_roll_level4_silver() -> String:
+	return _T.assert_eq(_roll_coin_type(0.80, 4), "SILVER", "Level 4: roll 0.80 -> SILVER")
+
+
+func test_spawn_roll_level_10_same_as_4() -> String:
+	var result: String = _T.assert_eq(_roll_coin_type(0.0, 10), "FRENZY", "Level 10 roll 0.0 -> FRENZY (same as level 4)")
+	if result != "":
+		return result
+	result = _T.assert_eq(_roll_coin_type(0.12, 10), "BOMB", "Level 10 roll 0.12 -> BOMB")
+	if result != "":
+		return result
+	result = _T.assert_eq(_roll_coin_type(0.20, 10), "MULTI", "Level 10 roll 0.20 -> MULTI")
+	if result != "":
+		return result
+	result = _T.assert_eq(_roll_coin_type(0.25, 10), "GOLD", "Level 10 roll 0.25 -> GOLD")
+	if result != "":
+		return result
+	result = _T.assert_eq(_roll_coin_type(0.50, 10), "COPPER", "Level 10 roll 0.50 -> COPPER")
+	if result != "":
+		return result
+	return _T.assert_eq(_roll_coin_type(0.80, 10), "SILVER", "Level 10 roll 0.80 -> SILVER")
+
+
+func test_copper_value_base() -> String:
+	var gm: Node = _make_gm()
+	var result: String = _T.assert_eq(gm.get_coin_value(), 1, "Copper base value is 1")
+	_free_gm(gm)
+	return result
+
+
+func test_copper_speed_default() -> String:
+	var fall_speed: float = 300.0
+	return _T.assert_float_eq(fall_speed, 300.0, 0.001, "Copper uses default fall speed")
 
 
 # ============= Frenzy Spawn Rate Acceleration =============
