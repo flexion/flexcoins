@@ -1,0 +1,21 @@
+{
+  "name": "Bomb Mechanics Test",
+  "description": "Set currency to 1000, spawn bomb on catcher, verify currency drops ~10%",
+  "steps": [
+    {"type": "wait", "seconds": 0.5, "comment": "Wait for game to stabilize"},
+    {"type": "command", "name": "reset-session", "comment": "Reset to clean state"},
+    {"type": "command", "name": "clear-coins", "comment": "Remove any falling coins"},
+    {"type": "wait", "seconds": 0.2},
+    {"type": "command", "name": "run-method", "node_path": "/root/GameManager", "method": "add_currency", "args": [1000], "comment": "Give 1000 currency"},
+    {"type": "wait", "seconds": 0.3},
+    {"type": "assert", "node": "/root/GameManager", "property": "currency", "equals": 1000},
+    {"type": "screenshot", "filename": "bomb_01_before.png"},
+    {"type": "command", "name": "spawn-coin-on-catcher", "coin_type": "BOMB", "comment": "Spawn bomb directly on catcher"},
+    {"type": "wait", "seconds": 1.0, "comment": "Wait for bomb to be collected"},
+    {"type": "screenshot", "filename": "bomb_02_after_hit.png"},
+    {"type": "assert", "node": "/root/GameManager", "property": "currency", "equals": 900},
+    {"type": "wait", "seconds": 3.5, "comment": "Wait for bomb penalty to expire"},
+    {"type": "screenshot", "filename": "bomb_03_recovered.png"},
+    {"type": "command", "name": "clear-coins"}
+  ]
+}

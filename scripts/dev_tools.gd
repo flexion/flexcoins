@@ -618,7 +618,7 @@ func _execute_sequence(sequence_id: String, steps: Array, timeout: float) -> voi
 
 
 func _cmd_spawn_coin(args: Dictionary) -> Dictionary:
-	var type_str: String = args.get("type", "SILVER").to_upper()
+	var type_str: String = args.get("type", args.get("coin_type", "SILVER")).to_upper()
 	if not COIN_TYPE_MAP.has(type_str):
 		return {"success": false, "message": "Unknown coin type: %s" % type_str}
 
@@ -653,7 +653,7 @@ func _cmd_spawn_coin_on_catcher(args: Dictionary) -> Dictionary:
 		return {"success": false, "message": "No catcher node found"}
 
 	var catcher: Node2D = catchers[0]
-	var type_str: String = args.get("type", "SILVER").to_upper()
+	var type_str: String = args.get("type", args.get("coin_type", "SILVER")).to_upper()
 	if not COIN_TYPE_MAP.has(type_str):
 		return {"success": false, "message": "Unknown coin type: %s" % type_str}
 

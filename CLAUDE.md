@@ -43,6 +43,18 @@ godot --headless --script res://tools/lint_project.gd -- --all --json
 godot --headless --script res://tools/lint_project.gd -- --all --fail-on-warn
 ```
 
+### Unit Tests (no game running needed)
+```bash
+# Run all unit tests
+godot --headless --script res://tools/run_tests.gd
+
+# JSON output for CI
+godot --headless --script res://tools/run_tests.gd -- --json
+
+# Filter specific test
+godot --headless --script res://tools/run_tests.gd -- --filter test_bomb
+```
+
 ### DevTools CLI (requires game running)
 ```bash
 # Check connection
@@ -136,9 +148,12 @@ python3 tools/devtools.py quit
 | `scripts/dev_tools.gd` | DevTools autoload (command handler) |
 | `scripts/scene_validator.gd` | Runtime scene validation (static + instantiation) |
 | `tools/lint_project.gd` | Headless UID/NodePath linter |
+| `tools/run_tests.gd` | Headless unit test runner (127 tests) |
 | `tools/devtools.py` | Python CLI client for DevTools |
+| `scripts/ci_test.sh` | CI orchestration (lint → tests → E2E) |
 | `.claude/commands/verify.md` | `/verify` command — automated pre-commit validation |
-| `test/sequences/*.json` | Input sequence test scripts |
+| `test/unit/*.gd` | Unit tests (GameManager, upgrade formulas) |
+| `test/sequences/*.json` | Input sequence E2E test scripts |
 
 ## Architecture
 
@@ -208,7 +223,7 @@ Tier progression is automatic and triggered in `catcher.gd:_update_catcher_visua
 
 **Ascension Effects:**
 - **Currency reset:** Resets to 0 coins
-- **Upgrade reset:** All core upgrades return to level 0 (magnet upgrade is **not** reset)
+- **Upgrade reset:** All upgrades return to level 0 (including magnet)
 - **Multiplier bonus:** Subsequent coins are worth `1.5^ascension_count` times base value
   - Example: After 3 ascensions, each coin is worth 1.5^3 = 3.375x multiplier applied to `get_coin_value()`
 - **Ascension count:** Increments by 1 (session-only, resets on restart)
@@ -216,7 +231,7 @@ Tier progression is automatic and triggered in `catcher.gd:_update_catcher_visua
 **Constants:**
 - `ASCEND_MIN_LEVEL`: 15 (minimum upgrade level required for all core upgrades)
 - `ASCEND_MULTIPLIER`: 1.5 (exponent base for multiplier calculation)
-- `CORE_UPGRADES`: `["spawn_rate", "coin_value", "catcher_speed", "catcher_width"]` (magnet excluded from requirements and reset)
+- `CORE_UPGRADES`: `["spawn_rate", "coin_value", "catcher_speed", "catcher_width"]` (magnet excluded from ascension requirements but still reset)
 
 **UI Integration:**
 - Ascend button created dynamically in `hud.gd:_create_ascension_ui()`

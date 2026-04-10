@@ -1,0 +1,26 @@
+{
+  "name": "Ascension Flow Test",
+  "description": "Set all core upgrades to level 15, verify can_ascend, trigger ascension, verify reset",
+  "steps": [
+    {"type": "wait", "seconds": 0.5, "comment": "Wait for game to stabilize"},
+    {"type": "command", "name": "reset-session", "comment": "Reset to clean state"},
+    {"type": "command", "name": "clear-coins", "comment": "Remove any falling coins"},
+    {"type": "wait", "seconds": 0.2},
+    {"type": "command", "name": "run-method", "node_path": "/root/GameManager", "method": "add_currency", "args": [50000], "comment": "Give plenty of currency"},
+    {"type": "command", "name": "set-upgrade-levels", "spawn_rate": 15, "coin_value": 15, "catcher_speed": 15, "catcher_width": 15, "comment": "Set all core upgrades to 15"},
+    {"type": "wait", "seconds": 0.3},
+    {"type": "screenshot", "filename": "ascension_01_ready.png"},
+    {"type": "command", "name": "get-state", "node_path": "/root/GameManager", "property": "ascension_count", "comment": "Should be 0 before ascend"},
+    {"type": "command", "name": "run-method", "node_path": "/root/GameManager", "method": "can_ascend", "comment": "Verify can_ascend returns true"},
+    {"type": "command", "name": "run-method", "node_path": "/root/GameManager", "method": "try_ascend", "comment": "Trigger ascension"},
+    {"type": "wait", "seconds": 1.0, "comment": "Wait for ascension animation"},
+    {"type": "screenshot", "filename": "ascension_02_ascended.png"},
+    {"type": "assert", "node": "/root/GameManager", "property": "ascension_count", "equals": 1},
+    {"type": "assert", "node": "/root/GameManager", "property": "currency", "equals": 0},
+    {"type": "command", "name": "get-state", "node_path": "/root/GameManager", "property": "ascension_count", "comment": "Should be 1 after ascend"},
+    {"type": "command", "name": "get-state", "node_path": "/root/GameManager", "property": "currency", "comment": "Should be 0 after ascend"},
+    {"type": "command", "name": "run-method", "node_path": "/root/GameManager", "method": "get_upgrade_level", "args": ["spawn_rate"], "comment": "Should return 0 after ascension reset"},
+    {"type": "screenshot", "filename": "ascension_03_final.png"},
+    {"type": "command", "name": "clear-coins"}
+  ]
+}
