@@ -229,6 +229,7 @@ Coins have a `CoinType` enum with four variants, each with distinct behaviors an
 | **GOLD** | 5x base value | 1.5x | Yellow-gold | Rare high-value coins, fall faster |
 | **FRENZY** | 0 (no currency gain) | 1.0x | Green | Triggers 5-second frenzy mode, spawns increased coin rate |
 | **BOMB** | 0 (no currency gain) | 0.8x | Red | Reduces catcher width to 60% for 3 seconds, deducts 10% of current currency |
+| **MULTI** | 0 (split coins carry value) | 0.9x | Cyan/teal | Splits into 3 silver coins on collection that scatter and can be caught again |
 
 All coin types display a glow effect and particle trail while falling. Coins spawn at random rotations and accelerate smoothly from 15% to full speed over the first frames. Spawn rates are controlled by the **spawn_rate** upgrade; actual coin type distribution is randomized at spawn time.
 

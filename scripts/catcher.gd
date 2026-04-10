@@ -7,12 +7,14 @@ const BURST_COLORS: Dictionary = {
 	1: Color(1.0, 0.95, 0.4, 0.9),   # GOLD -> bright yellow
 	2: Color(0.3, 1.0, 0.4, 0.9),    # FRENZY -> green
 	3: Color(1.0, 0.2, 0.1, 0.9),    # BOMB -> red
+	4: Color(0.3, 0.85, 1.0, 0.9),   # MULTI -> cyan
 }
 const BURST_TEXTURES: Dictionary = {
 	0: preload("res://assets/textures/star_yellow.png"),
 	1: preload("res://assets/textures/star_yellow.png"),
 	2: preload("res://assets/textures/star_green.png"),
 	3: preload("res://assets/textures/star_red.png"),
+	4: preload("res://assets/textures/star_blue.png"),
 }
 const TRAIL_TEXTURE_BLUE: Texture2D = preload("res://assets/textures/star_blue.png")
 const TRAIL_TEXTURE_GREEN: Texture2D = preload("res://assets/textures/star_green.png")
@@ -217,6 +219,11 @@ func _spawn_collect_burst(at_position: Vector2, coin_type: int = 0) -> void:
 			burst.initial_velocity_min = 60.0
 			burst.initial_velocity_max = 200.0
 			burst.gravity = Vector2(0, 400)
+		4:  # MULTI — wide cyan burst
+			burst.amount = 20
+			burst.spread = 360.0
+			burst.initial_velocity_min = 100.0
+			burst.initial_velocity_max = 220.0
 		_:  # SILVER — default
 			burst.amount = 12
 			burst.spread = 180.0

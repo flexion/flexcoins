@@ -39,13 +39,15 @@ func _on_timer_timeout() -> void:
 	var viewport_width := get_viewport_rect().size.x
 	coin.position = Vector2(randf_range(margin, viewport_width - margin), -50.0)
 
-	# Determine coin type: 5% frenzy, 8% bomb, 10% gold, rest silver
+	# Determine coin type: 5% frenzy, 8% bomb, 5% multi, 10% gold, rest silver
 	var roll := randf()
 	if roll < 0.05:
 		coin.coin_type = coin.CoinType.FRENZY
 	elif roll < 0.13:
 		coin.coin_type = coin.CoinType.BOMB
-	elif roll < 0.23:
+	elif roll < 0.18:
+		coin.coin_type = coin.CoinType.MULTI
+	elif roll < 0.28:
 		coin.coin_type = coin.CoinType.GOLD
 
 	get_parent().add_child(coin)

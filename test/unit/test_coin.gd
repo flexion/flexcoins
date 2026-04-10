@@ -1,8 +1,7 @@
 extends RefCounted
 
 ## Unit tests for coin mechanics (scripts/coin.gd).
-## Tests coin type value/speed multipliers, magnet attraction formula,
-## and screen exit behavior logic.
+## Tests coin type value/speed multipliers and screen exit behavior logic.
 
 var _T: GDScript
 var _gm_script: GDScript
@@ -66,6 +65,11 @@ func test_bomb_value_always_zero() -> String:
 	return _T.assert_eq(0, 0, "Bomb coin value is always 0")
 
 
+func test_multi_value_always_zero() -> String:
+	# MULTI coins set value = 0 (split coins carry the value)
+	return _T.assert_eq(0, 0, "Multi coin value is always 0")
+
+
 # ============= Coin Type Speed Multipliers =============
 # From coin.gd:42,49 — fall_speed adjustments
 
@@ -91,6 +95,12 @@ func test_frenzy_speed_default() -> String:
 	# FRENZY: no speed modification
 	var fall_speed: float = 300.0
 	return _T.assert_float_eq(fall_speed, 300.0, 0.001, "Frenzy uses default fall speed")
+
+
+func test_multi_speed_0_9x() -> String:
+	var fall_speed: float = 300.0
+	fall_speed *= 0.9
+	return _T.assert_float_eq(fall_speed, 270.0, 0.001, "Multi falls at 0.9x speed (slightly slower)")
 
 
 # ============= Speed Ramping Formula =============
@@ -128,33 +138,28 @@ func test_speed_ramp_converges() -> String:
 # ============= Screen Exit Behavior =============
 # From coin.gd:87-90 — coin_missed emits only for SILVER and GOLD
 
+func _should_emit_missed(collected: bool, coin_type: int) -> bool:
+	return not collected and coin_type != 2 and coin_type != 3 and coin_type != 4
+
+
 func test_silver_emits_missed_on_exit() -> String:
-	# SILVER: not collected, not FRENZY, not BOMB -> should emit coin_missed
-	var collected: bool = false
-	var coin_type: int = 0  # SILVER
-	var should_emit: bool = not collected and coin_type != 2 and coin_type != 3
-	return _T.assert_true(should_emit, "Silver should emit coin_missed on screen exit")
+	return _T.assert_true(_should_emit_missed(false, 0), "Silver should emit coin_missed on screen exit")
 
 
 func test_gold_emits_missed_on_exit() -> String:
-	var collected: bool = false
-	var coin_type: int = 1  # GOLD
-	var should_emit: bool = not collected and coin_type != 2 and coin_type != 3
-	return _T.assert_true(should_emit, "Gold should emit coin_missed on screen exit")
+	return _T.assert_true(_should_emit_missed(false, 1), "Gold should emit coin_missed on screen exit")
 
 
 func test_frenzy_does_not_emit_missed() -> String:
-	var collected: bool = false
-	var coin_type: int = 2  # FRENZY
-	var should_emit: bool = not collected and coin_type != 2 and coin_type != 3
-	return _T.assert_false(should_emit, "Frenzy should NOT emit coin_missed")
+	return _T.assert_false(_should_emit_missed(false, 2), "Frenzy should NOT emit coin_missed")
 
 
 func test_bomb_does_not_emit_missed() -> String:
-	var collected: bool = false
-	var coin_type: int = 3  # BOMB
-	var should_emit: bool = not collected and coin_type != 2 and coin_type != 3
-	return _T.assert_false(should_emit, "Bomb should NOT emit coin_missed")
+	return _T.assert_false(_should_emit_missed(false, 3), "Bomb should NOT emit coin_missed")
+
+
+func test_multi_does_not_emit_missed() -> String:
+	return _T.assert_false(_should_emit_missed(false, 4), "Multi should NOT emit coin_missed")
 
 
 func test_collected_coin_does_not_emit_missed() -> String:

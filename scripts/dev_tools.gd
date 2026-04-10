@@ -14,6 +14,7 @@ const COIN_TYPE_MAP: Dictionary = {
 	"GOLD": 1,
 	"FRENZY": 2,
 	"BOMB": 3,
+	"MULTI": 4,
 }
 
 # --- Variables ---
