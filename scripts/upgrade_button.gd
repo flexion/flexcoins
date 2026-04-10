@@ -102,7 +102,7 @@ func _setup_icon() -> void:
 	info_vbox.remove_child(name_label)
 	var icon := TextureRect.new()
 	icon.texture = UPGRADE_ICONS[upgrade_id]
-	icon.custom_minimum_size = Vector2(24.0, 24.0)
+	icon.custom_minimum_size = Vector2(40.0, 40.0)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	name_row.add_child(icon)
@@ -123,15 +123,15 @@ func _setup_sounds() -> void:
 
 func _create_segment_bar() -> void:
 	var bar := HBoxContainer.new()
-	bar.custom_minimum_size = Vector2(0.0, 6.0)
-	bar.add_theme_constant_override("separation", 3)
+	bar.custom_minimum_size = Vector2(0.0, 10.0)
+	bar.add_theme_constant_override("separation", 5)
 	# Insert between name and effect labels
 	var info_vbox: VBoxContainer = name_label.get_parent()
 	info_vbox.add_child(bar)
 	info_vbox.move_child(bar, name_label.get_index() + 1)
 	for i: int in range(SEGMENTS):
 		var seg := ColorRect.new()
-		seg.custom_minimum_size = Vector2(16.0, 6.0)
+		seg.custom_minimum_size = Vector2(28.0, 10.0)
 		seg.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		seg.color = EMPTY_COLOR
 		bar.add_child(seg)

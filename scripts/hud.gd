@@ -32,7 +32,7 @@ var _frenzy_tween: Tween
 var _shake_tween: Tween
 var _gear_button: Button
 var _settings_panel: PanelContainer
-var _settings_backdrop: Control
+var _settings_backdrop: ColorRect
 var _settings_open: bool = false
 var _settings_tween: Tween
 var _shop_backdrop: ColorRect
@@ -161,14 +161,14 @@ func _create_bottom_bar() -> void:
 	_bottom_bar.anchor_right = 0.5
 	_bottom_bar.anchor_top = 1.0
 	_bottom_bar.anchor_bottom = 1.0
-	_bottom_bar.offset_left = -90.0
-	_bottom_bar.offset_top = -50.0
-	_bottom_bar.offset_right = 90.0
+	_bottom_bar.offset_left = -125.0
+	_bottom_bar.offset_top = -65.0
+	_bottom_bar.offset_right = 125.0
 	_bottom_bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_bottom_bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	# Reparent ShopToggle into the bottom bar
 	shop_toggle.reparent(_bottom_bar)
-	shop_toggle.custom_minimum_size = Vector2(100, 40)
+	shop_toggle.custom_minimum_size = Vector2(160, 60)
 	# Move gear button from top-right into bottom bar
 	_gear_button.reparent(_bottom_bar)
 	_gear_button.anchors_preset = Control.PRESET_TOP_LEFT
@@ -178,7 +178,7 @@ func _create_bottom_bar() -> void:
 	_gear_button.offset_top = 0.0
 	_gear_button.offset_right = 0.0
 	_gear_button.offset_bottom = 0.0
-	_gear_button.custom_minimum_size = Vector2(50, 40)
+	_gear_button.custom_minimum_size = Vector2(70, 60)
 	_gear_button.grow_horizontal = Control.GROW_DIRECTION_END
 
 
@@ -207,7 +207,7 @@ func _create_shop_popup_ui() -> void:
 	var title: Label = Label.new()
 	title.text = "Shop"
 	title.add_theme_font_override("font", _display_font)
-	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_font_size_override("font_size", 44)
 	title.add_theme_color_override("font_color", Color(1.0, 0.84, 0.0, 1.0))
 	header.add_child(title)
 	var spacer: Control = Control.new()
@@ -216,8 +216,8 @@ func _create_shop_popup_ui() -> void:
 	_shop_close_button = Button.new()
 	_shop_close_button.theme = preload("res://assets/ui_theme.tres")
 	_shop_close_button.text = "\u2715"
-	_shop_close_button.add_theme_font_size_override("font_size", 20)
-	_shop_close_button.custom_minimum_size = Vector2(40, 40)
+	_shop_close_button.add_theme_font_size_override("font_size", 32)
+	_shop_close_button.custom_minimum_size = Vector2(60, 60)
 	_shop_close_button.pressed.connect(_close_shop)
 	header.add_child(_shop_close_button)
 	# Re-add scroll container below header
@@ -661,7 +661,7 @@ func _create_settings_ui() -> void:
 	# Gear button (top-right, replacing mute button position)
 	_gear_button = Button.new()
 	_gear_button.theme = preload("res://assets/ui_theme.tres")
-	_gear_button.add_theme_font_size_override("font_size", 22)
+	_gear_button.add_theme_font_size_override("font_size", 32)
 	_gear_button.text = "⚙"
 	_gear_button.pressed.connect(_on_gear_pressed)
 	add_child(_gear_button)
@@ -674,8 +674,9 @@ func _create_settings_ui() -> void:
 	_gear_button.offset_bottom = 55.0
 	_gear_button.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 
-	# Transparent backdrop for outside-tap detection
-	_settings_backdrop = Control.new()
+	# Semi-transparent backdrop (matches shop backdrop)
+	_settings_backdrop = ColorRect.new()
+	_settings_backdrop.color = Color(0.0, 0.0, 0.0, 0.5)
 	_settings_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	_settings_backdrop.visible = false
 	_settings_backdrop.z_index = 159
@@ -683,7 +684,7 @@ func _create_settings_ui() -> void:
 	_settings_backdrop.anchors_preset = Control.PRESET_FULL_RECT
 	_settings_backdrop.gui_input.connect(_on_backdrop_input)
 
-	# Settings panel
+	# Settings panel (centered popup, matches shop style)
 	_settings_panel = PanelContainer.new()
 	_settings_panel.theme = preload("res://assets/ui_theme.tres")
 	_settings_panel.z_index = 160
@@ -691,51 +692,79 @@ func _create_settings_ui() -> void:
 	_settings_panel.scale = Vector2(0.8, 0.8)
 	_settings_panel.modulate.a = 0.0
 	add_child(_settings_panel)
-	_settings_panel.anchors_preset = Control.PRESET_CENTER_BOTTOM
+	_settings_panel.anchors_preset = Control.PRESET_CENTER
 	_settings_panel.anchor_left = 0.5
 	_settings_panel.anchor_right = 0.5
-	_settings_panel.anchor_top = 1.0
-	_settings_panel.anchor_bottom = 1.0
-	_settings_panel.offset_left = -110.0
-	_settings_panel.offset_top = -170.0
-	_settings_panel.offset_right = 110.0
-	_settings_panel.offset_bottom = -55.0
+	_settings_panel.anchor_top = 0.5
+	_settings_panel.anchor_bottom = 0.5
+	_settings_panel.offset_left = -250.0
+	_settings_panel.offset_top = -160.0
+	_settings_panel.offset_right = 250.0
+	_settings_panel.offset_bottom = 160.0
+	_settings_panel.custom_minimum_size = Vector2(500, 320)
 	_settings_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_settings_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_settings_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 
 	var margin: MarginContainer = MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 10)
-	margin.add_theme_constant_override("margin_right", 10)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_top", 18)
+	margin.add_theme_constant_override("margin_bottom", 18)
 	_settings_panel.add_child(margin)
 
-	var vbox: VBoxContainer = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 6)
-	margin.add_child(vbox)
+	var wrapper: VBoxContainer = VBoxContainer.new()
+	wrapper.add_theme_constant_override("separation", 14)
+	margin.add_child(wrapper)
+
+	# Header row (matches shop header)
+	var header: HBoxContainer = HBoxContainer.new()
+	wrapper.add_child(header)
+	var title: Label = Label.new()
+	title.text = "Settings"
+	title.add_theme_font_override("font", _display_font)
+	title.add_theme_font_size_override("font_size", 44)
+	title.add_theme_color_override("font_color", Color(1.0, 0.84, 0.0, 1.0))
+	header.add_child(title)
+	var spacer: Control = Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(spacer)
+	var close_button: Button = Button.new()
+	close_button.theme = preload("res://assets/ui_theme.tres")
+	close_button.text = "\u2715"
+	close_button.add_theme_font_size_override("font_size", 32)
+	close_button.custom_minimum_size = Vector2(60, 60)
+	close_button.pressed.connect(_close_settings)
+	header.add_child(close_button)
+
+	# Settings options
+	var options_vbox: VBoxContainer = VBoxContainer.new()
+	options_vbox.add_theme_constant_override("separation", 12)
+	wrapper.add_child(options_vbox)
 
 	# Sound toggle
 	_sound_toggle = Button.new()
 	_sound_toggle.theme = preload("res://assets/ui_theme.tres")
-	_sound_toggle.add_theme_font_override("font", _narrow_font)
-	_sound_toggle.add_theme_font_size_override("font_size", 14)
+	_sound_toggle.add_theme_font_override("font", _display_font)
+	_sound_toggle.add_theme_font_size_override("font_size", 28)
+	_sound_toggle.custom_minimum_size = Vector2(0, 60)
 	_update_sound_toggle_text()
 	_sound_toggle.pressed.connect(_on_sound_toggle_pressed)
-	vbox.add_child(_sound_toggle)
+	options_vbox.add_child(_sound_toggle)
 
 	# Fullscreen toggle
 	_fullscreen_toggle = Button.new()
 	_fullscreen_toggle.theme = preload("res://assets/ui_theme.tres")
-	_fullscreen_toggle.add_theme_font_override("font", _narrow_font)
-	_fullscreen_toggle.add_theme_font_size_override("font_size", 14)
+	_fullscreen_toggle.add_theme_font_override("font", _display_font)
+	_fullscreen_toggle.add_theme_font_size_override("font_size", 28)
+	_fullscreen_toggle.custom_minimum_size = Vector2(0, 60)
 	_update_fullscreen_toggle_text()
 	_fullscreen_toggle.pressed.connect(_on_fullscreen_toggle_pressed)
-	vbox.add_child(_fullscreen_toggle)
+	options_vbox.add_child(_fullscreen_toggle)
 
-	# Set pivot for scale animation (top-right corner)
+	# Set pivot for center-scaling animation
 	await get_tree().process_frame
 	if is_instance_valid(_settings_panel):
-		_settings_panel.pivot_offset = Vector2(_settings_panel.size.x / 2.0, _settings_panel.size.y)
+		_settings_panel.pivot_offset = _settings_panel.size / 2.0
 
 
 func _on_gear_pressed() -> void:
@@ -755,22 +784,27 @@ func _open_settings() -> void:
 	_settings_panel.visible = true
 	_settings_panel.scale = Vector2(0.8, 0.8)
 	_settings_panel.modulate.a = 0.0
+	_settings_panel.pivot_offset = _settings_panel.size / 2.0
 	if _settings_tween and _settings_tween.is_running():
 		_settings_tween.kill()
 	_settings_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	_settings_tween.tween_property(_settings_panel, "scale", Vector2(1.0, 1.0), 0.15)
+	_settings_tween.tween_property(_settings_panel, "scale", Vector2(1.0, 1.0), 0.2)
 	_settings_tween.parallel().tween_property(_settings_panel, "modulate:a", 1.0, 0.15)
 
 
 func _close_settings() -> void:
+	if not _settings_open:
+		return
 	_settings_open = false
-	_settings_backdrop.visible = false
 	if _settings_tween and _settings_tween.is_running():
 		_settings_tween.kill()
 	_settings_tween = create_tween().set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
-	_settings_tween.tween_property(_settings_panel, "scale", Vector2(0.8, 0.8), 0.1)
-	_settings_tween.parallel().tween_property(_settings_panel, "modulate:a", 0.0, 0.1)
-	_settings_tween.tween_callback(func() -> void: _settings_panel.visible = false)
+	_settings_tween.tween_property(_settings_panel, "scale", Vector2(0.8, 0.8), 0.15)
+	_settings_tween.parallel().tween_property(_settings_panel, "modulate:a", 0.0, 0.15)
+	_settings_tween.tween_callback(func() -> void:
+		_settings_panel.visible = false
+		_settings_backdrop.visible = false
+	)
 
 
 func _on_backdrop_input(event: InputEvent) -> void:
