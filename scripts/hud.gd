@@ -8,6 +8,18 @@ var _ascension_label: Label
 var _ascend_button: Button
 var _combo_multiplier_label: Label
 var _combo_multiplier_glow_tween: Tween
+var _combo_color_tween: Tween
+var _combo_intro_tween: Tween
+var _combo_hide_tween: Tween
+var _combo_label: Label
+var _combo_pop_tween: Tween
+var _combo_shake_tween: Tween
+var _combo_pulse_tween: Tween
+var _combo_fade_timer: Timer
+var _combo_fade_tween: Tween
+var _combo_was_visible: bool = false
+var _combo_rainbow_time: float = 0.0
+var _combo_count: int = 0
 var _flash_tween: Tween
 var _milestone_tween: Tween
 var _shop_open: bool = false
@@ -43,6 +55,7 @@ func _ready() -> void:
 	GameManager.frenzy_ended.connect(_on_frenzy_ended)
 	GameManager.bomb_hit.connect(_on_bomb_hit)
 	GameManager.combo_multiplier_changed.connect(_on_combo_multiplier_changed)
+	GameManager.combo_changed.connect(_on_combo_changed)
 	currency_label.add_theme_font_override("font", _display_font)
 	currency_label.add_theme_font_size_override("font_size", 48)
 	_on_currency_changed(GameManager.currency)
@@ -56,6 +69,15 @@ func _ready() -> void:
 	_create_milestone_label()
 	_create_ascension_ui()
 	_create_combo_multiplier_badge()
+	_create_combo_label()
+
+
+func _process(delta: float) -> void:
+	# Rainbow combo label at 100+ combo
+	if _combo_count >= 100 and _combo_label.visible:
+		_combo_rainbow_time += delta * 1.5
+		_combo_label.add_theme_color_override("font_color", Color.from_hsv(fmod(_combo_rainbow_time * 2.0, 1.0), 0.8, 1.0))
+		_combo_label.add_theme_color_override("font_outline_color", Color.from_hsv(fmod(_combo_rainbow_time * 2.0 + 0.5, 1.0), 0.5, 1.0, 0.6))
 
 
 func _on_currency_changed(new_amount: int) -> void:
@@ -145,8 +167,13 @@ func _create_combo_multiplier_badge() -> void:
 	_combo_multiplier_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_combo_multiplier_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_combo_multiplier_label.add_theme_font_override("font", _display_font)
-	_combo_multiplier_label.add_theme_font_size_override("font_size", 36)
+	_combo_multiplier_label.add_theme_font_size_override("font_size", 42)
 	_combo_multiplier_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.0, 1.0))
+	_combo_multiplier_label.add_theme_constant_override("outline_size", 6)
+	_combo_multiplier_label.add_theme_color_override("font_outline_color", Color(0.6, 0.2, 0.0, 0.6))
+	_combo_multiplier_label.add_theme_constant_override("shadow_offset_x", 2)
+	_combo_multiplier_label.add_theme_constant_override("shadow_offset_y", 2)
+	_combo_multiplier_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.4))
 	_combo_multiplier_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_combo_multiplier_label.visible = false
 	_combo_multiplier_label.z_index = 150
@@ -164,31 +191,233 @@ func _create_combo_multiplier_badge() -> void:
 	_combo_multiplier_label.pivot_offset = _combo_multiplier_label.size / 2.0
 
 
+const COMBO_LABEL_TOP: float = 200.0
+const COMBO_TIER_COLORS: Array[Color] = [
+	Color(1.0, 1.0, 1.0, 0.9),    # white (combo 2-9)
+	Color(1.0, 1.0, 0.4, 0.9),    # yellow (combo 10-24)
+	Color(1.0, 0.7, 0.1, 0.9),    # orange (combo 25-49)
+	Color(1.0, 0.3, 0.1, 0.9),    # red (combo 50-99)
+]
+
+
+func _create_combo_label() -> void:
+	_combo_label = Label.new()
+	_combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_combo_label.add_theme_font_override("font", _display_font)
+	_combo_label.add_theme_font_size_override("font_size", 36)
+	_combo_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.9))
+	_combo_label.add_theme_constant_override("outline_size", 6)
+	_combo_label.add_theme_color_override("font_outline_color", Color(1.0, 0.8, 0.2, 0.6))
+	_combo_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_combo_label.z_index = 200
+	_combo_label.visible = false
+	_combo_label.modulate.a = 0.0
+	add_child(_combo_label)
+	_combo_label.anchors_preset = Control.PRESET_CENTER_TOP
+	_combo_label.offset_left = -200.0
+	_combo_label.offset_right = 200.0
+	_combo_label.offset_top = COMBO_LABEL_TOP
+	# Fade timer
+	_combo_fade_timer = Timer.new()
+	_combo_fade_timer.one_shot = true
+	_combo_fade_timer.wait_time = 3.0
+	_combo_fade_timer.timeout.connect(_fade_combo_label)
+	add_child(_combo_fade_timer)
+	# Set pivot after layout resolves
+	await get_tree().process_frame
+	if not is_instance_valid(_combo_label):
+		return
+	_combo_label.pivot_offset = _combo_label.size / 2.0
+
+
+func _on_combo_changed(count: int) -> void:
+	_combo_count = count
+	if _combo_fade_tween and _combo_fade_tween.is_valid():
+		_combo_fade_tween.kill()
+	if count >= 2:
+		_combo_label.text = "COMBO %d" % count
+		_combo_label.modulate.a = 1.0
+		_combo_fade_timer.start()
+
+		# Color progression
+		var combo_color: Color = _get_combo_color(count)
+		_combo_label.add_theme_color_override("font_color", combo_color)
+		_combo_label.add_theme_color_override("font_outline_color", Color(combo_color.r, combo_color.g, combo_color.b, 0.5))
+
+		# Dynamic font size (grows with combo, capped)
+		var dynamic_size: int = mini(36 + count / 4, 52)
+		_combo_label.add_theme_font_size_override("font_size", dynamic_size)
+
+		if not _combo_was_visible:
+			# First appearance: intro pop like frenzy (0.5 → 1.2 → 1.0 with looping pulse)
+			_combo_was_visible = true
+			_combo_label.visible = true
+			_combo_label.scale = Vector2(0.5, 0.5)
+			if _combo_pop_tween and _combo_pop_tween.is_valid():
+				_combo_pop_tween.kill()
+			_combo_label.pivot_offset = _combo_label.size / 2.0
+			_combo_pop_tween = create_tween()
+			_combo_pop_tween.tween_property(_combo_label, "scale", Vector2(1.2, 1.2), 0.15).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+			_combo_pop_tween.tween_property(_combo_label, "scale", Vector2(1.0, 1.0), 0.1)
+			_combo_pop_tween.tween_callback(_start_combo_pulse)
+		else:
+			# Subsequent hits: quick spring pop then resume pulse
+			_combo_label.visible = true
+			if _combo_pulse_tween and _combo_pulse_tween.is_valid():
+				_combo_pulse_tween.kill()
+			if _combo_pop_tween and _combo_pop_tween.is_valid():
+				_combo_pop_tween.kill()
+			_combo_label.pivot_offset = _combo_label.size / 2.0
+			_combo_pop_tween = create_tween()
+			_combo_pop_tween.tween_property(_combo_label, "scale", Vector2(1.3, 1.3), 0.06).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+			_combo_pop_tween.tween_property(_combo_label, "scale", Vector2(0.9, 0.9), 0.05)
+			_combo_pop_tween.tween_property(_combo_label, "scale", Vector2(1.0, 1.0), 0.08).set_ease(Tween.EASE_IN_OUT)
+			_combo_pop_tween.tween_callback(_start_combo_pulse)
+
+		# Micro-shake via offsets (compatible with anchored Controls)
+		if _combo_shake_tween and _combo_shake_tween.is_valid():
+			_combo_shake_tween.kill()
+		_combo_shake_tween = create_tween()
+		var shake_intensity: float = minf(3.0 + count * 0.06, 8.0)
+		_combo_shake_tween.tween_property(_combo_label, "offset_top",
+			COMBO_LABEL_TOP + randf_range(-shake_intensity, shake_intensity), 0.03)
+		_combo_shake_tween.tween_property(_combo_label, "offset_top",
+			COMBO_LABEL_TOP + randf_range(-shake_intensity, shake_intensity), 0.03)
+		_combo_shake_tween.tween_property(_combo_label, "offset_top", COMBO_LABEL_TOP, 0.04)
+	else:
+		_combo_was_visible = false
+		_kill_combo_label_tweens()
+		_combo_label.modulate.a = 0.0
+		_combo_label.visible = false
+
+
+func _get_combo_color(count: int) -> Color:
+	if count >= 100:
+		return Color.WHITE  # rainbow handled in _process
+	elif count >= 50:
+		return COMBO_TIER_COLORS[3]
+	elif count >= 25:
+		return COMBO_TIER_COLORS[2]
+	elif count >= 10:
+		return COMBO_TIER_COLORS[1]
+	return COMBO_TIER_COLORS[0]
+
+
+func _start_combo_pulse() -> void:
+	if _combo_pulse_tween and _combo_pulse_tween.is_valid():
+		_combo_pulse_tween.kill()
+	_combo_pulse_tween = create_tween().set_loops()
+	_combo_pulse_tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	_combo_pulse_tween.tween_property(_combo_label, "scale", Vector2(1.1, 1.1), 0.3)
+	_combo_pulse_tween.tween_property(_combo_label, "scale", Vector2(0.95, 0.95), 0.3)
+
+
+func _kill_combo_label_tweens() -> void:
+	if _combo_pop_tween and _combo_pop_tween.is_valid():
+		_combo_pop_tween.kill()
+	if _combo_shake_tween and _combo_shake_tween.is_valid():
+		_combo_shake_tween.kill()
+	if _combo_pulse_tween and _combo_pulse_tween.is_valid():
+		_combo_pulse_tween.kill()
+
+
+func _fade_combo_label() -> void:
+	if _combo_fade_tween and _combo_fade_tween.is_valid():
+		_combo_fade_tween.kill()
+	_kill_combo_label_tweens()
+	_combo_fade_tween = create_tween()
+	_combo_fade_tween.tween_property(_combo_label, "modulate:a", 0.0, 0.5)
+	_combo_fade_tween.tween_callback(func() -> void:
+		_combo_label.visible = false
+		_combo_was_visible = false
+	)
+
+
 func _on_combo_multiplier_changed(new_multiplier: float) -> void:
 	if new_multiplier == 1.0:
-		# Hide badge when multiplier resets to 1.0x
-		_combo_multiplier_label.visible = false
+		# Shrink-out animation before hiding
 		if _combo_multiplier_glow_tween and _combo_multiplier_glow_tween.is_running():
 			_combo_multiplier_glow_tween.kill()
+		if _combo_color_tween and _combo_color_tween.is_running():
+			_combo_color_tween.kill()
+		if _combo_intro_tween and _combo_intro_tween.is_valid():
+			_combo_intro_tween.kill()
+		if _combo_hide_tween and _combo_hide_tween.is_valid():
+			_combo_hide_tween.kill()
+		_combo_hide_tween = create_tween()
+		_combo_hide_tween.tween_property(_combo_multiplier_label, "scale", Vector2(0.0, 0.0), 0.15).set_ease(Tween.EASE_IN)
+		_combo_hide_tween.parallel().tween_property(_combo_multiplier_label, "modulate:a", 0.0, 0.15)
+		_combo_hide_tween.tween_callback(func() -> void: _combo_multiplier_label.visible = false)
 	else:
-		# Show and animate badge when multiplier activates
-		_combo_multiplier_label.visible = true
+		# Dramatic pop-in
+		if _combo_hide_tween and _combo_hide_tween.is_valid():
+			_combo_hide_tween.kill()
 		_combo_multiplier_label.text = "%.1fx" % new_multiplier
-		_animate_combo_multiplier_glow()
+		_combo_multiplier_label.visible = true
+		_combo_multiplier_label.scale = Vector2(0.0, 0.0)
+		_combo_multiplier_label.modulate.a = 0.0
+		if _combo_intro_tween and _combo_intro_tween.is_valid():
+			_combo_intro_tween.kill()
+		_combo_intro_tween = create_tween()
+		_combo_intro_tween.tween_property(_combo_multiplier_label, "scale", Vector2(1.3, 1.3), 0.15).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		_combo_intro_tween.parallel().tween_property(_combo_multiplier_label, "modulate:a", 1.0, 0.1)
+		_combo_intro_tween.tween_property(_combo_multiplier_label, "scale", Vector2(1.0, 1.0), 0.1)
+		_combo_intro_tween.tween_callback(_animate_combo_multiplier_glow)
+		# Screen flash
+		_spawn_combo_threshold_flash()
+		# Particle burst near badge
+		_spawn_combo_threshold_particles()
 
 
 func _animate_combo_multiplier_glow() -> void:
-	# Kill any existing tween
 	if _combo_multiplier_glow_tween and _combo_multiplier_glow_tween.is_running():
 		_combo_multiplier_glow_tween.kill()
+	if _combo_color_tween and _combo_color_tween.is_running():
+		_combo_color_tween.kill()
 
-	# Start fresh scale and color animation loop
-	_combo_multiplier_label.scale = Vector2(0.8, 0.8)
+	# Punchy scale pulse: quick pop, slow settle
 	_combo_multiplier_glow_tween = create_tween().set_loops()
-	_combo_multiplier_glow_tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-	_combo_multiplier_glow_tween.tween_property(_combo_multiplier_label, "scale", Vector2(1.2, 1.2), 0.4)
-	_combo_multiplier_glow_tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-	_combo_multiplier_glow_tween.tween_property(_combo_multiplier_label, "scale", Vector2(0.8, 0.8), 0.4)
+	_combo_multiplier_glow_tween.tween_property(_combo_multiplier_label, "scale", Vector2(1.15, 1.15), 0.15).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	_combo_multiplier_glow_tween.tween_property(_combo_multiplier_label, "scale", Vector2(0.95, 0.95), 0.25).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	_combo_multiplier_glow_tween.tween_property(_combo_multiplier_label, "scale", Vector2(1.0, 1.0), 0.2).set_ease(Tween.EASE_IN_OUT)
+
+	# Color cycle: gold -> white -> orange
+	_combo_color_tween = create_tween().set_loops()
+	_combo_color_tween.tween_property(_combo_multiplier_label, "theme_override_colors/font_color", Color(1.0, 0.85, 0.0), 0.3)
+	_combo_color_tween.tween_property(_combo_multiplier_label, "theme_override_colors/font_color", Color(1.0, 1.0, 0.9), 0.3)
+	_combo_color_tween.tween_property(_combo_multiplier_label, "theme_override_colors/font_color", Color(1.0, 0.5, 0.0), 0.3)
+
+
+func _spawn_combo_threshold_flash() -> void:
+	if _flash_tween and _flash_tween.is_running():
+		_flash_tween.kill()
+	_gold_flash.color = Color(1.0, 0.6, 0.0, 0.2)
+	_flash_tween = create_tween()
+	_flash_tween.tween_property(_gold_flash, "color:a", 0.0, 0.4).set_ease(Tween.EASE_OUT)
+
+
+func _spawn_combo_threshold_particles() -> void:
+	var burst := CPUParticles2D.new()
+	burst.emitting = true
+	burst.one_shot = true
+	burst.explosiveness = 1.0
+	burst.amount = 15
+	burst.lifetime = 0.8
+	burst.direction = Vector2(0, 1)
+	burst.spread = 180.0
+	burst.initial_velocity_min = 60.0
+	burst.initial_velocity_max = 150.0
+	burst.gravity = Vector2(0, 100)
+	burst.texture = preload("res://assets/textures/star_yellow.png")
+	burst.scale_amount_min = 0.1
+	burst.scale_amount_max = 0.2
+	burst.color = Color(1.0, 0.7, 0.0, 0.9)
+	var wrapper := Node2D.new()
+	var vp_size := get_viewport().get_visible_rect().size
+	wrapper.position = Vector2(vp_size.x - 135.0, 40.0)
+	add_child(wrapper)
+	wrapper.add_child(burst)
+	get_tree().create_timer(burst.lifetime + 0.2).timeout.connect(wrapper.queue_free)
 
 
 func _on_ascend_pressed() -> void:

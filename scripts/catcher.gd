@@ -23,14 +23,11 @@ const COMBO_MULTIPLIER_50: float = 1.5
 const COMBO_MULTIPLIER_100: float = 2.0
 const COMBO_THRESHOLD_50: int = 50
 const COMBO_THRESHOLD_100: int = 100
-
 var speed: float = 600.0
 
 var _prev_x: float = 0.0
 var _trail_particles: CPUParticles2D
 var _combo: int = 0
-var _combo_label: Label
-var _combo_fade_timer: Timer
 var _combo_multiplier: float = 1.0
 var _bomb_shrink_active: bool = false
 var _stripe: ColorRect
@@ -58,7 +55,6 @@ func _ready() -> void:
 	position.x = get_viewport_rect().size.x / 2.0
 	_prev_x = position.x
 	_setup_trail()
-	_setup_combo_label()
 	GameManager.coin_missed.connect(_on_coin_missed)
 	GameManager.bomb_hit.connect(_on_bomb_hit)
 	GameManager.shop_opened.connect(_on_shop_opened)
@@ -115,10 +111,10 @@ func _on_area_entered(area: Area2D) -> void:
 
 		# Coin value is now multiplied in GameManager.get_coin_value()
 		GameManager.coin_collected.emit(value, pos)
+		GameManager.combo_changed.emit(_combo)
 		_spawn_floating_text(pos, value, area.coin_type)
 		_spawn_collect_burst(pos, area.coin_type)
 		_squash_bounce()
-		_update_combo_label()
 		bling_sound.play()
 		area.collect()
 
@@ -204,8 +200,14 @@ func _spawn_floating_text(at_position: Vector2, value: int, coin_type: int = 0) 
 		return
 	if floating_text_scene:
 		var ft: Label = floating_text_scene.instantiate()
-		ft.text = "+%d" % value
+		ft.text = "%d" % value
 		ft.coin_type = coin_type
+		if _combo_multiplier >= 2.0:
+			ft.combo_level = 2
+		elif _combo_multiplier >= 1.5:
+			ft.combo_level = 1
+		else:
+			ft.combo_level = 0
 		ft.position = at_position + Vector2(randf_range(-10.0, 10.0), -10.0)
 		ft.z_index = 250
 		get_parent().add_child(ft)
@@ -256,44 +258,12 @@ func _spawn_collect_burst(at_position: Vector2, coin_type: int = 0) -> void:
 	get_tree().create_timer(burst.lifetime + 0.1).timeout.connect(burst.queue_free)
 
 
-func _setup_combo_label() -> void:
-	_combo_label = Label.new()
-	_combo_label.add_theme_font_size_override("font_size", 20)
-	_combo_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.9))
-	_combo_label.position = Vector2(30.0, -30.0)
-	_combo_label.modulate.a = 0.0
-	_combo_label.visible = false
-	add_child(_combo_label)
-	_combo_fade_timer = Timer.new()
-	_combo_fade_timer.one_shot = true
-	_combo_fade_timer.wait_time = 2.0
-	_combo_fade_timer.timeout.connect(_fade_combo_label)
-	add_child(_combo_fade_timer)
-
-
-func _update_combo_label() -> void:
-	if _combo >= 2:
-		_combo_label.text = "x%d" % _combo
-		_combo_label.visible = true
-		_combo_label.modulate.a = 1.0
-		_combo_fade_timer.start()
-	else:
-		_combo_label.modulate.a = 0.0
-		_combo_label.visible = false
-
-
-func _fade_combo_label() -> void:
-	var tween := create_tween()
-	tween.tween_property(_combo_label, "modulate:a", 0.0, 0.5)
-	tween.tween_callback(func() -> void: _combo_label.visible = false)
-
 
 func _on_coin_missed() -> void:
 	_combo = 0
 	_reset_combo_multiplier()
+	GameManager.combo_changed.emit(0)
 	bling_sound.pitch_scale = 1.0
-	_combo_label.modulate.a = 0.0
-	_combo_label.visible = false
 
 
 func _on_bomb_hit() -> void:
@@ -303,8 +273,7 @@ func _on_bomb_hit() -> void:
 	# Reset combo and multiplier on bomb hit (hard reset)
 	_combo = 0
 	_reset_combo_multiplier()
-	_combo_label.modulate.a = 0.0
-	_combo_label.visible = false
+	GameManager.combo_changed.emit(0)
 	# Shrink to 60% width
 	var normal_w := GameManager.get_catcher_width()
 	var shrunk_w := normal_w * 0.6
@@ -389,6 +358,5 @@ func _on_shop_closed() -> void:
 func _on_ascension(count: int) -> void:
 	_combo = 0
 	_reset_combo_multiplier()
+	GameManager.combo_changed.emit(0)
 	bling_sound.pitch_scale = 1.0
-	_combo_label.modulate.a = 0.0
-	_combo_label.visible = false
