@@ -1,6 +1,7 @@
 extends Node2D
 
 const COIN_COUNT: int = 360
+const BG_TEXTURE: Texture2D = preload("res://assets/textures/bg-dark-abstract-wide.png")
 const COIN_TEXTURE_GOLD: Texture2D = preload("res://flexcoin.png")
 const COIN_TEXTURE_SILVER: Texture2D = preload("res://flexcoin-silver.png")
 const COIN_TEXTURE_COPPER: Texture2D = preload("res://flexcoin-copper.png")
@@ -20,8 +21,9 @@ var transitioning: bool = false
 
 func _ready() -> void:
 	# Background
-	var bg: ColorRect = ColorRect.new()
-	bg.color = Color(0.08, 0.08, 0.18)
+	var bg: TextureRect = TextureRect.new()
+	bg.texture = BG_TEXTURE
+	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	bg.position = Vector2.ZERO
 	bg.size = Vector2(2160, 1280)
 	bg.z_index = -1
