@@ -23,7 +23,7 @@ func _ready() -> void:
 	var bg: ColorRect = ColorRect.new()
 	bg.color = Color(0.08, 0.08, 0.18)
 	bg.position = Vector2.ZERO
-	bg.size = Vector2(720, 1280)
+	bg.size = Vector2(2160, 1280)
 	bg.z_index = -1
 	add_child(bg)
 
@@ -33,9 +33,9 @@ func _ready() -> void:
 	add_child(coin_container)
 
 	# Spawn coins
-	for i in range(COIN_COUNT):
+	for i: int in range(COIN_COUNT):
 		var coin: Sprite2D = Sprite2D.new()
-		coin.position = Vector2(randf_range(-80.0, 800.0), randf_range(-200.0, 1280.0))
+		coin.position = Vector2(randf_range(-80.0, 2240.0), randf_range(-200.0, 1280.0))
 		coin.rotation = randf_range(0.0, TAU)
 
 		# Weighted random texture: 40% copper, 35% silver, 25% gold
@@ -62,7 +62,7 @@ func _ready() -> void:
 	var logo_backdrop: ColorRect = ColorRect.new()
 	logo_backdrop.color = Color(0.0, 0.0, 0.1, 0.6)
 	logo_backdrop.position = Vector2(0, 250)
-	logo_backdrop.size = Vector2(720, 200)
+	logo_backdrop.size = Vector2(2160, 200)
 	logo_backdrop.z_index = 5
 	add_child(logo_backdrop)
 
@@ -71,7 +71,7 @@ func _ready() -> void:
 	logo.texture = LOGO_TEXTURE
 	var logo_scale: float = 600.0 / LOGO_TEXTURE.get_width()
 	logo.scale = Vector2(logo_scale, logo_scale)
-	logo.position = Vector2(360, 350)
+	logo.position = Vector2(1080, 350)
 	logo.z_index = 10
 	add_child(logo)
 
@@ -84,7 +84,7 @@ func _ready() -> void:
 	var tap_backdrop: ColorRect = ColorRect.new()
 	tap_backdrop.color = Color(0.0, 0.0, 0.1, 0.6)
 	tap_backdrop.position = Vector2(0, 720)
-	tap_backdrop.size = Vector2(720, 80)
+	tap_backdrop.size = Vector2(2160, 80)
 	tap_backdrop.z_index = 5
 	add_child(tap_backdrop)
 
@@ -98,7 +98,7 @@ func _ready() -> void:
 	tap_label.add_theme_constant_override("outline_size", 4)
 	tap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tap_label.position = Vector2(0, 730)
-	tap_label.size = Vector2(720, 50)
+	tap_label.size = Vector2(2160, 50)
 	tap_label.z_index = 10
 	add_child(tap_label)
 
@@ -111,20 +111,20 @@ func _ready() -> void:
 	fade_overlay = ColorRect.new()
 	fade_overlay.color = Color(0.0, 0.0, 0.0, 0.0)
 	fade_overlay.position = Vector2.ZERO
-	fade_overlay.size = Vector2(720, 1280)
+	fade_overlay.size = Vector2(2160, 1280)
 	fade_overlay.z_index = 100
 	fade_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(fade_overlay)
 
 
 func _process(delta: float) -> void:
-	for i in range(coins.size()):
+	for i: int in range(coins.size()):
 		var coin: Sprite2D = coins[i]
 		coin.position.y += coin_speeds[i] * delta
 		coin.rotation += coin_rotation_speeds[i] * delta
 		if coin.position.y > 1480.0:
 			coin.position.y = -200.0
-			coin.position.x = randf_range(-80.0, 800.0)
+			coin.position.x = randf_range(-80.0, 2240.0)
 
 
 func _unhandled_input(event: InputEvent) -> void:

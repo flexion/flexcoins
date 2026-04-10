@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FlexCoins is a 2D idle falling-coin collector game built with **Godot 4.6** using **GDScript**. Coins spawn at the top of a portrait viewport (720x1280), fall downward, and the player moves a catcher left/right to collect them for currency. Includes an upgrade shop and combo multiplier system. Every session starts fresh.
+FlexCoins is a 2D idle falling-coin collector game built with **Godot 4.6** using **GDScript**. Coins spawn at the top of a landscape viewport (2160x1280), fall downward, and the player moves a catcher left/right to collect them for currency. Includes an upgrade shop (centered popup) and combo multiplier system. Every session starts fresh.
 
 ## Engine & Language
 
 - **Godot 4.6** with Forward Plus renderer
 - **GDScript** (not C# or GDExtension)
-- Viewport: 720x1280 (portrait)
+- Viewport: 2160x1280 (landscape)
 
 ## Development Commands
 
@@ -145,14 +145,15 @@ python3 tools/devtools.py quit
 ### Scene Tree (main.tscn)
 ```
 Main (Node2D)
-├── Background (ColorRect, 720x1280, dark navy)
+├── Background (ColorRect, 2160x1280, dark navy)
 ├── CoinSpawner (Node2D, scripts/coin_spawner.gd)
 │   └── Timer (dynamic interval from upgrades)
-├── Catcher (instanced, positioned at 360,1000)
+├── Catcher (instanced, positioned at 1080,960)
 │   └── spawns FloatingText on coin collection
 └── HUD (instanced, CanvasLayer)
-    ├── TopBar > %CurrencyLabel (gold, font 32)
-    └── UpgradePanel (bottom 260px, 4 upgrade buttons)
+    ├── TopBar > %CurrencyLabel (gold, font 48)
+    ├── BottomBar (Shop + Settings buttons, bottom center)
+    └── UpgradePanel (centered popup 500x600, z_index: 160)
 ```
 
 ### Autoloads
@@ -218,8 +219,8 @@ Tier progression is automatic and triggered in `catcher.gd:_update_catcher_visua
 - `CORE_UPGRADES`: `["spawn_rate", "coin_value", "catcher_speed", "catcher_width"]` (magnet excluded from requirements and reset)
 
 **UI Integration:**
-- Ascend button created dynamically in `hud.gd:_create_ascension_ui()` (lines 81–101)
-- Ascension label displays purple text below currency (line 106: `Color(0.8, 0.6, 1.0)`)
+- Ascend button created dynamically in `hud.gd:_create_ascension_ui()`
+- Ascension label displays purple text below currency (`Color(0.8, 0.6, 1.0)` in `_create_ascension_ui()`)
 - Ascension triggers milestone celebration with "ASCENDED!" text overlay and gold flash animation
 
 ### Upgrade System
@@ -300,19 +301,23 @@ floating_text.z_index = 250  # Floats above upgrade buttons
 
 ```
 Main (Node2D, z_index: 0)
-├── Background (ColorRect, 720x1280, dark navy, z_index: -1)
+├── Background (ColorRect, 2160x1280, dark navy, z_index: -1)
 ├── CoinSpawner (Node2D, z_index: 0)
 │   ├── Timer (dynamic interval from upgrades)
 │   └── [Coins instantiated with z_index: 10]
-├── Catcher (Area2D, positioned at 360,1000, z_index: 20)
+├── Catcher (Area2D, positioned at 1080,960, z_index: 20)
 │   ├── ColorRect (dynamic width/height)
 │   ├── CollisionShape2D (duplicated)
 │   └── [FloatingText children spawned with z_index: 250]
 └── HUD (CanvasLayer, layer: 1)
     ├── TopBar (Control, anchors: top|left)
-    │   └── CurrencyLabel (Label, gold font 32, z_index: 100)
-    └── UpgradePanel (PanelContainer, anchors: bottom|left|right, z_index: 100)
-        └── VBoxContainer
+    │   └── CurrencyLabel (Label, gold font 48)
+    ├── BottomBar (HBoxContainer, bottom center)
+    │   ├── ShopToggle (Button) - "Shop"
+    │   └── GearButton (Button) - "⚙"
+    ├── ShopBackdrop (ColorRect, full screen, z_index: 150)
+    └── UpgradePanel (PanelContainer, centered popup 500x600, z_index: 160)
+        └── Header ("Shop" + Close button) + ScrollContainer
             └── [UpgradeButton instances, created programmatically]
 ```
 
@@ -320,7 +325,7 @@ Main (Node2D, z_index: 0)
 - Background (`z_index: -1`) renders first, behind coins and catcher.
 - Coins (`z_index: 10`) and Catcher (`z_index: 20`) render in world space above background.
 - HUD on CanvasLayer (layer 1) floats above the world.
-- Upgrade buttons (`z_index: 100`) are visible but below popups.
+- Upgrade buttons inside shop popup (`z_index: 160`) render above the shop backdrop (`z_index: 150`).
 - Floating text (`z_index: 250`) appears on top.
 
 **Node Placement Rules:**
