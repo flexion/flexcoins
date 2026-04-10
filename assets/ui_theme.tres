@@ -1,8 +1,8 @@
 [gd_resource type="Theme" load_steps=10 format=3]
 
-[ext_resource type="Texture2D" path="res://UI Pack/PNG/Blue/Default/button_rectangle_depth_flat.png" id="1_blue_normal"]
-[ext_resource type="Texture2D" path="res://UI Pack/PNG/Blue/Default/button_rectangle_flat.png" id="2_blue_hover"]
-[ext_resource type="Texture2D" path="res://UI Pack/PNG/Grey/Default/button_rectangle_depth_flat.png" id="3_grey_depth"]
+[ext_resource type="Texture2D" path="res://assets/ui/button_blue_depth.png" id="1_blue_normal"]
+[ext_resource type="Texture2D" path="res://assets/ui/button_blue_flat.png" id="2_blue_hover"]
+[ext_resource type="Texture2D" path="res://assets/ui/button_grey_depth.png" id="3_grey_depth"]
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_btn_normal"]
 texture = ExtResource("1_blue_normal")

@@ -17,9 +17,9 @@ const UPGRADE_ICONS: Dictionary = {
 	"catcher_width": preload("res://assets/textures/icon_arrow_right.png"),
 	"magnet": preload("res://assets/textures/icon_circle.png"),
 }
-const BUY_STYLE_AFFORD: Texture2D = preload("res://UI Pack/PNG/Yellow/Default/button_rectangle_depth_flat.png")
-const BUY_STYLE_UNAFFORD: Texture2D = preload("res://UI Pack/PNG/Grey/Default/button_rectangle_depth_flat.png")
-const BUY_STYLE_GREEN: Texture2D = preload("res://UI Pack/PNG/Green/Default/button_rectangle_depth_flat.png")
+const BUY_STYLE_AFFORD: Texture2D = preload("res://assets/ui/button_yellow_depth.png")
+const BUY_STYLE_UNAFFORD: Texture2D = preload("res://assets/ui/button_grey_depth.png")
+const BUY_STYLE_GREEN: Texture2D = preload("res://assets/ui/button_green_depth.png")
 
 var upgrade_id: String = ""
 var _segment_rects: Array[ColorRect] = []
