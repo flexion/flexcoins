@@ -499,6 +499,21 @@ def cmd_reset_session(args, project_path: Path):
         sys.exit(1)
 
 
+def cmd_ascend(args, project_path: Path):
+    """Attempt ascension. Reports eligibility, count, and multiplier."""
+    result = send_command(project_path, "ascend")
+    data = result.get("data", {})
+    if result["success"]:
+        print(f"Ascended! count={data['ascension_count']} multiplier={data['multiplier']:.2f}")
+    else:
+        print(f"Cannot ascend: {result['message']}", file=sys.stderr)
+        levels = data.get("current_levels", {})
+        for uid, lvl in levels.items():
+            status = "OK" if lvl >= data.get("required_level", 15) else "NEEDS UPGRADE"
+            print(f"  {uid}: {lvl} ({status})", file=sys.stderr)
+        sys.exit(1)
+
+
 def cmd_set_game_speed(args, project_path: Path):
     """Set game speed (time scale)."""
     result = send_command(project_path, "set_game_speed", {"scale": args.scale})
@@ -786,6 +801,10 @@ def main():
     # reset-session
     p = subparsers.add_parser("reset-session", help="Reset to fresh game state")
     p.set_defaults(func=cmd_reset_session)
+
+    # ascend
+    p = subparsers.add_parser("ascend", help="Attempt ascension (reports eligibility, count, multiplier)")
+    p.set_defaults(func=cmd_ascend)
 
     # set-game-speed
     p = subparsers.add_parser("set-game-speed", help="Set game speed (time scale)")
