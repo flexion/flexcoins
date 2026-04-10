@@ -177,12 +177,16 @@ func test_collected_coin_does_not_emit_missed() -> String:
 # From coin_spawner.gd — coin type distribution varies by unlock level (0-4)
 
 func _roll_coin_type(roll: float, unlock_level: int) -> String:
-	# Rates descend by unlock order: Copper > Silver > Frenzy/Bomb > Gold > Multi
+	# Bombs always spawn; other types descend by unlock order
 	match unlock_level:
 		0:
+			if roll < 0.08:
+				return "BOMB"
 			return "COPPER"
 		1:
-			if roll < 0.70:
+			if roll < 0.08:
+				return "BOMB"
+			elif roll < 0.74:
 				return "COPPER"
 			return "SILVER"
 		2:
@@ -217,16 +221,24 @@ func _roll_coin_type(roll: float, unlock_level: int) -> String:
 			return "SILVER"
 
 
-func test_spawn_roll_level0_all_copper() -> String:
-	return _T.assert_eq(_roll_coin_type(0.0, 0), "COPPER", "Level 0: all rolls -> COPPER")
+func test_spawn_roll_level0_bomb() -> String:
+	return _T.assert_eq(_roll_coin_type(0.0, 0), "BOMB", "Level 0: roll 0.0 -> BOMB")
+
+
+func test_spawn_roll_level0_copper() -> String:
+	return _T.assert_eq(_roll_coin_type(0.10, 0), "COPPER", "Level 0: roll 0.10 -> COPPER")
 
 
 func test_spawn_roll_level0_high_roll_copper() -> String:
 	return _T.assert_eq(_roll_coin_type(0.99, 0), "COPPER", "Level 0: roll 0.99 -> COPPER")
 
 
+func test_spawn_roll_level1_bomb() -> String:
+	return _T.assert_eq(_roll_coin_type(0.0, 1), "BOMB", "Level 1: roll 0.0 -> BOMB")
+
+
 func test_spawn_roll_level1_copper() -> String:
-	return _T.assert_eq(_roll_coin_type(0.0, 1), "COPPER", "Level 1: roll 0.0 -> COPPER")
+	return _T.assert_eq(_roll_coin_type(0.10, 1), "COPPER", "Level 1: roll 0.10 -> COPPER")
 
 
 func test_spawn_roll_level1_silver() -> String:
