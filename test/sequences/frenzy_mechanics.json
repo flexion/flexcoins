@@ -1,0 +1,24 @@
+{
+  "name": "Frenzy Mechanics Test",
+  "description": "Spawn frenzy coin on catcher, verify frenzy activates and deactivates after 5 seconds",
+  "steps": [
+    {"type": "wait", "seconds": 0.5, "comment": "Wait for game to stabilize"},
+    {"type": "command", "name": "reset-session", "comment": "Reset to clean state"},
+    {"type": "command", "name": "clear-coins", "comment": "Remove any falling coins"},
+    {"type": "wait", "seconds": 0.2},
+    {"type": "command", "name": "get-state", "node_path": "/root/GameManager", "property": "frenzy_active", "comment": "Verify frenzy is NOT active"},
+    {"type": "assert", "node": "/root/GameManager", "property": "frenzy_active", "equals": false},
+    {"type": "screenshot", "filename": "frenzy_01_before.png"},
+    {"type": "command", "name": "spawn-coin-on-catcher", "coin_type": "FRENZY", "comment": "Spawn frenzy coin directly on catcher"},
+    {"type": "wait", "seconds": 1.0, "comment": "Wait for coin to be collected"},
+    {"type": "assert", "node": "/root/GameManager", "property": "frenzy_active", "equals": true},
+    {"type": "screenshot", "filename": "frenzy_02_active.png"},
+    {"type": "command", "name": "set-game-speed", "value": 10.0, "comment": "Speed up time to wait for frenzy end"},
+    {"type": "wait", "seconds": 1.0, "comment": "5 game seconds pass at 10x speed"},
+    {"type": "command", "name": "set-game-speed", "value": 1.0, "comment": "Restore normal speed"},
+    {"type": "wait", "seconds": 0.5},
+    {"type": "assert", "node": "/root/GameManager", "property": "frenzy_active", "equals": false},
+    {"type": "screenshot", "filename": "frenzy_03_ended.png"},
+    {"type": "command", "name": "clear-coins"}
+  ]
+}
