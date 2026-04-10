@@ -1,0 +1,30 @@
+{
+  "name": "trailer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@remotion/cli": "^4.0.447",
+    "@remotion/google-fonts": "^4.0.447",
+    "@remotion/light-leaks": "^4.0.447",
+    "@remotion/transitions": "^4.0.447",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "remotion": "^4.0.447",
+    "typescript": "^6.0.2"
+  },
+  "devDependencies": {
+    "@remotion/tailwind": "^4.0.447",
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.5.9",
+    "tailwindcss": "^3.4.19"
+  }
+}
