@@ -122,7 +122,7 @@ func _on_screen_exited() -> void:
 func _add_glow() -> void:
 	var glow := Sprite2D.new()
 	glow.texture = sprite.texture
-	glow.scale = Vector2(0.55, 0.55)
+	glow.scale = Vector2(0.66, 0.66)
 	match coin_type:
 		CoinType.COPPER:
 			glow.modulate = Color(0.8, 0.5, 0.2, 0.25)
@@ -222,7 +222,7 @@ func _update_split_buildup(progress: float) -> void:
 	if is_instance_valid(_glow_sprite):
 		var pulse: float = (sin(_split_timer * pulse_speed) + 1.0) * 0.5
 		_glow_sprite.modulate.a = lerpf(_glow_base_alpha, pulse_alpha, pulse)
-		_glow_sprite.scale = Vector2.ONE * lerpf(0.55, 1.2, t * pulse)
+		_glow_sprite.scale = Vector2.ONE * lerpf(0.66, 1.44, t * pulse)
 	# Coin shakes with increasing intensity
 	if t > 0.3:
 		var shake: float = lerpf(0.0, 5.0, (t - 0.3) / 0.7)
@@ -261,7 +261,7 @@ func _spawn_split_coins() -> void:
 		var split: Area2D = COIN_SCENE.instantiate()
 		split.coin_type = CoinType.SILVER
 		split.position = global_position
-		split.scale = Vector2(0.65, 0.65)
+		split.scale = Vector2(0.78, 0.78)
 		get_parent().add_child(split)
 		split.sprite.texture = TEXTURE_MULTI
 		if split._trail:

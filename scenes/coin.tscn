@@ -4,14 +4,14 @@
 [ext_resource type="Texture2D" uid="uid://brw0cre686ngb" path="res://flexcoin.png" id="2_texture"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_coin"]
-radius = 24.0
+radius = 28.8
 
 [node name="Coin" type="Area2D" unique_id=921727924]
 script = ExtResource("1_script")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=41759098]
 texture_filter = 6
-scale = Vector2(0.4, 0.4)
+scale = Vector2(0.6, 0.6)
 texture = ExtResource("2_texture")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=178592499]
