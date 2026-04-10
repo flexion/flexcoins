@@ -2,6 +2,9 @@ extends Area2D
 
 enum CoinType { SILVER, GOLD, FRENZY, BOMB }
 
+const TEXTURE_GOLD: Texture2D = preload("res://flexcoin.png")
+const TEXTURE_SILVER: Texture2D = preload("res://flexcoin-silver.png")
+
 @export var fall_speed: float = 300.0
 var value: int = 1
 var coin_type: CoinType = CoinType.SILVER
@@ -18,6 +21,11 @@ func _ready() -> void:
 	rotation = randf_range(0.0, TAU)
 	_rotation_speed = randf_range(-1.5, 1.5)
 	_current_speed = fall_speed * 0.15
+
+	# SILVER type uses the silver texture (1024x1024 vs gold's 128x128)
+	if coin_type == CoinType.SILVER:
+		sprite.texture = TEXTURE_SILVER
+		sprite.scale = Vector2(0.05, 0.05)
 
 	match coin_type:
 		CoinType.GOLD:
