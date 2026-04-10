@@ -33,9 +33,9 @@ var _pulse_tween: Tween
 var _shake_tween: Tween
 var _purchase_sound: AudioStreamPlayer
 var _reject_sound: AudioStreamPlayer
-var _style_afford: StyleBoxFlat
-var _style_unafford: StyleBoxFlat
-var _style_green: StyleBoxFlat
+var _style_afford: StyleBoxTexture
+var _style_unafford: StyleBoxTexture
+var _style_green: StyleBoxTexture
 
 @onready var name_label: Label = %NameLabel
 @onready var effect_label: Label = %EffectLabel
@@ -57,9 +57,10 @@ func _ready() -> void:
 	_create_segment_bar()
 	_setup_icon()
 	_setup_sounds()
-	_style_afford = _create_flat_style(COLOR_CTA_ORANGE, COLOR_CTA_ORANGE.darkened(0.3))
-	_style_unafford = _create_flat_style(COLOR_CHARCOAL, COLOR_CHARCOAL_DARK)
-	_style_green = _create_flat_style(COLOR_GREEN, COLOR_GREEN.darkened(0.3))
+	var sheet: Texture2D = preload("res://assets/greySheet.png")
+	_style_afford = _create_atlas_style(sheet, Rect2(0, 49, 191, 49))    # grey_button06 — raised
+	_style_unafford = _create_atlas_style(sheet, Rect2(0, 286, 190, 45)) # grey_button04 — flat/muted
+	_style_green = _create_atlas_style(sheet, Rect2(0, 49, 191, 49))     # same as afford (tinted green via modulate)
 	_apply_buy_style(_style_unafford)
 	_update_display()
 
@@ -152,15 +153,16 @@ func _update_segments(level: int) -> void:
 		_segment_rects[i].color = fill_color if i < filled else EMPTY_COLOR
 
 
-func _create_flat_style(bg_color: Color, border_color: Color) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = bg_color
-	style.border_width_bottom = 3
-	style.border_color = border_color
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_right = 6
-	style.corner_radius_bottom_left = 6
+func _create_atlas_style(sheet: Texture2D, region: Rect2) -> StyleBoxTexture:
+	var atlas := AtlasTexture.new()
+	atlas.atlas = sheet
+	atlas.region = region
+	var style := StyleBoxTexture.new()
+	style.texture = atlas
+	style.texture_margin_left = 12.0
+	style.texture_margin_top = 12.0
+	style.texture_margin_right = 12.0
+	style.texture_margin_bottom = 12.0
 	style.content_margin_left = 8.0
 	style.content_margin_top = 4.0
 	style.content_margin_right = 8.0
@@ -168,7 +170,7 @@ func _create_flat_style(bg_color: Color, border_color: Color) -> StyleBoxFlat:
 	return style
 
 
-func _apply_buy_style(style: StyleBoxFlat) -> void:
+func _apply_buy_style(style: StyleBoxTexture) -> void:
 	buy_button.add_theme_stylebox_override("normal", style)
 	buy_button.add_theme_stylebox_override("hover", style)
 	buy_button.add_theme_stylebox_override("pressed", style)
@@ -178,6 +180,7 @@ func _update_afford_cue(affordable: bool) -> void:
 	if affordable:
 		modulate.a = 1.0
 		buy_button.add_theme_color_override("font_color", AFFORD_COLOR)
+		buy_button.self_modulate = COLOR_CTA_ORANGE
 		_apply_buy_style(_style_afford)
 		if not _was_affordable:
 			_was_affordable = true
@@ -185,6 +188,7 @@ func _update_afford_cue(affordable: bool) -> void:
 	else:
 		modulate.a = 0.7
 		buy_button.add_theme_color_override("font_color", UNAFFORD_COLOR)
+		buy_button.self_modulate = Color.WHITE
 		_apply_buy_style(_style_unafford)
 		if _was_affordable:
 			_was_affordable = false
@@ -206,6 +210,7 @@ func _stop_pulse() -> void:
 
 func _animate_purchase() -> void:
 	_apply_buy_style(_style_green)
+	buy_button.self_modulate = COLOR_GREEN
 	pivot_offset = size / 2.0
 	var tween := create_tween()
 	tween.tween_property(self, "scale", Vector2(1.05, 1.05), 0.08).set_ease(Tween.EASE_OUT)
@@ -217,6 +222,7 @@ func _animate_purchase() -> void:
 		buy_button.add_theme_color_override("font_color", original_color)
 		var affordable := GameManager.currency >= GameManager.get_upgrade_cost(upgrade_id)
 		_apply_buy_style(_style_afford if affordable else _style_unafford)
+		buy_button.self_modulate = COLOR_CTA_ORANGE if affordable else Color.WHITE
 	)
 	if _purchase_sound:
 		_purchase_sound.play()
