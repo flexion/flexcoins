@@ -110,12 +110,12 @@ func _setup_icon() -> void:
 
 func _setup_sounds() -> void:
 	_purchase_sound = AudioStreamPlayer.new()
-	_purchase_sound.stream = preload("res://assets/sounds/click_purchase.ogg")
+	_purchase_sound.stream = preload("res://assets/sounds/tap-a.ogg")
 	_purchase_sound.volume_db = -6.0
 	add_child(_purchase_sound)
 
 	_reject_sound = AudioStreamPlayer.new()
-	_reject_sound.stream = preload("res://assets/sounds/tap_reject.ogg")
+	_reject_sound.stream = preload("res://assets/sounds/tap-b.ogg")
 	_reject_sound.volume_db = -6.0
 	add_child(_reject_sound)
 

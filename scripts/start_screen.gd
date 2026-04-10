@@ -18,6 +18,7 @@ var coin_speeds: Array[float] = []
 var coin_rotation_speeds: Array[float] = []
 var fade_overlay: ColorRect
 var transitioning: bool = false
+var _click_sound: AudioStreamPlayer
 
 
 func _ready() -> void:
@@ -116,6 +117,12 @@ func _ready() -> void:
 	pulse_tween.tween_property(tap_label, "modulate:a", 0.3, 0.6).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	pulse_tween.tween_property(tap_label, "modulate:a", 1.0, 0.6).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 
+	# Click sound
+	_click_sound = AudioStreamPlayer.new()
+	_click_sound.stream = preload("res://assets/sounds/click-b.ogg")
+	_click_sound.volume_db = -6.0
+	add_child(_click_sound)
+
 	# Fade overlay
 	fade_overlay = ColorRect.new()
 	fade_overlay.color = Color(0.0, 0.0, 0.0, 0.0)
@@ -149,6 +156,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if should_transition:
 		transitioning = true
+		_click_sound.play()
 		var fade_tween: Tween = create_tween()
 		fade_tween.tween_property(fade_overlay, "color:a", 1.0, 0.5)
 		fade_tween.tween_callback(_go_to_main)

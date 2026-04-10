@@ -48,6 +48,8 @@ var _target_currency: int = 0
 var _currency_ticking: bool = false
 var _display_font: Font = preload("res://assets/fonts/kenney_future.ttf")
 var _narrow_font: Font = preload("res://assets/fonts/kenney_future_narrow.ttf")
+var _snd_click: AudioStreamPlayer
+var _snd_switch: AudioStreamPlayer
 
 @onready var currency_label: Label = %CurrencyLabel
 @onready var upgrade_container: VBoxContainer = %UpgradeContainer
@@ -84,6 +86,18 @@ func _ready() -> void:
 	_create_ascension_ui()
 	_create_combo_multiplier_badge()
 	_create_combo_label()
+	_setup_ui_sounds()
+
+
+func _setup_ui_sounds() -> void:
+	_snd_click = AudioStreamPlayer.new()
+	_snd_click.stream = preload("res://assets/sounds/click-a.ogg")
+	_snd_click.volume_db = -6.0
+	add_child(_snd_click)
+	_snd_switch = AudioStreamPlayer.new()
+	_snd_switch.stream = preload("res://assets/sounds/switch-a.ogg")
+	_snd_switch.volume_db = -6.0
+	add_child(_snd_switch)
 
 
 func _process(delta: float) -> void:
@@ -133,6 +147,7 @@ func _on_shop_toggle_pressed() -> void:
 func _open_shop() -> void:
 	_shop_open = true
 	_shop_tweening = true
+	_snd_click.play()
 	GameManager.shop_opened.emit()
 	_shop_backdrop.visible = true
 	upgrade_panel.visible = true
@@ -152,6 +167,7 @@ func _close_shop() -> void:
 		return
 	_shop_open = false
 	_shop_tweening = true
+	_snd_click.play()
 	GameManager.shop_closed.emit()
 	if _shop_tween and _shop_tween.is_running():
 		_shop_tween.kill()
@@ -798,6 +814,7 @@ func _open_settings() -> void:
 	if _shop_open:
 		_close_shop()
 	_settings_open = true
+	_snd_click.play()
 	_settings_backdrop.visible = true
 	_settings_panel.visible = true
 	_settings_panel.scale = Vector2(0.8, 0.8)
@@ -814,6 +831,7 @@ func _close_settings() -> void:
 	if not _settings_open:
 		return
 	_settings_open = false
+	_snd_click.play()
 	if _settings_tween and _settings_tween.is_running():
 		_settings_tween.kill()
 	_settings_tween = create_tween().set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
@@ -831,6 +849,7 @@ func _on_backdrop_input(event: InputEvent) -> void:
 
 
 func _on_sound_toggle_pressed() -> void:
+	_snd_switch.play()
 	var bus_index: int = AudioServer.get_bus_index("Master")
 	var muted: bool = not AudioServer.is_bus_mute(bus_index)
 	AudioServer.set_bus_mute(bus_index, muted)
@@ -838,6 +857,7 @@ func _on_sound_toggle_pressed() -> void:
 
 
 func _on_fullscreen_toggle_pressed() -> void:
+	_snd_switch.play()
 	_toggle_fullscreen()
 
 
