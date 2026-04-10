@@ -12,6 +12,39 @@ FlexCoins is a 2D idle falling-coin collector game built with **Godot 4.6** usin
 - **GDScript** (not C# or GDExtension)
 - Viewport: 2160x1280 (landscape)
 
+## Brand Colors (Flexion Palette)
+
+All UI elements must use these colors. Do not introduce arbitrary colors — pick from this palette.
+
+### Primary
+
+| Name | Hex | GDScript | Usage |
+|---|---|---|---|
+| Navy | `#1F2937` | `Color(0.122, 0.161, 0.216)` | Panel backgrounds, dark UI surfaces |
+| Charcoal | `#4B5563` | `Color(0.294, 0.333, 0.388)` | Disabled/unaffordable buttons, subtle elements |
+| Blue | `#155FC8` | `Color(0.082, 0.373, 0.784)` | Primary buttons (Shop, Settings, Close) |
+| Light Blue | `#E0F2FE` | `Color(0.878, 0.949, 0.992)` | Focus outlines, highlights |
+| Concrete | `#DFE3E6` | `Color(0.875, 0.890, 0.902)` | Borders, dividers |
+| Orange | `#E05F1A` | `Color(0.878, 0.373, 0.102)` | Brand accent, hover states |
+| CTA Orange | `#CF4A02` | `Color(0.812, 0.291, 0.008)` | Buy/CTA buttons (affordable state) |
+
+### Secondary (Illustrations/Accents)
+
+| Name | Hex | GDScript | Usage |
+|---|---|---|---|
+| Light Tango | `#ED5338` | `Color(0.929, 0.325, 0.220)` | Bomb flash, reject shake |
+| Tango | `#DE4829` | `Color(0.871, 0.282, 0.161)` | Error states |
+| Brick | `#A02816` | `Color(0.627, 0.157, 0.086)` | Dark red accents |
+| Green | `#3BB273` | `Color(0.231, 0.698, 0.451)` | Purchase success, frenzy text |
+| Yellow | `#FAAE3B` | `Color(0.980, 0.682, 0.231)` | Currency label, shop/settings titles |
+
+### Where Colors Are Applied
+
+- **`assets/ui_theme.tres`**: StyleBoxFlat definitions for Button and PanelContainer (Blue normal, Charcoal pressed/disabled, Navy panel)
+- **`scripts/upgrade_button.gd`**: Buy button states (CTA Orange affordable, Green purchase flash, Charcoal unaffordable)
+- **`scripts/hud.gd`**: Shop/Settings title (Yellow), currency flash restore (Yellow)
+- **`scenes/hud.tscn`**: CurrencyLabel font_color (Yellow)
+
 ## Development Commands
 
 - **Godot binary (macOS)**: `/Applications/Godot.app/Contents/MacOS/Godot` — all `godot` commands below assume this is on PATH or aliased

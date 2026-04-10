@@ -226,7 +226,7 @@ func _create_shop_popup_ui() -> void:
 	title.text = "Shop"
 	title.add_theme_font_override("font", _display_font)
 	title.add_theme_font_size_override("font_size", 44)
-	title.add_theme_color_override("font_color", Color(1.0, 0.84, 0.0, 1.0))
+	title.add_theme_color_override("font_color", Color(0.98, 0.682, 0.231, 1.0))  # #FAAE3B
 	header.add_child(title)
 	var spacer: Control = Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -741,7 +741,7 @@ func _create_settings_ui() -> void:
 	title.text = "Settings"
 	title.add_theme_font_override("font", _display_font)
 	title.add_theme_font_size_override("font_size", 44)
-	title.add_theme_color_override("font_color", Color(1.0, 0.84, 0.0, 1.0))
+	title.add_theme_color_override("font_color", Color(0.98, 0.682, 0.231, 1.0))  # #FAAE3B
 	header.add_child(title)
 	var spacer: Control = Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -897,7 +897,7 @@ func _flash_currency_label() -> void:
 	_currency_flash_tween.tween_property(currency_label, "scale", Vector2(1.3, 1.3), 0.1).set_ease(Tween.EASE_OUT)
 	_currency_flash_tween.tween_property(currency_label, "scale", Vector2(1.0, 1.0), 0.15).set_ease(Tween.EASE_IN)
 	_currency_flash_tween.tween_callback(func() -> void:
-		currency_label.add_theme_color_override("font_color", Color(1.0, 0.84, 0.0, 1.0))
+		currency_label.add_theme_color_override("font_color", Color(0.98, 0.682, 0.231, 1.0))
 	)
 
 
