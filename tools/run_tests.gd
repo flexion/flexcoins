@@ -9,6 +9,7 @@ extends SceneTree
 const TEST_SCRIPTS: Array[String] = [
 	"res://test/unit/test_game_manager.gd",
 	"res://test/unit/test_upgrade_formulas.gd",
+	"res://test/unit/test_upgrade_button.gd",
 ]
 
 var _passed: int = 0
