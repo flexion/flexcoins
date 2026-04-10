@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://cvm5vo2m144dq"]
 
-[ext_resource type="Script" path="res://scripts/start_screen.gd" id="1_start_screen_script"]
+[ext_resource type="Script" uid="uid://dqg7doxbwn077" path="res://scripts/start_screen.gd" id="1_start_screen_script"]
 
-[node name="StartScreen" type="Node2D"]
+[node name="StartScreen" type="Node2D" unique_id=1652460007]
 script = ExtResource("1_start_screen_script")

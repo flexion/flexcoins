@@ -91,6 +91,7 @@ func _ready() -> void:
 	var logo_rect: TextureRect = TextureRect.new()
 	logo_rect.texture = LOGO_TEXTURE
 	logo_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	logo_rect.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	logo_rect.custom_minimum_size = Vector2(1100, 350)
 	logo_rect.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	logo_rect.size_flags_vertical = Control.SIZE_SHRINK_CENTER
