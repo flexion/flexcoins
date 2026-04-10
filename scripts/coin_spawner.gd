@@ -53,12 +53,16 @@ func _on_timer_timeout() -> void:
 func _roll_coin_type(coin: Area2D) -> int:
 	var level: int = GameManager.get_coin_type_unlock_level()
 	var roll := randf()
-	# Rates descend by unlock order: Copper > Silver > Frenzy/Bomb > Gold > Multi
+	# Bombs always spawn; other types descend by unlock order: Copper > Silver > Frenzy > Gold > Multi
 	match level:
 		0:
+			if roll < 0.08:
+				return coin.CoinType.BOMB
 			return coin.CoinType.COPPER
 		1:
-			if roll < 0.70:
+			if roll < 0.08:
+				return coin.CoinType.BOMB
+			elif roll < 0.74:
 				return coin.CoinType.COPPER
 			return coin.CoinType.SILVER
 		2:

@@ -617,6 +617,34 @@ func _on_frenzy_ended() -> void:
 
 
 func _on_bomb_hit() -> void:
+	# "-10%" penalty text below currency label
+	var penalty_label := Label.new()
+	penalty_label.text = "-10%"
+	penalty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	penalty_label.add_theme_font_override("font", _display_font)
+	penalty_label.add_theme_font_size_override("font_size", 72)
+	penalty_label.add_theme_color_override("font_color", Color(1.0, 0.2, 0.1))
+	penalty_label.add_theme_constant_override("outline_size", 6)
+	penalty_label.add_theme_color_override("font_outline_color", Color(0.3, 0.0, 0.0, 0.8))
+	penalty_label.add_theme_constant_override("shadow_offset_x", 3)
+	penalty_label.add_theme_constant_override("shadow_offset_y", 3)
+	penalty_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.5))
+	penalty_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	penalty_label.z_index = 200
+	add_child(penalty_label)
+	penalty_label.anchors_preset = Control.PRESET_CENTER_TOP
+	penalty_label.offset_left = -200.0
+	penalty_label.offset_right = 200.0
+	penalty_label.offset_top = 70.0
+	penalty_label.scale = Vector2(0.5, 0.5)
+	penalty_label.pivot_offset = Vector2(200.0, 30.0)
+	var penalty_tween := create_tween()
+	penalty_tween.tween_property(penalty_label, "scale", Vector2(1.3, 1.3), 0.12).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+	penalty_tween.tween_property(penalty_label, "scale", Vector2(1.0, 1.0), 0.1)
+	penalty_tween.tween_interval(1.0)
+	penalty_tween.tween_property(penalty_label, "position:y", penalty_label.position.y - 80.0, 0.6).set_ease(Tween.EASE_IN)
+	penalty_tween.parallel().tween_property(penalty_label, "modulate:a", 0.0, 0.6)
+	penalty_tween.tween_callback(penalty_label.queue_free)
 	# Red screen flash
 	if _flash_tween and _flash_tween.is_running():
 		_flash_tween.kill()
