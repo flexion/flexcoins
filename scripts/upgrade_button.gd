@@ -7,9 +7,8 @@ const TIER_COLORS: Array[Color] = [
 	Color(0.4, 0.7, 1.0, 1.0),    # Diamond blue (tier 2)
 	Color(0.8, 0.4, 1.0, 1.0),    # Purple (tier 3+)
 ]
-const EMPTY_COLOR := Color(0.2, 0.2, 0.2, 1.0)
-const AFFORD_COLOR := Color(1.0, 1.0, 1.0, 1.0)
-const UNAFFORD_COLOR := Color(0.65, 0.65, 0.65, 1.0)
+const EMPTY_COLOR := Color(0.78, 0.8, 0.82, 1.0)
+const COLOR_NAVY := Color(0.122, 0.161, 0.216, 1.0)       # #1F2937
 const UPGRADE_ICONS: Dictionary = {
 	"spawn_rate": preload("res://assets/textures/icon_repeat.png"),
 	"coin_value": preload("res://assets/textures/icon_star.png"),
@@ -18,11 +17,8 @@ const UPGRADE_ICONS: Dictionary = {
 	"magnet": preload("res://assets/textures/icon_circle.png"),
 }
 # Flexion brand colors for buy button states
-const COLOR_CTA_ORANGE := Color(0.812, 0.291, 0.008, 1.0)      # #CF4A02
-const COLOR_CTA_ORANGE_HOVER := Color(0.878, 0.373, 0.102, 1.0) # #E05F1A
 const COLOR_GREEN := Color(0.231, 0.698, 0.451, 1.0)            # #3BB273
 const COLOR_CHARCOAL := Color(0.294, 0.333, 0.388, 1.0)         # #4B5563
-const COLOR_CHARCOAL_DARK := Color(0.2, 0.24, 0.3, 1.0)
 
 var upgrade_id: String = ""
 var _segment_rects: Array[ColorRect] = []
@@ -35,7 +31,7 @@ var _purchase_sound: AudioStreamPlayer
 var _reject_sound: AudioStreamPlayer
 var _style_afford: StyleBoxTexture
 var _style_unafford: StyleBoxTexture
-var _style_green: StyleBoxTexture
+
 
 @onready var name_label: Label = %NameLabel
 @onready var effect_label: Label = %EffectLabel
@@ -60,7 +56,6 @@ func _ready() -> void:
 	var sheet: Texture2D = preload("res://assets/greySheet.png")
 	_style_afford = _create_atlas_style(sheet, Rect2(0, 49, 191, 49))    # grey_button06 — raised
 	_style_unafford = _create_atlas_style(sheet, Rect2(0, 286, 190, 45)) # grey_button04 — flat/muted
-	_style_green = _create_atlas_style(sheet, Rect2(0, 49, 191, 49))     # same as afford (tinted green via modulate)
 	_apply_buy_style(_style_unafford)
 	_update_display()
 
@@ -179,16 +174,14 @@ func _apply_buy_style(style: StyleBoxTexture) -> void:
 func _update_afford_cue(affordable: bool) -> void:
 	if affordable:
 		modulate.a = 1.0
-		buy_button.add_theme_color_override("font_color", COLOR_CTA_ORANGE)
-		buy_button.self_modulate = Color.WHITE
+		buy_button.add_theme_color_override("font_color", COLOR_NAVY)
 		_apply_buy_style(_style_afford)
 		if not _was_affordable:
 			_was_affordable = true
 			_start_pulse()
 	else:
-		modulate.a = 0.7
+		modulate.a = 0.85
 		buy_button.add_theme_color_override("font_color", COLOR_CHARCOAL)
-		buy_button.self_modulate = Color.WHITE
 		_apply_buy_style(_style_unafford)
 		if _was_affordable:
 			_was_affordable = false
@@ -218,7 +211,7 @@ func _animate_purchase() -> void:
 	tween.tween_callback(func() -> void:
 		scale = Vector2(1.0, 1.0)
 		var affordable := GameManager.currency >= GameManager.get_upgrade_cost(upgrade_id)
-		buy_button.add_theme_color_override("font_color", COLOR_CTA_ORANGE if affordable else COLOR_CHARCOAL)
+		buy_button.add_theme_color_override("font_color", COLOR_NAVY if affordable else COLOR_CHARCOAL)
 		_apply_buy_style(_style_afford if affordable else _style_unafford)
 	)
 	if _purchase_sound:
@@ -239,7 +232,7 @@ func _animate_reject() -> void:
 	_shake_tween.tween_callback(func() -> void:
 		buy_button.get_parent().queue_sort()
 		var affordable := GameManager.currency >= GameManager.get_upgrade_cost(upgrade_id)
-		buy_button.add_theme_color_override("font_color", COLOR_CTA_ORANGE if affordable else COLOR_CHARCOAL)
+		buy_button.add_theme_color_override("font_color", COLOR_NAVY if affordable else COLOR_CHARCOAL)
 	)
 	if _reject_sound:
 		_reject_sound.play()
