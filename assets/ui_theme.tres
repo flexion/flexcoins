@@ -1,90 +1,90 @@
-[gd_resource type="Theme" load_steps=13 format=3]
+[gd_resource type="Theme" format=3 uid="uid://c6lbb1vqjfp7y"]
 
 [ext_resource type="Texture2D" uid="uid://ctu1gw0yk7rh4" path="res://assets/greySheet.png" id="1_greysheet"]
-
-[sub_resource type="AtlasTexture" id="atlas_btn_normal"]
-atlas = ExtResource("1_greysheet")
-region = Rect2(0, 143, 190, 45)
-
-[sub_resource type="AtlasTexture" id="atlas_btn_hover"]
-atlas = ExtResource("1_greysheet")
-region = Rect2(0, 98, 190, 45)
-
-[sub_resource type="AtlasTexture" id="atlas_btn_pressed"]
-atlas = ExtResource("1_greysheet")
-region = Rect2(0, 188, 190, 49)
 
 [sub_resource type="AtlasTexture" id="atlas_btn_disabled"]
 atlas = ExtResource("1_greysheet")
 region = Rect2(0, 286, 190, 45)
 
-[sub_resource type="AtlasTexture" id="atlas_panel"]
-atlas = ExtResource("1_greysheet")
-region = Rect2(190, 98, 100, 100)
-
-[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_btn_normal"]
-texture = SubResource("atlas_btn_normal")
-texture_margin_left = 12.0
-texture_margin_top = 12.0
-texture_margin_right = 12.0
-texture_margin_bottom = 12.0
-content_margin_left = 12.0
-content_margin_top = 6.0
-content_margin_right = 12.0
-content_margin_bottom = 10.0
-
-[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_btn_hover"]
-texture = SubResource("atlas_btn_hover")
-texture_margin_left = 12.0
-texture_margin_top = 12.0
-texture_margin_right = 12.0
-texture_margin_bottom = 12.0
-content_margin_left = 12.0
-content_margin_top = 6.0
-content_margin_right = 12.0
-content_margin_bottom = 10.0
-
-[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_btn_pressed"]
-texture = SubResource("atlas_btn_pressed")
-texture_margin_left = 12.0
-texture_margin_top = 12.0
-texture_margin_right = 12.0
-texture_margin_bottom = 12.0
-content_margin_left = 12.0
-content_margin_top = 8.0
-content_margin_right = 12.0
-content_margin_bottom = 8.0
-
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_btn_disabled"]
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
 texture = SubResource("atlas_btn_disabled")
 texture_margin_left = 12.0
 texture_margin_top = 12.0
 texture_margin_right = 12.0
 texture_margin_bottom = 12.0
+
+[sub_resource type="AtlasTexture" id="atlas_btn_hover"]
+atlas = ExtResource("1_greysheet")
+region = Rect2(0, 98, 190, 45)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_btn_hover"]
 content_margin_left = 12.0
 content_margin_top = 6.0
 content_margin_right = 12.0
 content_margin_bottom = 10.0
+texture = SubResource("atlas_btn_hover")
+texture_margin_left = 12.0
+texture_margin_top = 12.0
+texture_margin_right = 12.0
+texture_margin_bottom = 12.0
+
+[sub_resource type="AtlasTexture" id="atlas_btn_normal"]
+atlas = ExtResource("1_greysheet")
+region = Rect2(0, 143, 190, 45)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_btn_normal"]
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+texture = SubResource("atlas_btn_normal")
+texture_margin_left = 12.0
+texture_margin_top = 12.0
+texture_margin_right = 12.0
+texture_margin_bottom = 12.0
+
+[sub_resource type="AtlasTexture" id="atlas_btn_pressed"]
+atlas = ExtResource("1_greysheet")
+region = Rect2(0, 188, 190, 49)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_btn_pressed"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
+texture = SubResource("atlas_btn_pressed")
+texture_margin_left = 12.0
+texture_margin_top = 12.0
+texture_margin_right = 12.0
+texture_margin_bottom = 12.0
+
+[sub_resource type="AtlasTexture" id="atlas_panel"]
+atlas = ExtResource("1_greysheet")
+region = Rect2(190, 98, 100, 100)
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_panel"]
+content_margin_left = 12.0
+content_margin_top = 8.0
+content_margin_right = 12.0
+content_margin_bottom = 8.0
 texture = SubResource("atlas_panel")
 texture_margin_left = 16.0
 texture_margin_top = 16.0
 texture_margin_right = 16.0
 texture_margin_bottom = 16.0
-content_margin_left = 12.0
-content_margin_top = 8.0
-content_margin_right = 12.0
-content_margin_bottom = 8.0
 
 [resource]
-Button/styles/normal = SubResource("StyleBoxTexture_btn_normal")
-Button/styles/hover = SubResource("StyleBoxTexture_btn_hover")
-Button/styles/pressed = SubResource("StyleBoxTexture_btn_pressed")
-Button/styles/disabled = SubResource("StyleBoxTexture_btn_disabled")
-Button/styles/focus = SubResource("StyleBoxTexture_btn_hover")
 Button/colors/font_color = Color(0.294, 0.333, 0.388, 1)
+Button/colors/font_disabled_color = Color(0.6, 0.6, 0.6, 1)
 Button/colors/font_hover_color = Color(0.122, 0.161, 0.216, 1)
 Button/colors/font_pressed_color = Color(0.122, 0.161, 0.216, 1)
-Button/colors/font_disabled_color = Color(0.6, 0.6, 0.6, 1)
+Button/styles/disabled = SubResource("StyleBoxTexture_btn_disabled")
+Button/styles/focus = SubResource("StyleBoxTexture_btn_hover")
+Button/styles/hover = SubResource("StyleBoxTexture_btn_hover")
+Button/styles/normal = SubResource("StyleBoxTexture_btn_normal")
+Button/styles/pressed = SubResource("StyleBoxTexture_btn_pressed")
 PanelContainer/styles/panel = SubResource("StyleBoxTexture_panel")
