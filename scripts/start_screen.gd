@@ -9,7 +9,7 @@ const LOGO_TEXTURE: Texture2D = preload("res://logo.png")
 const DISPLAY_FONT: Font = preload("res://assets/fonts/kenney_future.ttf")
 const UI_THEME: Theme = preload("res://assets/ui_theme.tres")
 const COIN_SCALE_GOLD: float = 2.0       # 128 * 2.0 = 256px (5x normal)
-const COIN_SCALE_LARGE: float = 0.25     # 1024 * 0.25 = 256px (matches gold)
+const COIN_SCALE_LARGE: float = 2.0      # 128 * 2.0 = 256px (matches gold)
 const MIN_SPEED: float = 60.0
 const MAX_SPEED: float = 160.0
 
@@ -38,6 +38,7 @@ func _ready() -> void:
 	# Spawn coins
 	for i: int in range(COIN_COUNT):
 		var coin: Sprite2D = Sprite2D.new()
+		coin.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		coin.position = Vector2(randf_range(-80.0, 2240.0), randf_range(-200.0, 1280.0))
 		coin.rotation = randf_range(0.0, TAU)
 

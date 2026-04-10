@@ -31,10 +31,8 @@ func _ready() -> void:
 	_rotation_speed = randf_range(-1.5, 1.5)
 	_current_speed = fall_speed * 0.15
 
-	# SILVER type uses the silver texture (1024x1024 vs gold's 128x128)
 	if coin_type == CoinType.SILVER:
 		sprite.texture = TEXTURE_SILVER
-		sprite.scale = Vector2(0.05, 0.05)
 
 	match coin_type:
 		CoinType.GOLD:
@@ -167,6 +165,7 @@ func _add_trail() -> void:
 		_:
 			trail.texture = preload("res://assets/textures/star_yellow.png")
 			trail.color_ramp = _make_sparkle_gradient(Color(1.0, 0.9, 0.3, 0.8), Color(1.0, 0.7, 0.1, 0.0))
+	trail.show_behind_parent = true
 	add_child(trail)
 
 
