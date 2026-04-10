@@ -64,12 +64,15 @@ func _ready() -> void:
 	# Centered panel (same style as shop menu)
 	var panel: PanelContainer = PanelContainer.new()
 	panel.theme = UI_THEME
+	panel.self_modulate = Color(0.15, 0.17, 0.22, 0.95)
 	panel.position = Vector2(430, 260)
 	panel.size = Vector2(1300, 760)
 	panel.z_index = 5
+	panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	add_child(panel)
 
 	var margin: MarginContainer = MarginContainer.new()
+	margin.mouse_filter = Control.MOUSE_FILTER_PASS
 	margin.add_theme_constant_override("margin_left", 40)
 	margin.add_theme_constant_override("margin_right", 40)
 	margin.add_theme_constant_override("margin_top", 40)
@@ -77,6 +80,7 @@ func _ready() -> void:
 	panel.add_child(margin)
 
 	var vbox: VBoxContainer = VBoxContainer.new()
+	vbox.mouse_filter = Control.MOUSE_FILTER_PASS
 	vbox.add_theme_constant_override("separation", 40)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	margin.add_child(vbox)
@@ -91,9 +95,8 @@ func _ready() -> void:
 	logo_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	vbox.add_child(logo_rect)
 
-	# "Tap to Play" label inside panel
 	var tap_label: Label = Label.new()
-	tap_label.text = "Tap to Play"
+	tap_label.text = "Continue"
 	tap_label.add_theme_font_override("font", DISPLAY_FONT)
 	tap_label.add_theme_font_size_override("font_size", 42)
 	tap_label.add_theme_color_override("font_color", Color(0.98, 0.682, 0.231, 1.0))
