@@ -1,5 +1,8 @@
 extends CanvasLayer
 
+const CURRENCY_TICK_SPEED: float = 8.0
+const CURRENCY_TICK_SNAP: float = 0.5
+
 @export var upgrade_button_scene: PackedScene
 
 var _gold_flash: ColorRect
@@ -40,6 +43,9 @@ var _shop_close_button: Button
 var _bottom_bar: HBoxContainer
 var _sound_toggle: Button
 var _fullscreen_toggle: Button
+var _displayed_currency: float = 0.0
+var _target_currency: int = 0
+var _currency_ticking: bool = false
 var _display_font: Font = preload("res://assets/fonts/kenney_future.ttf")
 var _narrow_font: Font = preload("res://assets/fonts/kenney_future_narrow.ttf")
 
@@ -61,7 +67,9 @@ func _ready() -> void:
 	GameManager.combo_changed.connect(_on_combo_changed)
 	currency_label.add_theme_font_override("font", _display_font)
 	currency_label.add_theme_font_size_override("font_size", 48)
-	_on_currency_changed(GameManager.currency)
+	_displayed_currency = float(GameManager.currency)
+	_target_currency = GameManager.currency
+	currency_label.text = "Coins: %s" % _format_currency(GameManager.currency)
 	_create_upgrade_buttons()
 	shop_toggle.pressed.connect(_on_shop_toggle_pressed)
 	_create_settings_ui()
@@ -79,6 +87,14 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# Currency tick-up animation
+	if _currency_ticking:
+		var target_f: float = float(_target_currency)
+		_displayed_currency = lerpf(_displayed_currency, target_f, 1.0 - exp(-CURRENCY_TICK_SPEED * delta))
+		if absf(_displayed_currency - target_f) < CURRENCY_TICK_SNAP:
+			_displayed_currency = target_f
+			_currency_ticking = false
+		currency_label.text = "Coins: %s" % _format_currency(int(roundf(_displayed_currency)))
 	# Rainbow combo label at 100+ combo
 	if _combo_count >= 100 and _combo_label.visible:
 		_combo_rainbow_time += delta * 1.5
@@ -87,7 +103,9 @@ func _process(delta: float) -> void:
 
 
 func _on_currency_changed(new_amount: int) -> void:
-	currency_label.text = "Coins: %s" % _format_currency(new_amount)
+	_target_currency = new_amount
+	if not _currency_ticking:
+		_currency_ticking = true
 	currency_label.custom_minimum_size.x = 280.0
 	currency_label.pivot_offset = currency_label.size / 2.0
 	_update_ascend_button()
