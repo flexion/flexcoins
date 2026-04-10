@@ -1,0 +1,20 @@
+{
+  "name": "Shop UI Flow Test",
+  "description": "Tests currency addition, purchase flow, and UI state consistency",
+  "steps": [
+    {"type": "wait", "seconds": 0.5, "comment": "Brief wait for game to stabilize"},
+    {"type": "command", "name": "reset-session", "comment": "Reset to clean state"},
+    {"type": "command", "name": "clear-coins", "comment": "Remove any falling coins"},
+    {"type": "wait", "seconds": 0.2},
+    {"type": "screenshot", "filename": "shop_flow_01_initial.png"},
+    {"type": "command", "name": "run-method", "node_path": "/root/GameManager", "method": "add_currency", "args": [10000], "comment": "Give currency for testing"},
+    {"type": "wait", "seconds": 0.5},
+    {"type": "screenshot", "filename": "shop_flow_02_with_currency.png"},
+    {"type": "command", "name": "validate-ui", "comment": "Validate UI with currency"},
+    {"type": "command", "name": "run-method", "node_path": "/root/GameManager", "method": "try_purchase_upgrade", "args": ["spawn_rate"], "comment": "Purchase spawn rate upgrade"},
+    {"type": "wait", "seconds": 0.5},
+    {"type": "screenshot", "filename": "shop_flow_03_after_purchase.png"},
+    {"type": "command", "name": "validate-ui", "comment": "Validate UI after purchase"},
+    {"type": "screenshot", "filename": "shop_flow_04_final.png"}
+  ]
+}

@@ -11,6 +11,7 @@ var _combo_multiplier_glow_tween: Tween
 var _flash_tween: Tween
 var _milestone_tween: Tween
 var _shop_open: bool = false
+var _shop_tweening: bool = false
 var _shop_tween: Tween
 var _currency_pop_tween: Tween
 var _currency_flash_tween: Tween
@@ -58,7 +59,8 @@ func _ready() -> void:
 
 
 func _on_currency_changed(new_amount: int) -> void:
-	currency_label.text = "Coins: %d" % new_amount
+	currency_label.text = "Coins: %s" % _format_currency(new_amount)
+	currency_label.custom_minimum_size.x = 280.0
 	currency_label.pivot_offset = currency_label.size / 2.0
 	_update_ascend_button()
 
@@ -72,12 +74,13 @@ func _create_upgrade_buttons() -> void:
 
 
 func _on_shop_toggle_pressed() -> void:
-	if _shop_tween and _shop_tween.is_running():
+	if _shop_tweening:
 		return
 	# Close settings panel if open (mutual exclusion)
 	if _settings_open:
 		_close_settings()
 	_shop_open = not _shop_open
+	_shop_tweening = true
 	shop_toggle.text = "Close" if _shop_open else "Shop"
 	if _shop_open:
 		GameManager.shop_opened.emit()
@@ -87,11 +90,15 @@ func _on_shop_toggle_pressed() -> void:
 	if _shop_open:
 		upgrade_panel.visible = true
 		upgrade_panel.offset_top = 0.0
-		_shop_tween.tween_property(upgrade_panel, "offset_top", -260.0, 0.3)
+		_shop_tween.tween_property(upgrade_panel, "offset_top", -320.0, 0.3)
+		_shop_tween.tween_callback(func() -> void: _shop_tweening = false)
 	else:
 		_shop_tween.set_trans(Tween.TRANS_QUAD)
 		_shop_tween.tween_property(upgrade_panel, "offset_top", 0.0, 0.2)
-		_shop_tween.tween_callback(func() -> void: upgrade_panel.visible = false)
+		_shop_tween.tween_callback(func() -> void:
+			upgrade_panel.visible = false
+			_shop_tweening = false
+		)
 
 
 func _create_ascension_ui() -> void:
@@ -409,9 +416,13 @@ func _open_settings() -> void:
 		GameManager.shop_closed.emit()
 		if _shop_tween and _shop_tween.is_running():
 			_shop_tween.kill()
+		_shop_tweening = true
 		_shop_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 		_shop_tween.tween_property(upgrade_panel, "offset_top", 0.0, 0.2)
-		_shop_tween.tween_callback(func() -> void: upgrade_panel.visible = false)
+		_shop_tween.tween_callback(func() -> void:
+			upgrade_panel.visible = false
+			_shop_tweening = false
+		)
 	_settings_open = true
 	_settings_backdrop.visible = true
 	_settings_panel.visible = true
@@ -583,6 +594,16 @@ func _show_milestone_celebration(amount: int) -> void:
 
 	# Spawn celebration particles across the screen
 	_spawn_celebration_particles()
+
+
+func _format_currency(amount: int) -> String:
+	var s := str(amount)
+	var result := ""
+	for i in range(s.length()):
+		if i > 0 and (s.length() - i) % 3 == 0:
+			result += ","
+		result += s[i]
+	return result
 
 
 func _spawn_celebration_particles() -> void:
