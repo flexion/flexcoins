@@ -12,8 +12,11 @@ signal shop_opened
 signal shop_closed
 signal combo_multiplier_changed(new_multiplier: float)
 signal combo_changed(count: int)
+signal boost_used
+signal boost_ready
 
 const MILESTONES: Array[int] = [100, 500, 1000, 5000, 10000, 50000, 100000]
+const BOOST_COOLDOWN: float = 3.0
 
 const UPGRADE_DATA: Dictionary = {
 	"spawn_rate": {"name": "Spawn Rate", "description": "More coins fall", "base_cost": 25, "cost_growth": 1.50},
@@ -22,6 +25,7 @@ const UPGRADE_DATA: Dictionary = {
 	"catcher_width": {"name": "Catcher Width", "description": "Wider catcher", "base_cost": 30, "cost_growth": 1.25},
 	"auto_catcher": {"name": "Auto Platform", "description": "Auto-catching platforms", "base_cost": 750, "cost_growth": 1.60},
 	"coin_types": {"name": "Coin Types", "description": "Unlock new coin types", "base_cost": 100, "cost_growth": 2.5, "max_level": 4},
+	"boost_power": {"name": "Boost Power", "description": "Dash further", "base_cost": 50, "cost_growth": 1.35},
 }
 
 var currency: int = 0
@@ -80,6 +84,10 @@ func get_catcher_width() -> float:
 
 func get_auto_catcher_count() -> int:
 	return _upgrade_levels.get("auto_catcher", 0)
+
+
+func get_boost_distance() -> float:
+	return 200.0 + _upgrade_levels.get("boost_power", 0) * 50.0
 
 
 func get_coin_type_unlock_level() -> int:

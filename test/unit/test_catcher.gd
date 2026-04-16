@@ -344,3 +344,40 @@ func test_catcher_speed_formula() -> String:
 	var result: String = _T.assert_float_eq(gm.get_catcher_speed(), 1000.0, 0.001, "Speed at level 8: 600+400=1000")
 	_free_gm(gm)
 	return result
+
+
+# ============= Boost Distance Formula =============
+
+func test_boost_distance_at_level_0() -> String:
+	var gm: Node = _make_gm()
+	var result: String = _T.assert_float_eq(gm.get_boost_distance(), 200.0, 0.001, "Boost distance at level 0")
+	_free_gm(gm)
+	return result
+
+
+func test_boost_distance_at_level_5() -> String:
+	var gm: Node = _make_gm()
+	gm._upgrade_levels["boost_power"] = 5
+	var result: String = _T.assert_float_eq(gm.get_boost_distance(), 450.0, 0.001, "Boost distance at level 5: 200+250=450")
+	_free_gm(gm)
+	return result
+
+
+func test_boost_distance_at_level_10() -> String:
+	var gm: Node = _make_gm()
+	gm._upgrade_levels["boost_power"] = 10
+	var result: String = _T.assert_float_eq(gm.get_boost_distance(), 700.0, 0.001, "Boost distance at level 10: 200+500=700")
+	_free_gm(gm)
+	return result
+
+
+# ============= Boost Clamping Logic =============
+
+func test_boost_clamp_at_left_edge() -> String:
+	var target: float = _clamp_position(100.0 - 200.0, 100.0, 2160.0)
+	return _T.assert_float_eq(target, 50.0, 0.001, "Boost left clamped at edge")
+
+
+func test_boost_clamp_at_right_edge() -> String:
+	var target: float = _clamp_position(2100.0 + 200.0, 100.0, 2160.0)
+	return _T.assert_float_eq(target, 2110.0, 0.001, "Boost right clamped at edge")

@@ -130,6 +130,7 @@ func _create_upgrade_buttons() -> void:
 
 
 func _on_shop_toggle_pressed() -> void:
+	shop_toggle.release_focus()
 	if _shop_tweening:
 		return
 	if _settings_open:
@@ -779,6 +780,7 @@ func _create_settings_ui() -> void:
 
 
 func _on_gear_pressed() -> void:
+	_gear_button.release_focus()
 	if _settings_tween and _settings_tween.is_running():
 		return
 	if _settings_open:

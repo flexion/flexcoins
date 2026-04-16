@@ -51,7 +51,7 @@ All UI elements must use these colors. Do not introduce arbitrary colors — pic
 - **Open in Godot editor**: `godot project.godot` (or open via Godot Project Manager)
 - **Run the game**: Press F5 in editor (main scene: `res://scenes/main.tscn`)
 - **Run a specific scene**: Press F6 in editor, or `godot --path . scenes/coin.tscn`
-- **Input actions**: `move_left` (Left arrow / A), `move_right` (Right arrow / D)
+- **Input actions**: `move_left` (Left arrow / A), `move_right` (Right arrow / D), `boost` (Space)
 
 ## Validation & Testing Infrastructure
 
@@ -256,6 +256,7 @@ Tier progression is automatic and triggered in `catcher.gd:_update_catcher_visua
 | catcher_width | 100 + level × 15 px | 30 | 1.25 |
 | coin_types | Unlocks Silver → Frenzy/Bomb → Gold → Multi (max level 4) | 100 | 2.50 |
 | auto_catcher | 1 auto platform per level | 750 | 1.60 |
+| boost_power | 200 + level × 50 px dash distance (3s cooldown) | 50 | 1.35 |
 
 ### Data Flow
 Spawner → instantiates Coins (value from GameManager) → Coins fall → Catcher detects overlap → GameManager.add_currency() → emits currency_changed → HUD updates label. Upgrades: UpgradeButton → GameManager.try_purchase_upgrade() → emits upgrade_purchased → Catcher/Spawner react.

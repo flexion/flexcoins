@@ -27,6 +27,12 @@ const COMBO_MULTIPLIER_50: float = 1.5
 const COMBO_MULTIPLIER_100: float = 2.0
 const COMBO_THRESHOLD_50: int = 50
 const COMBO_THRESHOLD_100: int = 100
+const BOOST_TWEEN_DURATION: float = 0.12
+const COOLDOWN_BAR_HEIGHT: float = 4.0
+const COOLDOWN_BAR_Y_OFFSET: float = 14.0
+const COOLDOWN_COLOR_ACTIVE := Color(0.878, 0.373, 0.102, 0.8)
+const COOLDOWN_COLOR_READY := Color(0.231, 0.698, 0.451, 0.8)
+const COOLDOWN_COLOR_BG := Color(0.294, 0.333, 0.388, 0.3)
 var speed: float = 600.0
 
 var _prev_x: float = 0.0
@@ -40,6 +46,12 @@ var _game_paused: bool = false
 var _frenzy_active: bool = false
 var _base_scale: Vector2 = Vector2.ONE
 var _squash_tween: Tween
+var _last_move_direction: float = 1.0
+var _boost_cooldown_remaining: float = 0.0
+var _boost_active: bool = false
+var _boost_tween: Tween
+var _cooldown_bar: ColorRect
+var _cooldown_bar_bg: ColorRect
 
 const SPRITE_NATIVE_W: float = 128.0
 const SPRITE_NATIVE_H: float = 8.0
@@ -63,6 +75,7 @@ func _ready() -> void:
 	position.x = get_viewport_rect().size.x / 2.0
 	_prev_x = position.x
 	_setup_trail()
+	_setup_cooldown_bar()
 	GameManager.coin_missed.connect(_on_coin_missed)
 	GameManager.bomb_hit.connect(_on_bomb_hit)
 	GameManager.shop_opened.connect(_on_shop_opened)
@@ -74,13 +87,16 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if _game_paused:
 		return
-	var direction := Input.get_axis("move_left", "move_right")
-	var half_width := GameManager.get_catcher_width() / 2.0
-	var viewport_width := get_viewport_rect().size.x
-	var unclamped_x := position.x + direction * speed * delta
-	position.x = clamp(unclamped_x, half_width, viewport_width - half_width)
-	if unclamped_x != position.x:
-		scale = Vector2.ONE
+	if not _boost_active:
+		var direction := Input.get_axis("move_left", "move_right")
+		if direction != 0.0:
+			_last_move_direction = direction
+		var half_width := GameManager.get_catcher_width() / 2.0
+		var viewport_width := get_viewport_rect().size.x
+		var unclamped_x := position.x + direction * speed * delta
+		position.x = clamp(unclamped_x, half_width, viewport_width - half_width)
+		if unclamped_x != position.x:
+			scale = Vector2.ONE
 
 	# Motion trail intensity based on speed
 	var velocity := absf(position.x - _prev_x) / delta
@@ -96,6 +112,8 @@ func _process(delta: float) -> void:
 	# Reset to base scale when no squash is active
 	if not (_squash_tween and _squash_tween.is_running()):
 		sprite.scale = _base_scale
+
+	_update_cooldown(delta)
 
 	# Rainbow animation for tier 3+
 	if _catcher_tier >= 3:
@@ -331,3 +349,103 @@ func _on_shop_closed() -> void:
 	monitoring = true
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if _game_paused:
+		return
+	if event.is_action_pressed("boost"):
+		var direction := Input.get_axis("move_left", "move_right")
+		if direction == 0.0:
+			direction = _last_move_direction
+		_try_boost(direction)
+
+
+func _try_boost(direction: float) -> void:
+	if _boost_cooldown_remaining > 0.0:
+		return
+	if _boost_active:
+		return
+	_boost_active = true
+	var boost_dist: float = GameManager.get_boost_distance()
+	var half_width: float = GameManager.get_catcher_width() / 2.0
+	if _bomb_shrink_active:
+		half_width = GameManager.get_catcher_width() * 0.6 / 2.0
+	var viewport_width: float = get_viewport_rect().size.x
+	var target_x: float = clampf(
+		position.x + direction * boost_dist,
+		half_width,
+		viewport_width - half_width
+	)
+	if _boost_tween and _boost_tween.is_running():
+		_boost_tween.kill()
+	_boost_tween = create_tween()
+	_boost_tween.tween_property(self, "position:x", target_x, BOOST_TWEEN_DURATION) \
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	_boost_tween.tween_callback(_on_boost_finished)
+	_boost_cooldown_remaining = GameManager.BOOST_COOLDOWN
+	_show_cooldown_bar()
+	_squash_bounce()
+	GameManager.boost_used.emit()
+
+
+func _on_boost_finished() -> void:
+	_boost_active = false
+
+
+func _update_cooldown(delta: float) -> void:
+	if _boost_cooldown_remaining <= 0.0:
+		return
+	_boost_cooldown_remaining -= delta
+	if _boost_cooldown_remaining <= 0.0:
+		_boost_cooldown_remaining = 0.0
+		_hide_cooldown_bar()
+		GameManager.boost_ready.emit()
+	else:
+		_update_cooldown_bar_width()
+
+
+func _setup_cooldown_bar() -> void:
+	_cooldown_bar_bg = ColorRect.new()
+	_cooldown_bar_bg.color = COOLDOWN_COLOR_BG
+	_cooldown_bar_bg.size = Vector2(GameManager.get_catcher_width(), COOLDOWN_BAR_HEIGHT)
+	_cooldown_bar_bg.position = Vector2(-GameManager.get_catcher_width() / 2.0, COOLDOWN_BAR_Y_OFFSET)
+	_cooldown_bar_bg.visible = false
+	add_child(_cooldown_bar_bg)
+
+	_cooldown_bar = ColorRect.new()
+	_cooldown_bar.color = COOLDOWN_COLOR_ACTIVE
+	_cooldown_bar.size = Vector2(GameManager.get_catcher_width(), COOLDOWN_BAR_HEIGHT)
+	_cooldown_bar.position = Vector2(-GameManager.get_catcher_width() / 2.0, COOLDOWN_BAR_Y_OFFSET)
+	_cooldown_bar.visible = false
+	add_child(_cooldown_bar)
+
+
+func _show_cooldown_bar() -> void:
+	_cooldown_bar_bg.visible = true
+	_cooldown_bar.visible = true
+	_cooldown_bar.color = COOLDOWN_COLOR_ACTIVE
+	_update_cooldown_bar_width()
+
+
+func _hide_cooldown_bar() -> void:
+	_cooldown_bar.color = COOLDOWN_COLOR_READY
+	var tween := create_tween()
+	tween.tween_interval(0.2)
+	tween.tween_property(_cooldown_bar, "modulate:a", 0.0, 0.15)
+	tween.parallel().tween_property(_cooldown_bar_bg, "modulate:a", 0.0, 0.15)
+	tween.tween_callback(func() -> void:
+		_cooldown_bar.visible = false
+		_cooldown_bar_bg.visible = false
+		_cooldown_bar.modulate.a = 1.0
+		_cooldown_bar_bg.modulate.a = 1.0
+	)
+
+
+func _update_cooldown_bar_width() -> void:
+	var current_w: float = GameManager.get_catcher_width()
+	if _bomb_shrink_active:
+		current_w *= 0.6
+	var ratio: float = _boost_cooldown_remaining / GameManager.BOOST_COOLDOWN
+	_cooldown_bar_bg.size.x = current_w
+	_cooldown_bar_bg.position.x = -current_w / 2.0
+	_cooldown_bar.size.x = current_w * ratio
+	_cooldown_bar.position.x = -current_w / 2.0

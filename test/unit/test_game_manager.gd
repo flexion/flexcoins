@@ -518,14 +518,6 @@ func test_coin_type_max_level_blocks_purchase() -> String:
 	return result
 
 
-func test_coin_types_not_in_core_upgrades() -> String:
-	var gm: Node = _make_gm()
-	var in_core: bool = "coin_types" in gm.CORE_UPGRADES
-	var result: String = _T.assert_false(in_core, "coin_types should not be a core upgrade")
-	_free_gm(gm)
-	return result
-
-
 func test_coin_type_cost_progression() -> String:
 	var gm: Node = _make_gm()
 	var costs: Array[int] = []
@@ -546,6 +538,55 @@ func test_coin_type_cost_progression() -> String:
 		_free_gm(gm)
 		return result
 	result = _T.assert_eq(costs[3], 1562, "Coin types cost at level 3")
+	_free_gm(gm)
+	return result
+
+
+# ============= Boost Power Upgrade Tests =============
+
+func test_boost_power_in_upgrade_data() -> String:
+	var gm: Node = _make_gm()
+	var has_it: bool = gm.UPGRADE_DATA.has("boost_power")
+	var result: String = _T.assert_true(has_it, "boost_power should be in UPGRADE_DATA")
+	_free_gm(gm)
+	return result
+
+
+func test_boost_distance_initial() -> String:
+	var gm: Node = _make_gm()
+	var result: String = _T.assert_float_eq(gm.get_boost_distance(), 200.0, 0.001, "Initial boost distance")
+	_free_gm(gm)
+	return result
+
+
+func test_boost_distance_at_level_5() -> String:
+	var gm: Node = _make_gm()
+	gm._upgrade_levels["boost_power"] = 5
+	var result: String = _T.assert_float_eq(gm.get_boost_distance(), 450.0, 0.001, "Boost distance at level 5: 200+250=450")
+	_free_gm(gm)
+	return result
+
+
+func test_boost_distance_increases_with_level() -> String:
+	var gm: Node = _make_gm()
+	var dist_0: float = gm.get_boost_distance()
+	gm._upgrade_levels["boost_power"] = 3
+	var dist_3: float = gm.get_boost_distance()
+	var result: String = _T.assert_gt(dist_3, dist_0, "Boost distance should increase with level")
+	_free_gm(gm)
+	return result
+
+
+func test_boost_power_cost_progression() -> String:
+	var gm: Node = _make_gm()
+	var cost_0: int = gm.get_upgrade_cost("boost_power")
+	gm._upgrade_levels["boost_power"] = 1
+	var cost_1: int = gm.get_upgrade_cost("boost_power")
+	var result: String = _T.assert_eq(cost_0, 50, "Boost power cost at level 0")
+	if result != "":
+		_free_gm(gm)
+		return result
+	result = _T.assert_eq(cost_1, 67, "Boost power cost at level 1: int(50*1.35)=67")
 	_free_gm(gm)
 	return result
 

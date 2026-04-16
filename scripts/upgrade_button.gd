@@ -16,6 +16,7 @@ const UPGRADE_ICONS: Dictionary = {
 	"catcher_width": preload("res://assets/textures/icon_arrow_right.png"),
 	"auto_catcher": preload("res://assets/textures/icon_arrow_left.png"),
 	"coin_types": preload("res://assets/textures/icon_circle.png"),
+	"boost_power": preload("res://assets/textures/icon_arrow_up.png"),
 }
 # Flexion brand colors for buy button states
 const COLOR_GREEN := Color(0.231, 0.698, 0.451, 1.0)            # #3BB273
@@ -62,6 +63,7 @@ func _ready() -> void:
 
 
 func _on_buy_pressed() -> void:
+	buy_button.release_focus()
 	if GameManager.try_purchase_upgrade(upgrade_id):
 		_animate_purchase()
 	else:
