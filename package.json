@@ -1,0 +1,8 @@
+{
+  "name": "flexcoins-infra",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "sst": "latest"
+  }
+}

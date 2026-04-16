@@ -18,5 +18,9 @@ trailer/public/*.import
 # UI Pack asset library (only used files copied to assets/ui/)
 UI Pack/
 
+# SST
+.sst/
+node_modules/
+
 # Claude Code
 .claude/worktrees/
