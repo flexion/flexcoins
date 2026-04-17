@@ -25,7 +25,7 @@ DevTools="*res://scripts/dev_tools.gd"
 window/size/viewport_width=2160
 window/size/viewport_height=1280
 window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
+window/stretch/aspect="keep"
 
 [input]
 

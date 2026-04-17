@@ -56,6 +56,8 @@ var _cooldown_bar_bg: ColorRect
 const SPRITE_NATIVE_W: float = 128.0
 const SPRITE_NATIVE_H: float = 8.0
 const CATCHER_HEIGHT: float = 20.0
+const CATCHER_BOTTOM_OFFSET: float = 240.0
+const BOMB_SHRINK_FACTOR: float = 0.6
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
@@ -72,7 +74,9 @@ func _ready() -> void:
 
 	GameManager.upgrade_purchased.connect(_on_upgrade_purchased)
 	_apply_upgrades()
-	position.x = get_viewport_rect().size.x / 2.0
+	var vp_size: Vector2 = get_viewport_rect().size
+	position.x = vp_size.x / 2.0
+	position.y = vp_size.y - CATCHER_BOTTOM_OFFSET
 	_prev_x = position.x
 	_setup_trail()
 	_setup_cooldown_bar()
@@ -153,6 +157,11 @@ func _apply_upgrades() -> void:
 	sprite.scale = _base_scale
 	collision_shape.shape.size = Vector2(w, CATCHER_HEIGHT)
 	_update_catcher_visual()
+	if _cooldown_bar_bg:
+		_cooldown_bar_bg.size.x = w
+		_cooldown_bar_bg.position.x = -w / 2.0
+		_cooldown_bar.size.x = w
+		_cooldown_bar.position.x = -w / 2.0
 
 
 func _update_catcher_visual() -> void:
@@ -270,7 +279,7 @@ func _on_bomb_hit() -> void:
 	GameManager.combo_changed.emit(0)
 	# Shrink to 60% width
 	var normal_w := GameManager.get_catcher_width()
-	var shrunk_w := normal_w * 0.6
+	var shrunk_w := normal_w * BOMB_SHRINK_FACTOR
 	_base_scale = Vector2(shrunk_w / SPRITE_NATIVE_W, CATCHER_HEIGHT / SPRITE_NATIVE_H)
 	sprite.scale = _base_scale
 	collision_shape.shape.size = Vector2(shrunk_w, CATCHER_HEIGHT)
@@ -349,6 +358,7 @@ func _on_shop_closed() -> void:
 	monitoring = true
 
 
+
 func _unhandled_input(event: InputEvent) -> void:
 	if _game_paused:
 		return
@@ -368,7 +378,7 @@ func _try_boost(direction: float) -> void:
 	var boost_dist: float = GameManager.get_boost_distance()
 	var half_width: float = GameManager.get_catcher_width() / 2.0
 	if _bomb_shrink_active:
-		half_width = GameManager.get_catcher_width() * 0.6 / 2.0
+		half_width = GameManager.get_catcher_width() * BOMB_SHRINK_FACTOR / 2.0
 	var viewport_width: float = get_viewport_rect().size.x
 	var target_x: float = clampf(
 		position.x + direction * boost_dist,
@@ -389,6 +399,11 @@ func _try_boost(direction: float) -> void:
 
 func _on_boost_finished() -> void:
 	_boost_active = false
+	var half_width: float = GameManager.get_catcher_width() / 2.0
+	if _bomb_shrink_active:
+		half_width = GameManager.get_catcher_width() * BOMB_SHRINK_FACTOR / 2.0
+	var viewport_width: float = get_viewport_rect().size.x
+	position.x = clampf(position.x, half_width, viewport_width - half_width)
 
 
 func _update_cooldown(delta: float) -> void:
@@ -443,7 +458,7 @@ func _hide_cooldown_bar() -> void:
 func _update_cooldown_bar_width() -> void:
 	var current_w: float = GameManager.get_catcher_width()
 	if _bomb_shrink_active:
-		current_w *= 0.6
+		current_w *= BOMB_SHRINK_FACTOR
 	var ratio: float = _boost_cooldown_remaining / GameManager.BOOST_COOLDOWN
 	_cooldown_bar_bg.size.x = current_w
 	_cooldown_bar_bg.position.x = -current_w / 2.0

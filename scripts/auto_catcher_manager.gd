@@ -1,7 +1,7 @@
 extends Node2D
 
 const AUTO_PLATFORM_SCENE: PackedScene = preload("res://scenes/auto_platform.tscn")
-const PLATFORM_Y: float = 1130.0
+const PLATFORM_BOTTOM_OFFSET: float = 150.0
 
 @export var floating_text_scene: PackedScene
 
@@ -36,5 +36,8 @@ func _sync_platforms() -> void:
 
 
 func _reposition_platforms() -> void:
+	var platform_y: float = get_viewport_rect().size.y - PLATFORM_BOTTOM_OFFSET
 	for p: Area2D in _platforms:
-		p.position.y = PLATFORM_Y
+		p.position.y = platform_y
+
+

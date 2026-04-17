@@ -13,23 +13,31 @@ const COIN_SCALE_LARGE: float = 2.0      # 128 * 2.0 = 256px (matches gold)
 const MIN_SPEED: float = 60.0
 const MAX_SPEED: float = 160.0
 
+const PANEL_WIDTH: float = 1300.0
+const PANEL_HEIGHT: float = 760.0
+
 var coins: Array[Sprite2D] = []
 var coin_speeds: Array[float] = []
 var coin_rotation_speeds: Array[float] = []
 var fade_overlay: ColorRect
+var _bg: TextureRect
+var _panel: PanelContainer
 var transitioning: bool = false
 var _click_sound: AudioStreamPlayer
+var _panel_tween: Tween
 
 
 func _ready() -> void:
+	var vp_size: Vector2 = get_viewport_rect().size
+
 	# Background
-	var bg: TextureRect = TextureRect.new()
-	bg.texture = BG_TEXTURE
-	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	bg.position = Vector2.ZERO
-	bg.size = Vector2(2160, 1280)
-	bg.z_index = -1
-	add_child(bg)
+	_bg = TextureRect.new()
+	_bg.texture = BG_TEXTURE
+	_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_bg.position = Vector2.ZERO
+	_bg.size = vp_size
+	_bg.z_index = -1
+	add_child(_bg)
 
 	# Coin container
 	var coin_container: Node2D = Node2D.new()
@@ -40,7 +48,7 @@ func _ready() -> void:
 	for i: int in range(COIN_COUNT):
 		var coin: Sprite2D = Sprite2D.new()
 		coin.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		coin.position = Vector2(randf_range(-80.0, 2240.0), randf_range(-200.0, 1280.0))
+		coin.position = Vector2(randf_range(-80.0, vp_size.x + 80.0), randf_range(-200.0, vp_size.y))
 		coin.rotation = randf_range(0.0, TAU)
 
 		# Weighted random texture: 40% copper, 35% silver, 25% gold
@@ -64,14 +72,14 @@ func _ready() -> void:
 		coin_rotation_speeds.append(rot_speed)
 
 	# Centered panel (same style as shop menu)
-	var panel: PanelContainer = PanelContainer.new()
-	panel.theme = UI_THEME
-	panel.self_modulate = Color(0.15, 0.17, 0.22, 0.95)
-	panel.position = Vector2(430, 260)
-	panel.size = Vector2(1300, 760)
-	panel.z_index = 5
-	panel.mouse_filter = Control.MOUSE_FILTER_PASS
-	add_child(panel)
+	_panel = PanelContainer.new()
+	_panel.theme = UI_THEME
+	_panel.self_modulate = Color(0.15, 0.17, 0.22, 0.95)
+	_panel.position = Vector2((vp_size.x - PANEL_WIDTH) / 2.0, (vp_size.y - PANEL_HEIGHT) / 2.0)
+	_panel.size = Vector2(PANEL_WIDTH, PANEL_HEIGHT)
+	_panel.z_index = 5
+	_panel.mouse_filter = Control.MOUSE_FILTER_PASS
+	add_child(_panel)
 
 	var margin: MarginContainer = MarginContainer.new()
 	margin.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -79,7 +87,7 @@ func _ready() -> void:
 	margin.add_theme_constant_override("margin_right", 40)
 	margin.add_theme_constant_override("margin_top", 40)
 	margin.add_theme_constant_override("margin_bottom", 40)
-	panel.add_child(margin)
+	_panel.add_child(margin)
 
 	var vbox: VBoxContainer = VBoxContainer.new()
 	vbox.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -109,9 +117,7 @@ func _ready() -> void:
 	vbox.add_child(tap_label)
 
 	# Panel bob animation
-	var panel_tween: Tween = create_tween().set_loops()
-	panel_tween.tween_property(panel, "position:y", 250.0, 1.0).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
-	panel_tween.tween_property(panel, "position:y", 270.0, 1.0).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	_start_panel_bob(vp_size)
 
 	# Pulse animation on tap label
 	var pulse_tween: Tween = create_tween().set_loops()
@@ -128,20 +134,22 @@ func _ready() -> void:
 	fade_overlay = ColorRect.new()
 	fade_overlay.color = Color(0.0, 0.0, 0.0, 0.0)
 	fade_overlay.position = Vector2.ZERO
-	fade_overlay.size = Vector2(2160, 1280)
+	fade_overlay.size = vp_size
 	fade_overlay.z_index = 100
 	fade_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(fade_overlay)
 
 
+
 func _process(delta: float) -> void:
+	var vp_size: Vector2 = get_viewport_rect().size
 	for i: int in range(coins.size()):
 		var coin: Sprite2D = coins[i]
 		coin.position.y += coin_speeds[i] * delta
 		coin.rotation += coin_rotation_speeds[i] * delta
-		if coin.position.y > 1480.0:
+		if coin.position.y > vp_size.y + 200.0:
 			coin.position.y = -200.0
-			coin.position.x = randf_range(-80.0, 2240.0)
+			coin.position.x = randf_range(-80.0, vp_size.x + 80.0)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -161,6 +169,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		var fade_tween: Tween = create_tween()
 		fade_tween.tween_property(fade_overlay, "color:a", 1.0, 0.5)
 		fade_tween.tween_callback(_go_to_main)
+
+
+
+func _start_panel_bob(vp_size: Vector2) -> void:
+	if _panel_tween and _panel_tween.is_running():
+		_panel_tween.kill()
+	var center_y: float = (vp_size.y - PANEL_HEIGHT) / 2.0
+	_panel_tween = create_tween().set_loops()
+	_panel_tween.tween_property(_panel, "position:y", center_y - 10.0, 1.0).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	_panel_tween.tween_property(_panel, "position:y", center_y + 10.0, 1.0).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 
 
 func _go_to_main() -> void:
