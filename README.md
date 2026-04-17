@@ -1,33 +1,79 @@
-# FlexCoins
+<p align="center">
+  <img src="logo.png" alt="FlexCoins" width="600">
+</p>
 
-A 2D idle coin collector game built with [Godot 4.6](https://godotengine.org/) and GDScript.
+<p align="center">
+  A 2D idle coin collector built with <a href="https://godotengine.org/">Godot 4.6</a> and GDScript.<br>
+  Catch falling coins, buy upgrades, and chase high combos.
+</p>
 
-Coins rain from the sky -- move your catcher to collect them, earn currency, and buy upgrades to earn even faster.
+<p align="center">
+  <a href="https://d2mbkpxq9bew2t.cloudfront.net/"><strong>Play Now</strong></a>
+</p>
 
-![FlexCoins](flexcoin.png)
+---
 
-## How to Play
+## Coin Types
 
-- **Arrow keys** or **A/D** to move the catcher left and right
-- Catch falling coins to earn currency
-- Spend currency on upgrades in the shop panel:
-  - **Spawn Rate** -- more coins fall per second
-  - **Coin Value** -- each coin is worth more
-  - **Catcher Speed** -- move the catcher faster
-  - **Catcher Width** -- widen the catcher to catch more
-- Your upgrade progress is saved automatically
-- Close and reopen the game to see offline earnings
+Coins unlock progressively as you upgrade **Coin Types** in the shop. Frenzy and Gold coins share the gold sprite but are distinguished by glow color and particle effects in-game:
 
-## Download
+| Coin | Sprite | Unlock | Value | Effect |
+|------|--------|--------|-------|--------|
+| **Copper** | <img src="flexcoin-copper.png" width="32"> | Default | 1x | Always most common |
+| **Silver** | <img src="flexcoin-silver.png" width="32"> | Level 1 | 2x | Standard upgrade |
+| **Frenzy** | <img src="flexcoin.png" width="32"> | Level 2 | — | Triggers 5s triple spawn rate |
+| **Bomb** | <img src="flexcoin-bomb.png" width="32"> | Always | — | -10% coins, shrinks catcher 3s, resets combo |
+| **Gold** | <img src="flexcoin.png" width="32"> | Level 3 | 5x | Falls 1.5x faster |
+| **Multi** | <img src="flexcoin-multi.png" width="32"> | Level 4 | — | Splits into 3 silver coins mid-air |
 
-Grab the latest build from the [Releases](../../releases) page:
+## Upgrades
 
-| Platform | File |
-|----------|------|
-| Windows | `FlexCoins-windows.zip` |
-| macOS | `FlexCoins-macos.zip` |
-| Linux | `FlexCoins-linux.zip` |
-| Web | `FlexCoins-web.zip` |
+| Upgrade | Effect | Base Cost | Scaling |
+|---------|--------|-----------|---------|
+| **Spawn Rate** | Spawn interval: 0.8s / 1.3^level (min 0.1s) | 25 | 1.50x |
+| **Coin Value** | +1 coin value per level | 75 | 1.50x |
+| **Catcher Speed** | 600 + 50 × level px/s | 15 | 1.20x |
+| **Catcher Width** | 100 + 15 × level px | 30 | 1.25x |
+| **Coin Types** | Unlocks new coin types (max level 4) | 100 | 2.50x |
+| **Auto Platform** | +1 auto-catching platform per level | 750 | 1.60x |
+| **Boost Power** | Dash distance: 200 + 50 × level px (3s cooldown) | 50 | 1.35x |
+
+## Gameplay Features
+
+### Combo System
+
+Catching consecutive coins builds a combo counter that multiplies earnings:
+
+- **50+ combo** — 1.5x multiplier
+- **100+ combo** — 2.0x multiplier with rainbow text
+
+Missing a coin or catching a bomb resets the combo to 0.
+
+### Boost / Dash
+
+Press **Space** to dash in your current movement direction. Distance scales with the Boost Power upgrade. 3-second cooldown between uses.
+
+### Frenzy Mode
+
+Catching a Frenzy coin triggers 5 seconds of triple spawn rate — maximize earnings with a wide catcher and high combo.
+
+### Catcher Visual Tiers
+
+The catcher evolves as you upgrade its width:
+
+| Tier | Levels | Appearance |
+|------|--------|------------|
+| 0 | 0–9 | Blue |
+| 1 | 10–19 | Wooden brown |
+| 2 | 20–29 | Chrome silver |
+| 3+ | 30+ | Rainbow animated |
+
+## Controls
+
+| Key | Action |
+|-----|--------|
+| Arrow keys / A / D | Move catcher |
+| Space | Boost / dash |
 
 ## Building from Source
 
@@ -35,33 +81,17 @@ Grab the latest build from the [Releases](../../releases) page:
 
 - [Godot 4.6](https://godotengine.org/download/) (standard build)
 
-### Run in Editor
+### Run Locally
 
 1. Clone this repository
 2. Open the project in Godot (`project.godot`)
 3. Press **F5** to run
 
-### Export
-
-1. Open **Project > Export** in the Godot editor
-2. Select a preset (Windows, macOS, Linux, or Web)
-3. Click **Export Project**
-
-Or use the CLI:
+### Export for Web
 
 ```bash
-godot --headless --export-release "Windows" build/FlexCoins.exe
-godot --headless --export-release "macOS" build/FlexCoins.zip
-godot --headless --export-release "Linux" build/FlexCoins.x86_64
-godot --headless --export-release "Web" build/FlexCoins.html
-```
-
-## Project Structure
-
-```
-scenes/          Scene files (.tscn)
-scripts/         GDScript files (.gd)
-sounds/          Audio assets
+mkdir -p build/web
+godot --headless --export-release "Web" build/web/FlexCoins.html
 ```
 
 ## Tech Stack
@@ -69,6 +99,7 @@ sounds/          Audio assets
 - **Engine:** Godot 4.6 (Forward+ renderer)
 - **Language:** GDScript
 - **Architecture:** Composition-based scenes, autoload singleton for game state, signal-driven communication
+- **Deployment:** SST on AWS (CloudFront + S3)
 
 ## License
 

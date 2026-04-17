@@ -228,7 +228,7 @@ Coins have a `CoinType` enum with six variants, progressively unlocked via the *
 | **COPPER** | 0 (default) | 1 (modified by coin_value upgrade) | 1.0x | Default coin, always most common |
 | **SILVER** | 1 | 2x base value | 1.0x | Standard coin, worth double copper |
 | **FRENZY** | 2 | 0 (no currency gain) | 1.0x | Triggers 5-second frenzy mode, spawns increased coin rate |
-| **BOMB** | 2 | 0 (no currency gain) | 0.8x | Reduces catcher width to 60% for 3 seconds, deducts 10% of current currency |
+| **BOMB** | 0 (always) | 0 (no currency gain) | 0.8x | Reduces catcher width to 60% for 3 seconds, deducts 10% of current currency |
 | **GOLD** | 3 | 5x base value | 1.5x | Rare high-value coins, fall faster |
 | **MULTI** | 4 | 0 (split coins carry value) | 0.9x | Splits into 3 silver coins mid-air that scatter and can be caught |
 

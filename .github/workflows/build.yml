@@ -10,22 +10,9 @@ env:
   GODOT_VERSION: "4.6.2"
 
 jobs:
-  export-linux:
+  export-web:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - preset: "Windows"
-            artifact: "FlexCoins-windows"
-            export_path: "build/FlexCoins.exe"
-          - preset: "Linux"
-            artifact: "FlexCoins-linux"
-            export_path: "build/FlexCoins.x86_64"
-          - preset: "Web"
-            artifact: "FlexCoins-web"
-            export_path: "build/web/FlexCoins.html"
 
     steps:
       - uses: actions/checkout@v4
@@ -50,68 +37,22 @@ jobs:
       - name: Create build directory
         run: mkdir -p build/web
 
-      - name: Export ${{ matrix.preset }}
-        run: godot --headless --export-release "${{ matrix.preset }}" "${{ matrix.export_path }}"
+      - name: Export Web
+        run: godot --headless --export-release "Web" "build/web/FlexCoins.html"
 
       - name: Zip build output
-        run: |
-          if [ "${{ matrix.preset }}" = "Web" ]; then
-            cd build && zip -r ../FlexCoins-web.zip web/
-          else
-            cd build && zip -r ../${{ matrix.artifact }}.zip $(basename "${{ matrix.export_path }}")
-          fi
+        run: cd build && zip -r ../FlexCoins-web.zip web/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}.zip
-          compression-level: 0
-          retention-days: 7
-
-  export-macos:
-    runs-on: macos-latest
-    timeout-minutes: 30
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Godot
-        run: |
-          wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_macos.universal.zip
-          unzip -q Godot_v${GODOT_VERSION}-stable_macos.universal.zip
-          sudo cp -R Godot.app /Applications/
-          sudo ln -sf /Applications/Godot.app/Contents/MacOS/Godot /usr/local/bin/godot
-
-      - name: Install export templates
-        run: |
-          mkdir -p ~/Library/Application\ Support/Godot/export_templates/${GODOT_VERSION}.stable
-          wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz
-          unzip -q Godot_v${GODOT_VERSION}-stable_export_templates.tpz
-          mv templates/* ~/Library/Application\ Support/Godot/export_templates/${GODOT_VERSION}.stable/
-
-      - name: Import project
-        run: godot --headless --import 2>&1 || true
-
-      - name: Create build directory
-        run: mkdir -p build
-
-      - name: Export macOS
-        run: godot --headless --export-release "macOS" build/FlexCoins.zip
-
-      - name: Rename artifact
-        run: mv build/FlexCoins.zip FlexCoins-macos.zip
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: FlexCoins-macos
-          path: FlexCoins-macos.zip
+          name: FlexCoins-web
+          path: FlexCoins-web.zip
           compression-level: 0
           retention-days: 7
 
   release:
-    needs: [export-linux, export-macos]
+    needs: [export-web]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
