@@ -164,6 +164,9 @@ python3 tools/devtools.py performance
 python3 tools/devtools.py quit
 ```
 
+### Post-Feature Validation (REQUIRED)
+**After implementing any feature, bug fix, or gameplay change, you MUST run `/verify` before considering the work complete.** Do not wait for a commit request — run it as soon as the implementation is done. This catches runtime errors that lint and tests cannot detect.
+
 ### Pre-commit Validation Checklist (REQUIRED)
 **You MUST run runtime validation before every commit that modifies scripts or gameplay.** Do not skip this step — review sub-agents cannot catch runtime errors.
 

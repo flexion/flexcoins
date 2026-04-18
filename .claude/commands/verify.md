@@ -4,7 +4,7 @@ description: Run runtime devtools verification on the FlexCoins game. Use after 
 
 Run the FlexCoins runtime verification workflow. Execute each phase sequentially, stopping on failures.
 
-## Phase 1: Headless Lint
+## Phase 1: Headless Lint & Unit Tests
 
 ```bash
 /Applications/Godot.app/Contents/MacOS/Godot --headless --path . --script res://tools/lint_project.gd
@@ -12,10 +12,17 @@ Run the FlexCoins runtime verification workflow. Execute each phase sequentially
 
 Stop if lint reports errors.
 
+```bash
+/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --script res://tools/run_tests.gd
+```
+
+Stop if any tests fail.
+
 ## Phase 2: Launch Game
 
 ```bash
-/Applications/Godot.app/Contents/MacOS/Godot --path . &
+# --mute suppresses audio during automated testing
+/Applications/Godot.app/Contents/MacOS/Godot --path . --mute &
 ```
 
 Wait for startup, then confirm connection:
@@ -24,7 +31,30 @@ Wait for startup, then confirm connection:
 sleep 5 && python3 tools/devtools.py ping
 ```
 
-If ping fails, run `sleep 3 && python3 tools/devtools.py ping` once more. If it fails twice, check Godot terminal output for errors and stop.
+If ping fails, retry once:
+
+```bash
+sleep 3 && python3 tools/devtools.py ping
+```
+
+If it fails twice, check Godot terminal output for errors and stop.
+
+### Skip Start Screen
+
+After ping succeeds, check if the game launched to StartScreen instead of Main:
+
+```bash
+python3 tools/devtools.py scene-tree | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('name','?'))"
+```
+
+If the output is "StartScreen", transition to Main:
+
+```bash
+python3 tools/devtools.py run-method --node "/root/StartScreen" --method _go_to_main --args "[]"
+sleep 3
+```
+
+Then re-check scene-tree to confirm the root scene name is "Main". If the scene name is anything other than "Main" (including unexpected values like "?" or other scene names), stop and report the failure.
 
 ## Phase 3: Validation
 
@@ -33,11 +63,29 @@ Run in order:
 1. `python3 tools/devtools.py validate-all` -- 0 issues required
 2. `python3 tools/devtools.py validate-ui` -- 0 issues required (CurrencyLabel pivot_offset warnings are acceptable)
 3. `python3 tools/devtools.py screenshot` -- visual verification
-4. `python3 tools/devtools.py performance` -- must show 0 orphan nodes, FPS >= 60
+4. `python3 tools/devtools.py performance` -- must show 0 orphan nodes, FPS >= 60 (if running on CI or resource-constrained hardware, FPS >= 30 is acceptable)
 
-## Phase 4: Feature Tests (if applicable)
+## Phase 4: Feature Tests (diff-aware)
 
-Run feature-specific tests based on what was modified. Common recipes:
+Before running recipes, determine what changed:
+
+```bash
+git diff --name-only HEAD
+```
+
+If no files changed in the working tree, use your knowledge of what was modified in this session. Select recipes based on this mapping:
+
+| Files changed | Recipes to run |
+|---|---|
+| `coin.gd`, `coin_spawner.gd` | Coin collection, Frenzy mode, Bomb |
+| `catcher.gd`, `auto_catcher_manager.gd` | Coin collection |
+| `hud.gd`, `upgrade_button.gd` | Shop UI, Purchase |
+| `game_manager.gd` | Coin collection, Shop UI, Purchase |
+| `start_screen.gd` | (none -- covered by Phase 2 skip) |
+| Scene files (`*.tscn`) | Run all recipes |
+| Other / unclear | Run all recipes |
+
+Recipes:
 
 **Coin collection:** `python3 tools/devtools.py spawn-coin-on-catcher --type SILVER`
 
@@ -45,14 +93,20 @@ Run feature-specific tests based on what was modified. Common recipes:
 
 **Bomb:** `python3 tools/devtools.py spawn-coin-on-catcher --type BOMB` then `sleep 1` and screenshot
 
-**Shop UI (fresh launch only):**
+**Shop UI (only toggle once per launch; if already toggled, quit and relaunch):**
 ```bash
 python3 tools/devtools.py run-method --node "/root/GameManager" --method add_currency --args "[500]"
-python3 tools/devtools.py run-method --node "/root/Main/HUD/ShopToggle" --method emit_signal --args '["pressed"]'
+python3 tools/devtools.py run-method --node "/root/Main/HUD" --method _on_shop_toggle_pressed --args "[]"
 sleep 1 && python3 tools/devtools.py screenshot
 ```
 
-**Purchase:** `python3 tools/devtools.py run-method --node "/root/GameManager" --method try_purchase_upgrade --args '["spawn_rate"]'`
+**Purchase (requires currency; add first if needed):**
+```bash
+python3 tools/devtools.py run-method --node "/root/GameManager" --method add_currency --args "[500]"
+python3 tools/devtools.py run-method --node "/root/GameManager" --method try_purchase_upgrade --args '["spawn_rate"]'
+python3 tools/devtools.py get-state --node "/root/GameManager"
+```
+Verify `upgrade_levels.spawn_rate` incremented and currency decreased.
 
 ## Phase 5: Clean Shutdown
 
@@ -73,46 +127,65 @@ python3 tools/devtools.py run-method --node "/root/GameManager" --method add_cur
 
 **Signal-aware methods** -- `add_currency`, `try_purchase_upgrade`, `start_frenzy`, `trigger_bomb` all emit signals. Direct `set-state` on GameManager properties does NOT.
 
+**StartScreen blocks DevTools input** -- DevTools input simulation does not trigger `_unhandled_input` on StartScreen. To bypass, call:
+```bash
+python3 tools/devtools.py run-method --node "/root/StartScreen" --method _go_to_main --args "[]"
+```
+Then `sleep 3` before issuing further commands. Phase 2 handles this automatically, but if re-launching mid-run, apply manually.
+
 **Common node paths:**
 | Node | Path |
 |------|------|
 | GameManager | `/root/GameManager` |
 | HUD | `/root/Main/HUD` |
-| Shop toggle | `/root/Main/HUD/ShopToggle` |
+| Shop toggle | `/root/Main/HUD` (call `_on_shop_toggle_pressed`; ShopToggle is reparented at runtime) |
 | Currency label | `/root/Main/HUD/TopBar/CurrencyLabel` |
 
 ## Self-Improvement (Post-Run)
 
-After Phase 5 shutdown (but before writing the Pass/Fail Summary), review the run for lessons that should persist. Update verify.md in a **single edit** at the end of the run -- never incrementally during phases. If no issues meet the evidence threshold below, make no changes.
+After writing the Pass/Fail Summary, reflect on the entire run and identify improvements to this file. **Do not edit verify.md directly.** Instead, present proposals to the user for approval.
 
-### What to Update
+### What to Look For
 
-Updates target the **existing sections** of this file (Critical Pitfalls, Common node paths, Phase 4 recipes) -- not new tables within this section. This section is instructions only, not a data store.
+Review the run for any of these signals:
 
-| Category | Where to edit | What to record |
-|---|---|---|
-| **Pitfalls** | "Critical Pitfalls" section | Commands or patterns that cause silent failures, signal bypasses, or corrupt state |
-| **Node Paths** | "Common node paths" table | Node paths that changed due to refactoring or scene restructuring |
-| **Broken Recipes** | "Phase 4: Feature Tests" section | Existing recipes whose command syntax, method signatures, or argument formats no longer work |
-| **Acceptable Warnings** | Phase 3 validation notes | New warning types from `validate-ui` or `validate-all` that are confirmed acceptable (like the existing CurrencyLabel pivot_offset note) |
+| Signal | Example |
+|---|---|
+| **Workflow friction** | A phase required manual workarounds, retries, or unexpected steps not in the instructions |
+| **Silent failures** | A command succeeded (exit 0) but produced wrong results, or a recipe ran without validating its outcome |
+| **Stale references** | Node paths, method names, or argument formats that no longer match the codebase |
+| **Missing recipes** | A feature was modified but no Phase 4 recipe exists to test it |
+| **Timing / ordering** | A recipe that only works before/after another, or a sleep that's too short and causes flaky results |
+| **Unclear instructions** | You had to guess what to do because the instructions were ambiguous |
+| **Unnecessary steps** | A check that always passes and adds no value |
+
+### How to Propose
+
+For each issue found, present a recommendation in this format:
+
+```
+**Issue:** [What went wrong — quote the specific command output or describe the friction]
+**Proposal:** [Which section to change, plus the literal text to insert or replace as a code block — so approval is a single yes/no]
+**Rationale:** [Why this improves future runs]
+```
 
 ### Rules
 
-1. **Evidence required.** Before adding or modifying any entry, verify it against the current run's command output (quote the specific error message or output line). Do not record speculative fixes.
+1. **Evidence required.** Every proposal must cite specific output from this run (quote error messages, unexpected results, or describe the exact friction point). No speculative improvements.
 
-2. **Max 3 total updates per run** across all categories. If more than 3 issues surface, prioritize: silent failures over wrong output over inconvenience.
+2. **Max 3 proposals per run.** If more than 3 issues surface, prioritize: silent failures > workflow blockers > stale references > polish.
 
-3. **Correct in place.** If a pitfall description is wrong or a recipe's syntax changed, update the existing entry directly. Only mark an entry `[DEPRECATED YYYY-MM-DD]` if its entire concept no longer applies (e.g., a removed feature). Do not accumulate stale entries.
+3. **No transient issues.** Do not propose changes for issues that resolved by retrying the same command. One-off timeouts are not improvements.
 
-4. **Each recipe entry must be 5 lines or fewer**, including the command block.
+4. **No re-proposals.** Do not re-propose an issue the user declined in this session unless new evidence changes the rationale.
 
-5. **No transient issues.** Do NOT add entries for issues that resolved by retrying the same command without changes. One-off ping timeouts and startup races are not pitfalls.
+5. **Nothing is off-limits.** Any section of this file — phases, commands, thresholds, pitfalls, recipes, even this section — can be proposed for change. The user decides what gets applied.
 
-6. **Phases 1-3 are protected.** Do NOT modify command syntax or validation thresholds (FPS >= 60, 0 issues required) in Phases 1-3. Those require explicit human approval. Only the acceptable-warnings notes (e.g., "X warnings are acceptable") may be added.
+6. **Wait for approval.** Present proposals after the Pass/Fail Summary (so the user sees results first). Ask the user which (if any) to apply. Only edit verify.md after explicit approval. Apply all approved changes in a single edit.
 
-7. **Soft cap.** If any section exceeds 10 entries, consolidate or remove entries that have not been relevant in recent runs.
+7. **Soft cap.** If Critical Pitfalls or Phase 4 Recipes exceeds 10 entries, propose consolidation or removal of entries not triggered in recent runs.
 
-8. **No meta-changes.** Do not modify this Self-Improvement section's own rules.
+8. **Keep recipes concise.** Each recipe entry must be 5 lines or fewer, including the command block.
 
 ## Pass/Fail Summary
 

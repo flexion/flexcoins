@@ -29,6 +29,8 @@ var _split_delay: float = -1.0
 var _split_timer: float = 0.0
 var _horizontal_speed: float = 0.0
 var _trail: CPUParticles2D
+var _ember_trail: CPUParticles2D
+var _has_fire_trail: bool = false
 
 @onready var sprite: Sprite2D = $Sprite2D
 
@@ -89,6 +91,12 @@ func _process(delta: float) -> void:
 			_spawn_split_coins()
 			queue_free()
 			return
+	# Update fire trail positions for top_level emitters
+	if _has_fire_trail:
+		if is_instance_valid(_trail):
+			_trail.global_position = global_position
+		if is_instance_valid(_ember_trail):
+			_ember_trail.global_position = global_position
 	_shimmer_timer += delta
 	if _shimmer_timer >= _shimmer_interval:
 		_shimmer_timer = 0.0
@@ -102,6 +110,7 @@ func collect() -> void:
 		GameManager.start_frenzy()
 	elif coin_type == CoinType.BOMB:
 		GameManager.trigger_bomb()
+	_release_fire_emitters()
 	set_deferred("monitoring", false)
 	set_deferred("monitorable", false)
 	set_process(false)
@@ -114,6 +123,7 @@ func collect() -> void:
 
 
 func _on_screen_exited() -> void:
+	_release_fire_emitters()
 	if not _collected and coin_type != CoinType.FRENZY and coin_type != CoinType.BOMB and coin_type != CoinType.MULTI:
 		GameManager.coin_missed.emit()
 	queue_free()
@@ -131,7 +141,8 @@ func _add_glow() -> void:
 		CoinType.FRENZY:
 			glow.modulate = Color(0.3, 1.0, 0.4, 0.3)
 		CoinType.BOMB:
-			glow.modulate = Color(1.0, 0.2, 0.1, 0.3)
+			glow.modulate = Color(1.0, 0.5, 0.1, 0.5)
+			glow.scale = Vector2(0.9, 0.9)
 		CoinType.MULTI:
 			glow.modulate = Color(0.3, 0.85, 1.0, 0.35)
 		CoinType.SILVER:
@@ -183,17 +194,43 @@ func _add_trail() -> void:
 			trail.texture = preload("res://assets/textures/star_green.png")
 			trail.color_ramp = _make_sparkle_gradient(Color(0.4, 1.0, 0.6, 0.9), Color(0.2, 0.9, 0.3, 0.0))
 		CoinType.BOMB:
-			trail.texture = preload("res://assets/textures/star_red.png")
-			trail.color_ramp = _make_sparkle_gradient(Color(1.0, 0.4, 0.2, 0.9), Color(1.0, 0.2, 0.05, 0.0))
+			trail.texture = preload("res://assets/textures/soft_circle.png")
+			trail.color_ramp = _make_fire_gradient()
 		CoinType.MULTI:
 			trail.texture = preload("res://assets/textures/star_blue.png")
 			trail.color_ramp = _make_sparkle_gradient(Color(0.3, 0.85, 1.0, 0.9), Color(0.2, 0.7, 1.0, 0.0))
 		CoinType.SILVER:
 			trail.texture = preload("res://assets/textures/star_yellow.png")
 			trail.color_ramp = _make_sparkle_gradient(Color(1.0, 0.9, 0.3, 0.8), Color(1.0, 0.7, 0.1, 0.0))
+	# Fire-specific overrides for bomb coins
+	if coin_type == CoinType.BOMB:
+		trail.amount = 24
+		trail.lifetime = 0.8
+		trail.emission_rect_extents = Vector2(20.0, 12.0)
+		trail.spread = 42.0
+		trail.initial_velocity_min = 25.0
+		trail.initial_velocity_max = 55.0
+		trail.gravity = Vector2(0, -60)
+		trail.scale_amount_min = 0.4
+		trail.scale_amount_max = 0.7
+		trail.scale_amount_curve = _make_fire_scale_curve()
+		trail.angular_velocity_min = -15.0
+		trail.angular_velocity_max = 15.0
+		trail.hue_variation_min = -0.03
+		trail.hue_variation_max = 0.05
+		trail.damping_min = 5.0
+		trail.damping_max = 15.0
+		trail.explosiveness = 0.15
+		trail.top_level = true
+		trail.z_index = 8
+		trail.position = global_position
+		_has_fire_trail = true
 	trail.show_behind_parent = true
 	add_child(trail)
 	_trail = trail
+	# Add ember/spark sub-emitter for bomb coins
+	if coin_type == CoinType.BOMB:
+		_add_ember_trail()
 
 
 func _make_sparkle_gradient(start: Color, end: Color) -> Gradient:
@@ -211,6 +248,91 @@ func _make_shrink_curve() -> Curve:
 	curve.add_point(Vector2(0.3, 0.6))
 	curve.add_point(Vector2(1.0, 0.05))
 	return curve
+
+
+func _make_fire_gradient() -> Gradient:
+	var grad := Gradient.new()
+	grad.set_color(0, Color(1.0, 1.0, 0.9, 1.0))  # White-yellow core
+	grad.add_point(0.2, Color(1.0, 0.9, 0.3, 0.95))  # Intense yellow
+	grad.add_point(0.45, Color(1.0, 0.5, 0.1, 0.8))  # Hot orange
+	grad.add_point(0.7, Color(0.8, 0.15, 0.0, 0.5))  # Dark red
+	grad.set_color(1, Color(0.4, 0.0, 0.0, 0.0))  # Fades to transparent
+	return grad
+
+
+func _make_fire_scale_curve() -> Curve:
+	var curve := Curve.new()
+	curve.add_point(Vector2(0.0, 0.8))
+	curve.add_point(Vector2(0.15, 1.0))
+	curve.add_point(Vector2(0.5, 0.5))
+	curve.add_point(Vector2(1.0, 0.05))
+	return curve
+
+
+func _add_ember_trail() -> void:
+	var embers := CPUParticles2D.new()
+	embers.emitting = true
+	embers.amount = 8
+	embers.lifetime = 1.1
+	embers.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	embers.emission_rect_extents = Vector2(12.0, 6.0)
+	embers.direction = Vector2(0, -1)
+	embers.spread = 45.0
+	embers.initial_velocity_min = 15.0
+	embers.initial_velocity_max = 40.0
+	embers.gravity = Vector2(0, -45)
+	embers.scale_amount_min = 0.08
+	embers.scale_amount_max = 0.18
+	embers.scale_amount_curve = _make_ember_scale_curve()
+	embers.angular_velocity_min = -180.0
+	embers.angular_velocity_max = 180.0
+	embers.damping_min = 8.0
+	embers.damping_max = 20.0
+	embers.texture = preload("res://assets/textures/star_red.png")
+	embers.color_ramp = _make_ember_gradient()
+	embers.show_behind_parent = true
+	embers.top_level = true
+	embers.z_index = 8
+	embers.position = global_position
+	add_child(embers)
+	_ember_trail = embers
+
+
+func _make_ember_gradient() -> Gradient:
+	var grad := Gradient.new()
+	grad.set_color(0, Color(1.0, 0.9, 0.4, 1.0))  # Bright yellow-white spark
+	grad.add_point(0.3, Color(1.0, 0.6, 0.1, 0.9))  # Orange
+	grad.add_point(0.7, Color(1.0, 0.3, 0.0, 0.6))  # Red-orange
+	grad.set_color(1, Color(0.5, 0.1, 0.0, 0.0))  # Fades out
+	return grad
+
+
+func _make_ember_scale_curve() -> Curve:
+	var curve := Curve.new()
+	curve.add_point(Vector2(0.0, 1.0))
+	curve.add_point(Vector2(0.6, 0.8))
+	curve.add_point(Vector2(1.0, 0.0))
+	return curve
+
+
+func _release_fire_emitters() -> void:
+	if not _has_fire_trail:
+		return
+	var parent: Node = get_parent()
+	if not is_instance_valid(parent):
+		return
+	if is_instance_valid(_trail):
+		_trail.emitting = false
+		remove_child(_trail)
+		parent.add_child(_trail)
+		get_tree().create_timer(_trail.lifetime).timeout.connect(_trail.queue_free)
+		_trail = null
+	if is_instance_valid(_ember_trail):
+		_ember_trail.emitting = false
+		remove_child(_ember_trail)
+		parent.add_child(_ember_trail)
+		get_tree().create_timer(_ember_trail.lifetime).timeout.connect(_ember_trail.queue_free)
+		_ember_trail = null
 
 
 func _update_split_buildup(progress: float) -> void:
