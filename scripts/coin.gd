@@ -7,11 +7,14 @@ const TEXTURE_SILVER: Texture2D = preload("res://assets/textures/coins/flexcoin-
 const TEXTURE_MULTI: Texture2D = preload("res://assets/textures/coins/flexcoin-multi.png")
 const TEXTURE_COPPER: Texture2D = preload("res://assets/textures/coins/flexcoin-copper.png")
 const TEXTURE_BOMB: Texture2D = preload("res://assets/textures/coins/flexcoin-bomb.png")
+const TEXTURE_FRENZY: Texture2D = preload("res://assets/textures/coins/flexcoin-frenzy.png")
 const COIN_SCENE: PackedScene = preload("res://scenes/coin.tscn")
 const SHIMMER_MIN_INTERVAL: float = 2.0
 const SHIMMER_MAX_INTERVAL: float = 4.0
 const SHIMMER_FLASH_ALPHA: float = 0.85
 const SHIMMER_DURATION: float = 0.25
+const SPEED_VARIATION_MIN: float = 0.8
+const SPEED_VARIATION_MAX: float = 1.5
 
 @export var fall_speed: float = 300.0
 var value: int = 1
@@ -40,7 +43,7 @@ func _ready() -> void:
 	value = GameManager.get_coin_value()
 	rotation = randf_range(0.0, TAU)
 	_rotation_speed = randf_range(-1.5, 1.5)
-	_current_speed = fall_speed * 0.15
+	fall_speed *= randf_range(SPEED_VARIATION_MIN, SPEED_VARIATION_MAX)
 
 	if coin_type == CoinType.COPPER:
 		sprite.texture = TEXTURE_COPPER
@@ -48,6 +51,8 @@ func _ready() -> void:
 		sprite.texture = TEXTURE_SILVER
 	elif coin_type == CoinType.BOMB:
 		sprite.texture = TEXTURE_BOMB
+	elif coin_type == CoinType.FRENZY:
+		sprite.texture = TEXTURE_FRENZY
 	elif coin_type == CoinType.MULTI:
 		sprite.texture = TEXTURE_MULTI
 
@@ -69,6 +74,7 @@ func _ready() -> void:
 			fall_speed *= 0.9
 			_split_delay = randf_range(1.5, 2.5)
 
+	_current_speed = fall_speed * 0.15
 	_add_glow()
 	_add_trail()
 	GameManager.shop_opened.connect(func(): set_process(false))
