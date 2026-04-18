@@ -91,12 +91,12 @@ func _process(delta: float) -> void:
 			_spawn_split_coins()
 			queue_free()
 			return
-	# Update fire trail positions for top_level emitters
+	# Counter-rotate fire emitters so fire always rises upward despite coin spin
 	if _has_fire_trail:
 		if is_instance_valid(_trail):
-			_trail.global_position = global_position
+			_trail.global_rotation = 0.0
 		if is_instance_valid(_ember_trail):
-			_ember_trail.global_position = global_position
+			_ember_trail.global_rotation = 0.0
 	_shimmer_timer += delta
 	if _shimmer_timer >= _shimmer_interval:
 		_shimmer_timer = 0.0
@@ -221,9 +221,6 @@ func _add_trail() -> void:
 		trail.damping_min = 5.0
 		trail.damping_max = 15.0
 		trail.explosiveness = 0.15
-		trail.top_level = true
-		trail.z_index = -1
-		trail.position = global_position
 		_has_fire_trail = true
 	trail.show_behind_parent = true
 	add_child(trail)
@@ -291,9 +288,6 @@ func _add_ember_trail() -> void:
 	embers.texture = preload("res://assets/textures/star_red.png")
 	embers.color_ramp = _make_ember_gradient()
 	embers.show_behind_parent = true
-	embers.top_level = true
-	embers.z_index = -1
-	embers.position = global_position
 	add_child(embers)
 	_ember_trail = embers
 
@@ -323,14 +317,18 @@ func _release_fire_emitters() -> void:
 		return
 	if is_instance_valid(_trail):
 		_trail.emitting = false
+		var trail_pos: Vector2 = _trail.global_position
 		remove_child(_trail)
 		parent.add_child(_trail)
+		_trail.global_position = trail_pos
 		get_tree().create_timer(_trail.lifetime).timeout.connect(_trail.queue_free)
 		_trail = null
 	if is_instance_valid(_ember_trail):
 		_ember_trail.emitting = false
+		var ember_pos: Vector2 = _ember_trail.global_position
 		remove_child(_ember_trail)
 		parent.add_child(_ember_trail)
+		_ember_trail.global_position = ember_pos
 		get_tree().create_timer(_ember_trail.lifetime).timeout.connect(_ember_trail.queue_free)
 		_ember_trail = null
 
