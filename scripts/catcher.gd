@@ -56,6 +56,7 @@ var _boost_active: bool = false
 var _boost_tween: Tween
 var _cooldown_bar: ColorRect
 var _cooldown_bar_bg: ColorRect
+var _cooldown_hide_tween: Tween
 
 const SPRITE_NATIVE_W: float = 128.0
 const SPRITE_NATIVE_H: float = 8.0
@@ -451,6 +452,10 @@ func _setup_cooldown_bar() -> void:
 
 
 func _show_cooldown_bar() -> void:
+	if _cooldown_hide_tween and _cooldown_hide_tween.is_running():
+		_cooldown_hide_tween.kill()
+	_cooldown_bar_bg.modulate.a = 1.0
+	_cooldown_bar.modulate.a = 1.0
 	_cooldown_bar_bg.visible = true
 	_cooldown_bar.visible = true
 	_cooldown_bar.color = COOLDOWN_COLOR_ACTIVE
@@ -459,7 +464,10 @@ func _show_cooldown_bar() -> void:
 
 func _hide_cooldown_bar() -> void:
 	_cooldown_bar.color = COOLDOWN_COLOR_READY
+	if _cooldown_hide_tween and _cooldown_hide_tween.is_running():
+		_cooldown_hide_tween.kill()
 	var tween := create_tween()
+	_cooldown_hide_tween = tween
 	tween.tween_interval(0.2)
 	tween.tween_property(_cooldown_bar, "modulate:a", 0.0, 0.15)
 	tween.parallel().tween_property(_cooldown_bar_bg, "modulate:a", 0.0, 0.15)
