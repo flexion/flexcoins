@@ -34,6 +34,17 @@ const COOLDOWN_COLOR_BG := Color(0.294, 0.333, 0.388, 0.3)
 const AUTO_DEADZONE: float = 10.0
 const AUTO_BOOST_MIN_DIST_RATIO: float = 0.5
 const AUTO_BOOST_DANGER_ZONE_Y: float = 0.6
+const AUTO_VALUE_WEIGHT: float = 0.4
+const AUTO_URGENCY_WEIGHT: float = 0.35
+const AUTO_REACHABILITY_WEIGHT: float = 0.25
+const AUTO_BOMB_PENALTY_RADIUS: float = 150.0
+const AUTO_BOMB_PENALTY_SCORE: float = 0.5
+const AUTO_BOMB_DODGE_Y_RANGE: float = 200.0
+const AUTO_OFFENSIVE_BOOST_MIN_Y: float = 0.3
+const AUTO_OFFENSIVE_BOOST_MIN_DIST: float = 0.6
+const AUTO_OFFENSIVE_BOOST_MAX_DIST: float = 1.5
+const AUTO_MAX_VALUE_SCORE: float = 15.0
+const AUTO_REACHABILITY_MARGIN: float = 1.1
 const COIN_SCRIPT: GDScript = preload("res://scripts/coin.gd")
 const BLING_POOL_SIZE: int = 4
 const SPRITE_NATIVE_W: float = 128.0
@@ -66,6 +77,7 @@ var _cooldown_bar_bg: ColorRect
 var _cooldown_hide_tween: Tween
 var _bling_pool: Array[AudioStreamPlayer] = []
 var _bling_index: int = 0
+var _auto_bomb_positions: Array[Vector2] = []
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
@@ -506,18 +518,83 @@ func _update_cooldown_bar_width() -> void:
 
 
 func _get_auto_target_coin() -> Node:
-	var best_coin: Node = null
-	var best_y: float = -INF
 	var bomb_type: int = COIN_SCRIPT.CoinType.BOMB
-	for node: Node in get_tree().get_nodes_in_group("coins"):
+	var viewport_size: Vector2 = get_viewport_rect().size
+	var viewport_w: float = viewport_size.x
+	var viewport_h: float = viewport_size.y
+	var bomb_radius: float = AUTO_BOMB_PENALTY_RADIUS + GameManager.get_catcher_width() / 2.0
+
+	# Cache coins group for both passes
+	var coins: Array[Node] = get_tree().get_nodes_in_group("coins")
+
+	# First pass: collect bomb positions
+	var bomb_positions: Array[Vector2] = []
+	for node: Node in coins:
+		if node.get("_collected"):
+			continue
+		var ct: Variant = node.get("coin_type")
+		if ct != null and int(ct) == bomb_type:
+			bomb_positions.append(node.position)
+
+	# Store bomb positions for _should_auto_boost to read
+	_auto_bomb_positions = bomb_positions
+
+	# Value lookup by coin type enum
+	var value_map: Dictionary = {
+		COIN_SCRIPT.CoinType.COPPER: 1.0,
+		COIN_SCRIPT.CoinType.SILVER: 2.0,
+		COIN_SCRIPT.CoinType.GOLD: 10.0,
+		COIN_SCRIPT.CoinType.FRENZY: 15.0,
+		COIN_SCRIPT.CoinType.MULTI: 7.5,
+	}
+
+	# Second pass: score non-bomb coins
+	var best_coin: Node = null
+	var best_score: float = -INF
+	for node: Node in coins:
 		if node.get("_collected"):
 			continue
 		var ct: Variant = node.get("coin_type")
 		if ct != null and int(ct) == bomb_type:
 			continue
-		if node.position.y > best_y:
-			best_y = node.position.y
+
+		var coin_y: float = node.position.y
+		var h_dist: float = absf(node.position.x - position.x)
+
+		# Reachability gate
+		var fall_spd: Variant = node.get("fall_speed")
+		if fall_spd != null and float(fall_spd) > 0.0:
+			var time_to_exit: float = (viewport_h - coin_y) / float(fall_spd)
+			var time_to_reach: float = h_dist / speed
+			if time_to_reach > time_to_exit * AUTO_REACHABILITY_MARGIN:
+				continue
+
+		# Value score (0-1)
+		var coin_type_int: int = int(ct) if ct != null else 0
+		var raw_value: float = value_map.get(coin_type_int, 1.0)
+		var value_score: float = raw_value / AUTO_MAX_VALUE_SCORE
+
+		# Urgency score (0-1)
+		var urgency_score: float = coin_y / viewport_h
+
+		# Reachability score (0-1)
+		var reachability_score: float = 1.0 - (h_dist / viewport_w)
+
+		# Bomb penalty
+		var bomb_penalty: float = 0.0
+		for bomb_pos: Vector2 in bomb_positions:
+			if node.position.distance_to(bomb_pos) < bomb_radius:
+				bomb_penalty += AUTO_BOMB_PENALTY_SCORE
+
+		var score: float = value_score * AUTO_VALUE_WEIGHT \
+			+ urgency_score * AUTO_URGENCY_WEIGHT \
+			+ reachability_score * AUTO_REACHABILITY_WEIGHT \
+			- bomb_penalty
+
+		if score > best_score:
+			best_score = score
 			best_coin = node
+
 	return best_coin
 
 
@@ -532,7 +609,34 @@ func _should_auto_boost(coin: Node) -> bool:
 	var boost_dist: float = GameManager.get_boost_distance()
 	if dist < boost_dist * AUTO_BOOST_MIN_DIST_RATIO:
 		return false
-	var viewport_h: float = get_viewport_rect().size.y
-	if coin.position.y < viewport_h * AUTO_BOOST_DANGER_ZONE_Y:
-		return false
-	return true
+
+	# Bomb-dodge: check if boost landing zone is near any bomb
+	var boost_dir: float = signf(coin.position.x - position.x)
+	var half_width: float = GameManager.get_catcher_width() / 2.0
+	var viewport_size: Vector2 = get_viewport_rect().size
+	var viewport_w: float = viewport_size.x
+	var viewport_h: float = viewport_size.y
+	var landing_x: float = clampf(position.x + boost_dir * boost_dist, half_width, viewport_w - half_width)
+	var bomb_radius: float = AUTO_BOMB_PENALTY_RADIUS + half_width
+	for bomb_pos: Vector2 in _auto_bomb_positions:
+		if absf(landing_x - bomb_pos.x) < bomb_radius \
+			and absf(position.y - bomb_pos.y) < AUTO_BOMB_DODGE_Y_RANGE:
+			return false
+
+	# Defensive trigger: coin in danger zone (bottom 40% of screen)
+	if coin.position.y >= viewport_h * AUTO_BOOST_DANGER_ZONE_Y:
+		return true
+
+	# Offensive trigger: high-value coins worth boosting for
+	var target_ct: Variant = coin.get("coin_type")
+	if target_ct != null:
+		var coin_type_int: int = int(target_ct)
+		if coin_type_int == COIN_SCRIPT.CoinType.GOLD \
+			or coin_type_int == COIN_SCRIPT.CoinType.FRENZY \
+			or coin_type_int == COIN_SCRIPT.CoinType.MULTI:
+			if coin.position.y >= viewport_h * AUTO_OFFENSIVE_BOOST_MIN_Y \
+				and dist > boost_dist * AUTO_OFFENSIVE_BOOST_MIN_DIST \
+				and dist < boost_dist * AUTO_OFFENSIVE_BOOST_MAX_DIST:
+				return true
+
+	return false
