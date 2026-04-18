@@ -33,6 +33,8 @@ const COOLDOWN_BAR_Y_OFFSET: float = 14.0
 const COOLDOWN_COLOR_ACTIVE := Color(0.878, 0.373, 0.102, 0.8)
 const COOLDOWN_COLOR_READY := Color(0.231, 0.698, 0.451, 0.8)
 const COOLDOWN_COLOR_BG := Color(0.294, 0.333, 0.388, 0.3)
+const AUTO_DEADZONE: float = 10.0
+const COIN_SCRIPT: GDScript = preload("res://scripts/coin.gd")
 var speed: float = 600.0
 
 var _prev_x: float = 0.0
@@ -92,7 +94,11 @@ func _process(delta: float) -> void:
 	if _game_paused:
 		return
 	if not _boost_active:
-		var direction := Input.get_axis("move_left", "move_right")
+		var direction: float = 0.0
+		if GameManager.auto_mode_active:
+			direction = _get_auto_direction()
+		else:
+			direction = Input.get_axis("move_left", "move_right")
 		if direction != 0.0:
 			_last_move_direction = direction
 		var half_width := GameManager.get_catcher_width() / 2.0
@@ -464,3 +470,24 @@ func _update_cooldown_bar_width() -> void:
 	_cooldown_bar_bg.position.x = -current_w / 2.0
 	_cooldown_bar.size.x = current_w * ratio
 	_cooldown_bar.position.x = -current_w / 2.0
+
+
+func _get_auto_direction() -> float:
+	var best_coin: Node = null
+	var best_y: float = -INF
+	var bomb_type: int = COIN_SCRIPT.CoinType.BOMB
+	for node: Node in get_tree().get_nodes_in_group("coins"):
+		if node.get("_collected"):
+			continue
+		var ct: Variant = node.get("coin_type")
+		if ct != null and int(ct) == bomb_type:
+			continue
+		if node.position.y > best_y:
+			best_y = node.position.y
+			best_coin = node
+	if best_coin == null:
+		return 0.0
+	var diff: float = best_coin.position.x - position.x
+	if absf(diff) < AUTO_DEADZONE:
+		return 0.0
+	return signf(diff)

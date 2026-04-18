@@ -36,6 +36,7 @@ var _has_fire_trail: bool = false
 
 
 func _ready() -> void:
+	add_to_group("coins")
 	value = GameManager.get_coin_value()
 	rotation = randf_range(0.0, TAU)
 	_rotation_speed = randf_range(-1.5, 1.5)

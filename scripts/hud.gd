@@ -39,6 +39,8 @@ var _settings_tween: Tween
 var _shop_backdrop: ColorRect
 var _shop_close_button: Button
 var _bottom_bar: HBoxContainer
+var _auto_button: Button
+var _auto_active_style: StyleBoxFlat
 var _sound_toggle: Button
 var _fullscreen_toggle: Button
 var _displayed_currency: float = 0.0
@@ -48,6 +50,7 @@ var _display_font: Font = preload("res://assets/fonts/kenney_future.ttf")
 var _narrow_font: Font = preload("res://assets/fonts/kenney_future_narrow.ttf")
 var _snd_click: AudioStreamPlayer
 var _snd_switch: AudioStreamPlayer
+var _snd_taco: AudioStreamPlayer
 
 @onready var currency_label: Label = %CurrencyLabel
 @onready var upgrade_container: VBoxContainer = %UpgradeContainer
@@ -65,6 +68,7 @@ func _ready() -> void:
 	GameManager.bomb_hit.connect(_on_bomb_hit)
 	GameManager.combo_multiplier_changed.connect(_on_combo_multiplier_changed)
 	GameManager.combo_changed.connect(_on_combo_changed)
+	GameManager.auto_mode_changed.connect(_on_auto_mode_changed)
 	currency_label.add_theme_font_override("font", _display_font)
 	currency_label.add_theme_font_size_override("font_size", 48)
 	_displayed_currency = float(GameManager.currency)
@@ -95,6 +99,10 @@ func _setup_ui_sounds() -> void:
 	_snd_switch.stream = preload("res://assets/sounds/switch-a.ogg")
 	_snd_switch.volume_db = -30.0
 	add_child(_snd_switch)
+	_snd_taco = AudioStreamPlayer.new()
+	_snd_taco.stream = preload("res://assets/sounds/taco.mp3")
+	_snd_taco.volume_db = -20.0
+	add_child(_snd_taco)
 
 
 func _process(delta: float) -> void:
@@ -192,11 +200,23 @@ func _create_bottom_bar() -> void:
 	_bottom_bar.anchor_right = 0.5
 	_bottom_bar.anchor_top = 1.0
 	_bottom_bar.anchor_bottom = 1.0
-	_bottom_bar.offset_left = -125.0
+	_bottom_bar.offset_left = -252.0
 	_bottom_bar.offset_top = -65.0
-	_bottom_bar.offset_right = 125.0
+	_bottom_bar.offset_right = 252.0
 	_bottom_bar.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_bottom_bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	# Auto button (leftmost)
+	_auto_button = Button.new()
+	_auto_button.theme = preload("res://assets/ui_theme.tres")
+	_auto_button.add_theme_font_size_override("font_size", 28)
+	_auto_button.text = "Auto"
+	_auto_button.custom_minimum_size = Vector2(160, 60)
+	_auto_button.pressed.connect(_on_auto_button_pressed)
+	_auto_active_style = StyleBoxFlat.new()
+	_auto_active_style.bg_color = Color(0.231, 0.698, 0.451, 1.0)
+	_auto_active_style.set_corner_radius_all(6)
+	_auto_active_style.set_content_margin_all(12)
+	_bottom_bar.add_child(_auto_button)
 	# Reparent ShopToggle into the bottom bar
 	shop_toggle.reparent(_bottom_bar)
 	shop_toggle.custom_minimum_size = Vector2(160, 60)
@@ -881,6 +901,7 @@ func _notification(what: int) -> void:
 
 
 func _on_upgrade_purchased(_upgrade_id: String) -> void:
+	_snd_taco.play()
 	_flash_currency_label()
 	_flash_gold_overlay()
 
@@ -1016,3 +1037,28 @@ func _spawn_celebration_particles() -> void:
 		add_child(wrapper)
 		wrapper.add_child(burst)
 		get_tree().create_timer(burst.lifetime + 0.2).timeout.connect(wrapper.queue_free)
+
+
+func _on_auto_button_pressed() -> void:
+	_auto_button.release_focus()
+	_snd_switch.play()
+	GameManager.toggle_auto_mode()
+
+
+func _on_auto_mode_changed(active: bool) -> void:
+	if active:
+		_auto_button.add_theme_stylebox_override("normal", _auto_active_style)
+		_auto_button.add_theme_stylebox_override("hover", _auto_active_style)
+		_auto_button.add_theme_stylebox_override("pressed", _auto_active_style)
+		_auto_button.add_theme_color_override("font_color", Color.WHITE)
+		_auto_button.add_theme_color_override("font_hover_color", Color.WHITE)
+		_auto_button.add_theme_color_override("font_pressed_color", Color.WHITE)
+		_auto_button.text = "Auto: ON"
+	else:
+		_auto_button.remove_theme_stylebox_override("normal")
+		_auto_button.remove_theme_stylebox_override("hover")
+		_auto_button.remove_theme_stylebox_override("pressed")
+		_auto_button.remove_theme_color_override("font_color")
+		_auto_button.remove_theme_color_override("font_hover_color")
+		_auto_button.remove_theme_color_override("font_pressed_color")
+		_auto_button.text = "Auto"

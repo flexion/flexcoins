@@ -14,6 +14,7 @@ signal combo_multiplier_changed(new_multiplier: float)
 signal combo_changed(count: int)
 signal boost_used
 signal boost_ready
+signal auto_mode_changed(active: bool)
 
 const MILESTONES: Array[int] = [100, 500, 1000, 5000, 10000, 50000, 100000]
 const BOOST_COOLDOWN: float = 3.0
@@ -34,6 +35,7 @@ var _last_milestone: int = 0
 var frenzy_active: bool = false
 var _frenzy_timer: Timer
 var _combo_multiplier: float = 1.0
+var auto_mode_active: bool = false
 
 func _ready() -> void:
 	for id: String in UPGRADE_DATA:
@@ -84,6 +86,11 @@ func get_catcher_width() -> float:
 
 func get_auto_catcher_count() -> int:
 	return _upgrade_levels.get("auto_catcher", 0)
+
+
+func toggle_auto_mode() -> void:
+	auto_mode_active = not auto_mode_active
+	auto_mode_changed.emit(auto_mode_active)
 
 
 func get_boost_distance() -> float:
