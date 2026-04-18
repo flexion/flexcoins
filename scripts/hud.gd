@@ -209,7 +209,7 @@ func _create_bottom_bar() -> void:
 	_gear_button.offset_top = 0.0
 	_gear_button.offset_right = 0.0
 	_gear_button.offset_bottom = 0.0
-	_gear_button.custom_minimum_size = Vector2(70, 60)
+	_gear_button.custom_minimum_size = Vector2(160, 60)
 	_gear_button.grow_horizontal = Control.GROW_DIRECTION_END
 
 
@@ -246,7 +246,7 @@ func _create_shop_popup_ui() -> void:
 	header.add_child(spacer)
 	_shop_close_button = Button.new()
 	_shop_close_button.theme = preload("res://assets/ui_theme.tres")
-	_shop_close_button.text = "\u2715"
+	_shop_close_button.text = "X"
 	_shop_close_button.add_theme_font_size_override("font_size", 32)
 	_shop_close_button.custom_minimum_size = Vector2(60, 60)
 	_shop_close_button.pressed.connect(_close_shop)
@@ -673,8 +673,8 @@ func _create_settings_ui() -> void:
 	# Gear button (top-right, replacing mute button position)
 	_gear_button = Button.new()
 	_gear_button.theme = preload("res://assets/ui_theme.tres")
-	_gear_button.add_theme_font_size_override("font_size", 32)
-	_gear_button.text = "⚙"
+	_gear_button.add_theme_font_size_override("font_size", 28)
+	_gear_button.text = "Menu"
 	_gear_button.pressed.connect(_on_gear_pressed)
 	add_child(_gear_button)
 	_gear_button.anchors_preset = Control.PRESET_TOP_RIGHT
@@ -742,7 +742,7 @@ func _create_settings_ui() -> void:
 	header.add_child(spacer)
 	var close_button: Button = Button.new()
 	close_button.theme = preload("res://assets/ui_theme.tres")
-	close_button.text = "\u2715"
+	close_button.text = "X"
 	close_button.add_theme_font_size_override("font_size", 32)
 	close_button.custom_minimum_size = Vector2(60, 60)
 	close_button.pressed.connect(_close_settings)
