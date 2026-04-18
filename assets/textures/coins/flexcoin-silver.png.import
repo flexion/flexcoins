@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ctu1gw0yk7rh4"
-path="res://.godot/imported/greySheet.png-980e7e9a81d91785fb621ebf2c31beab.ctex"
+uid="uid://cgmrifth1xmko"
+path="res://.godot/imported/flexcoin-silver.png-0efc57f06ee4ec2eb49109d69870fb87.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/greySheet.png"
-dest_files=["res://.godot/imported/greySheet.png-980e7e9a81d91785fb621ebf2c31beab.ctex"]
+source_file="res://assets/textures/coins/flexcoin-silver.png"
+dest_files=["res://.godot/imported/flexcoin-silver.png-0efc57f06ee4ec2eb49109d69870fb87.ctex"]
 
 [params]
 
@@ -36,5 +36,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=128
 detect_3d/compress_to=1

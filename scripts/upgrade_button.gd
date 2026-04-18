@@ -55,7 +55,7 @@ func _ready() -> void:
 	_create_segment_bar()
 	_setup_icon()
 	_setup_sounds()
-	var sheet: Texture2D = preload("res://assets/greySheet.png")
+	var sheet: Texture2D = preload("res://assets/ui/greySheet.png")
 	_style_afford = _create_atlas_style(sheet, Rect2(0, 49, 191, 49))    # grey_button06 — raised
 	_style_unafford = _create_atlas_style(sheet, Rect2(0, 286, 190, 45)) # grey_button04 — flat/muted
 	_apply_buy_style(_style_unafford)

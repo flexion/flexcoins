@@ -2,11 +2,11 @@ extends Area2D
 
 enum CoinType { COPPER, SILVER, GOLD, FRENZY, BOMB, MULTI }
 
-const TEXTURE_GOLD: Texture2D = preload("res://flexcoin.png")
-const TEXTURE_SILVER: Texture2D = preload("res://flexcoin-silver.png")
-const TEXTURE_MULTI: Texture2D = preload("res://flexcoin-multi.png")
-const TEXTURE_COPPER: Texture2D = preload("res://flexcoin-copper.png")
-const TEXTURE_BOMB: Texture2D = preload("res://flexcoin-bomb.png")
+const TEXTURE_GOLD: Texture2D = preload("res://assets/textures/coins/flexcoin.png")
+const TEXTURE_SILVER: Texture2D = preload("res://assets/textures/coins/flexcoin-silver.png")
+const TEXTURE_MULTI: Texture2D = preload("res://assets/textures/coins/flexcoin-multi.png")
+const TEXTURE_COPPER: Texture2D = preload("res://assets/textures/coins/flexcoin-copper.png")
+const TEXTURE_BOMB: Texture2D = preload("res://assets/textures/coins/flexcoin-bomb.png")
 const COIN_SCENE: PackedScene = preload("res://scenes/coin.tscn")
 const SHIMMER_MIN_INTERVAL: float = 2.0
 const SHIMMER_MAX_INTERVAL: float = 4.0

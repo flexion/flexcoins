@@ -1,6 +1,6 @@
 [gd_resource type="Theme" format=3 uid="uid://c6lbb1vqjfp7y"]
 
-[ext_resource type="Texture2D" uid="uid://ctu1gw0yk7rh4" path="res://assets/greySheet.png" id="1_greysheet"]
+[ext_resource type="Texture2D" uid="uid://dxxa8v61u4vcy" path="res://assets/ui/greySheet.png" id="1_greysheet"]
 
 [sub_resource type="AtlasTexture" id="atlas_btn_disabled"]
 atlas = ExtResource("1_greysheet")

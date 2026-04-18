@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://chorqwmavmtxi"
-path="res://.godot/imported/flexcoin-bomb.png-e3c49b48dcbbd74dd1b7a16cc6c22a81.ctex"
+uid="uid://bqawhdwyofy5w"
+path="res://.godot/imported/flexcoin-bomb.png-33d748dd299874bd101ec5b3d487ed6d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://flexcoin-bomb.png"
-dest_files=["res://.godot/imported/flexcoin-bomb.png-e3c49b48dcbbd74dd1b7a16cc6c22a81.ctex"]
+source_file="res://assets/textures/coins/flexcoin-bomb.png"
+dest_files=["res://.godot/imported/flexcoin-bomb.png-33d748dd299874bd101ec5b3d487ed6d.ctex"]
 
 [params]
 

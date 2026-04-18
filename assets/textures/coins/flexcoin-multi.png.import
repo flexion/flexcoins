@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d0hy6wr75ar8i"
-path="res://.godot/imported/flexcoin-copper.png-08cd4664b073176c8bd421060450d843.ctex"
+uid="uid://duo226nl0y76r"
+path="res://.godot/imported/flexcoin-multi.png-dfac4b7dbd0d1ed040b7b0a62b9c68a5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://flexcoin-copper.png"
-dest_files=["res://.godot/imported/flexcoin-copper.png-08cd4664b073176c8bd421060450d843.ctex"]
+source_file="res://assets/textures/coins/flexcoin-multi.png"
+dest_files=["res://.godot/imported/flexcoin-multi.png-dfac4b7dbd0d1ed040b7b0a62b9c68a5.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://upgrade_btn_001"]
 
 [ext_resource type="Script" path="res://scripts/upgrade_button.gd" id="1_script"]
-[ext_resource type="Texture2D" uid="uid://ctu1gw0yk7rh4" path="res://assets/greySheet.png" id="2_greysheet"]
+[ext_resource type="Texture2D" uid="uid://dxxa8v61u4vcy" path="res://assets/ui/greySheet.png" id="2_greysheet"]
 
 [sub_resource type="AtlasTexture" id="atlas_card_bg"]
 atlas = ExtResource("2_greysheet")

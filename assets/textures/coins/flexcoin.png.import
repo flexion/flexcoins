@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b73g8vkex55h0"
-path="res://.godot/imported/logo-white.png-5f00aeaba28aac4cf8dbe59d354dbead.ctex"
+uid="uid://dd4epdr67cs8e"
+path="res://.godot/imported/flexcoin.png-cff7dd4dc66ebdcfd9eecc5e7ce8113f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://logo-white.png"
-dest_files=["res://.godot/imported/logo-white.png-5f00aeaba28aac4cf8dbe59d354dbead.ctex"]
+source_file="res://assets/textures/coins/flexcoin.png"
+dest_files=["res://.godot/imported/flexcoin.png-cff7dd4dc66ebdcfd9eecc5e7ce8113f.ctex"]
 
 [params]
 

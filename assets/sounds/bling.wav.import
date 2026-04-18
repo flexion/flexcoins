@@ -2,13 +2,13 @@
 
 importer="wav"
 type="AudioStreamWAV"
-uid="uid://dmpx6knl0kltu"
-path="res://.godot/imported/bling.wav-d6bb5a16307f43676d91b5a00d980fb7.sample"
+uid="uid://cmllepmyv0kbe"
+path="res://.godot/imported/bling.wav-0727642af5cf70d6e37e0598e15ad765.sample"
 
 [deps]
 
-source_file="res://sounds/bling.wav"
-dest_files=["res://.godot/imported/bling.wav-d6bb5a16307f43676d91b5a00d980fb7.sample"]
+source_file="res://assets/sounds/bling.wav"
+dest_files=["res://.godot/imported/bling.wav-0727642af5cf70d6e37e0598e15ad765.sample"]
 
 [params]
 

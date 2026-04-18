@@ -2,10 +2,10 @@ extends Node2D
 
 const COIN_COUNT: int = 360
 const BG_TEXTURE: Texture2D = preload("res://assets/textures/bg-dark-abstract-wide.png")
-const COIN_TEXTURE_GOLD: Texture2D = preload("res://flexcoin.png")
-const COIN_TEXTURE_SILVER: Texture2D = preload("res://flexcoin-silver.png")
-const COIN_TEXTURE_COPPER: Texture2D = preload("res://flexcoin-copper.png")
-const LOGO_TEXTURE: Texture2D = preload("res://logo.png")
+const COIN_TEXTURE_GOLD: Texture2D = preload("res://assets/textures/coins/flexcoin.png")
+const COIN_TEXTURE_SILVER: Texture2D = preload("res://assets/textures/coins/flexcoin-silver.png")
+const COIN_TEXTURE_COPPER: Texture2D = preload("res://assets/textures/coins/flexcoin-copper.png")
+const LOGO_TEXTURE: Texture2D = preload("res://assets/textures/logo.png")
 const DISPLAY_FONT: Font = preload("res://assets/fonts/kenney_future.ttf")
 const UI_THEME: Theme = preload("res://assets/ui_theme.tres")
 const COIN_SCALE_GOLD: float = 2.0       # 128 * 2.0 = 256px (5x normal)

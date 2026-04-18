@@ -1,42 +1,42 @@
-[gd_scene load_steps=10 format=3 uid="uid://main_scene_001"]
+[gd_scene format=3 uid="uid://bkp7a0a4qdgkw"]
 
-[ext_resource type="Script" path="res://scripts/coin_spawner.gd" id="1_spawner_script"]
-[ext_resource type="Texture2D" uid="uid://vrqw1mu1ogsh" path="res://assets/textures/bg-dark-abstract-wide.png" id="9_bg_texture"]
-[ext_resource type="PackedScene" path="res://scenes/coin.tscn" id="2_coin_scene"]
+[ext_resource type="Script" uid="uid://cqvotubtk2b4n" path="res://scripts/coin_spawner.gd" id="1_spawner_script"]
+[ext_resource type="PackedScene" uid="uid://dwwadoda2fjf2" path="res://scenes/coin.tscn" id="2_coin_scene"]
 [ext_resource type="PackedScene" path="res://scenes/catcher.tscn" id="3_catcher_scene"]
 [ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="4_hud_scene"]
 [ext_resource type="PackedScene" path="res://scenes/floating_text.tscn" id="5_float_text"]
-[ext_resource type="Script" path="res://scripts/background.gd" id="6_bg_script"]
-[ext_resource type="AudioStream" path="res://sounds/flexion-game-bonus.mp3" id="7_music"]
-[ext_resource type="Script" path="res://scripts/background_music.gd" id="8_music_script"]
-[ext_resource type="Script" path="res://scripts/auto_catcher_manager.gd" id="9_auto_mgr"]
+[ext_resource type="Script" uid="uid://cf7gmqefvsg6p" path="res://scripts/background.gd" id="6_bg_script"]
+[ext_resource type="AudioStream" uid="uid://diemibg141f2a" path="res://assets/sounds/music/flexion-game-bonus.mp3" id="7_music"]
+[ext_resource type="Script" uid="uid://c10eotbo7oef2" path="res://scripts/background_music.gd" id="8_music_script"]
+[ext_resource type="Script" uid="uid://cur1rcm3nh501" path="res://scripts/auto_catcher_manager.gd" id="9_auto_mgr"]
+[ext_resource type="Texture2D" uid="uid://vrqw1mu1ogsh" path="res://assets/textures/bg-dark-abstract-wide.png" id="9_bg_texture"]
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Node2D" unique_id=9850328]
 
-[node name="Background" type="TextureRect" parent="."]
+[node name="Background" type="TextureRect" parent="." unique_id=195538254]
 offset_right = 2160.0
 offset_bottom = 1280.0
 texture = ExtResource("9_bg_texture")
 stretch_mode = 6
 script = ExtResource("6_bg_script")
 
-[node name="CoinSpawner" type="Node2D" parent="."]
+[node name="CoinSpawner" type="Node2D" parent="." unique_id=1907612120]
 script = ExtResource("1_spawner_script")
 coin_scene = ExtResource("2_coin_scene")
 
-[node name="Timer" type="Timer" parent="CoinSpawner"]
+[node name="Timer" type="Timer" parent="CoinSpawner" unique_id=427124667]
 
-[node name="Catcher" parent="." instance=ExtResource("3_catcher_scene")]
+[node name="Catcher" parent="." unique_id=1510509035 instance=ExtResource("3_catcher_scene")]
 position = Vector2(1080, 1040)
 floating_text_scene = ExtResource("5_float_text")
 
-[node name="AutoCatcherManager" type="Node2D" parent="."]
+[node name="AutoCatcherManager" type="Node2D" parent="." unique_id=2013640468]
 script = ExtResource("9_auto_mgr")
 floating_text_scene = ExtResource("5_float_text")
 
-[node name="HUD" parent="." instance=ExtResource("4_hud_scene")]
+[node name="HUD" parent="." unique_id=930414806 instance=ExtResource("4_hud_scene")]
 
-[node name="BackgroundMusic" type="AudioStreamPlayer" parent="."]
+[node name="BackgroundMusic" type="AudioStreamPlayer" parent="." unique_id=920392579]
 stream = ExtResource("7_music")
 volume_db = -10.0
 autoplay = true
