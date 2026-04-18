@@ -9,8 +9,8 @@ var _spawn_sound: AudioStreamPlayer
 
 func _ready() -> void:
 	_spawn_sound = AudioStreamPlayer.new()
-	_spawn_sound.stream = preload("res://assets/sounds/coin.wav")
-	_spawn_sound.volume_db = -30.0
+	_spawn_sound.stream = preload("res://assets/sounds/coin_drop.wav")
+	_spawn_sound.volume_db = -40.0
 	add_child(_spawn_sound)
 	_normal_interval = GameManager.get_spawn_interval()
 	$Timer.wait_time = _normal_interval
