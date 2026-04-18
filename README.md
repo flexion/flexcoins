@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.png" alt="FlexCoins" width="600">
+  <img src="assets/textures/logo.png" alt="FlexCoins" width="600">
 </p>
 
 <p align="center">
@@ -19,12 +19,12 @@ Coins unlock progressively as you upgrade **Coin Types** in the shop. Frenzy and
 
 | Coin | Sprite | Unlock | Value | Effect |
 |------|--------|--------|-------|--------|
-| **Copper** | <img src="flexcoin-copper.png" width="32"> | Default | 1x | Always most common |
-| **Silver** | <img src="flexcoin-silver.png" width="32"> | Level 1 | 2x | Standard upgrade |
-| **Frenzy** | <img src="flexcoin.png" width="32"> | Level 2 | — | Triggers 5s triple spawn rate |
-| **Bomb** | <img src="flexcoin-bomb.png" width="32"> | Always | — | -10% coins, shrinks catcher 3s, resets combo |
-| **Gold** | <img src="flexcoin.png" width="32"> | Level 3 | 5x | Falls 1.5x faster |
-| **Multi** | <img src="flexcoin-multi.png" width="32"> | Level 4 | — | Splits into 3 silver coins mid-air |
+| **Copper** | <img src="assets/textures/coins/flexcoin-copper.png" width="32"> | Default | 1x | Always most common |
+| **Silver** | <img src="assets/textures/coins/flexcoin-silver.png" width="32"> | Level 1 | 2x | Standard upgrade |
+| **Frenzy** | <img src="assets/textures/coins/flexcoin.png" width="32"> | Level 2 | — | Triggers 5s triple spawn rate |
+| **Bomb** | <img src="assets/textures/coins/flexcoin-bomb.png" width="32"> | Always | — | -10% coins, shrinks catcher 3s, resets combo |
+| **Gold** | <img src="assets/textures/coins/flexcoin.png" width="32"> | Level 3 | 5x | Falls 1.5x faster |
+| **Multi** | <img src="assets/textures/coins/flexcoin-multi.png" width="32"> | Level 4 | — | Splits into 3 silver coins mid-air |
 
 ## Upgrades
 
