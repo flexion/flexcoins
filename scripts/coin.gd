@@ -222,7 +222,7 @@ func _add_trail() -> void:
 		trail.damping_max = 15.0
 		trail.explosiveness = 0.15
 		trail.top_level = true
-		trail.z_index = 8
+		trail.z_index = -1
 		trail.position = global_position
 		_has_fire_trail = true
 	trail.show_behind_parent = true
@@ -292,7 +292,7 @@ func _add_ember_trail() -> void:
 	embers.color_ramp = _make_ember_gradient()
 	embers.show_behind_parent = true
 	embers.top_level = true
-	embers.z_index = 8
+	embers.z_index = -1
 	embers.position = global_position
 	add_child(embers)
 	_ember_trail = embers
