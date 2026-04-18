@@ -247,11 +247,13 @@ func _animate_purchase() -> void:
 func _animate_reject() -> void:
 	if _shake_tween and _shake_tween.is_running():
 		_shake_tween.kill()
+		buy_button.get_parent().queue_sort()
+	var original_x: float = buy_button.position.x
 	_shake_tween = create_tween()
 	for i: int in range(4):
-		_shake_tween.tween_property(buy_button, "position:x", 6.0, 0.037)
-		_shake_tween.tween_property(buy_button, "position:x", -6.0, 0.037)
-	_shake_tween.tween_property(buy_button, "position:x", 0.0, 0.037)
+		_shake_tween.tween_property(buy_button, "position:x", original_x + 6.0, 0.037)
+		_shake_tween.tween_property(buy_button, "position:x", original_x - 6.0, 0.037)
+	_shake_tween.tween_property(buy_button, "position:x", original_x, 0.037)
 	buy_button.add_theme_color_override("font_color", COLOR_REJECT)
 	_shake_tween.tween_callback(func() -> void:
 		buy_button.get_parent().queue_sort()
