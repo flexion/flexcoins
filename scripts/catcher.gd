@@ -34,6 +34,8 @@ const COOLDOWN_COLOR_ACTIVE := Color(0.878, 0.373, 0.102, 0.8)
 const COOLDOWN_COLOR_READY := Color(0.231, 0.698, 0.451, 0.8)
 const COOLDOWN_COLOR_BG := Color(0.294, 0.333, 0.388, 0.3)
 const AUTO_DEADZONE: float = 10.0
+const AUTO_BOOST_MIN_DIST_RATIO: float = 0.5
+const AUTO_BOOST_DANGER_ZONE_Y: float = 0.6
 const COIN_SCRIPT: GDScript = preload("res://scripts/coin.gd")
 var speed: float = 600.0
 
@@ -95,8 +97,12 @@ func _process(delta: float) -> void:
 		return
 	if not _boost_active:
 		var direction: float = 0.0
+		var auto_target: Node = null
 		if GameManager.auto_mode_active:
-			direction = _get_auto_direction()
+			auto_target = _get_auto_target_coin()
+			if auto_target:
+				var diff: float = auto_target.position.x - position.x
+				direction = 0.0 if absf(diff) < AUTO_DEADZONE else signf(diff)
 		else:
 			direction = Input.get_axis("move_left", "move_right")
 		if direction != 0.0:
@@ -107,6 +113,10 @@ func _process(delta: float) -> void:
 		position.x = clamp(unclamped_x, half_width, viewport_width - half_width)
 		if unclamped_x != position.x:
 			scale = Vector2.ONE
+		# Auto-boost: dash toward distant coins in danger zone
+		if GameManager.auto_mode_active and auto_target and _should_auto_boost(auto_target):
+			var boost_dir: float = signf(auto_target.position.x - position.x)
+			_try_boost(boost_dir)
 
 	# Motion trail intensity based on speed
 	var velocity := absf(position.x - _prev_x) / delta
@@ -472,7 +482,7 @@ func _update_cooldown_bar_width() -> void:
 	_cooldown_bar.position.x = -current_w / 2.0
 
 
-func _get_auto_direction() -> float:
+func _get_auto_target_coin() -> Node:
 	var best_coin: Node = null
 	var best_y: float = -INF
 	var bomb_type: int = COIN_SCRIPT.CoinType.BOMB
@@ -485,9 +495,21 @@ func _get_auto_direction() -> float:
 		if node.position.y > best_y:
 			best_y = node.position.y
 			best_coin = node
-	if best_coin == null:
-		return 0.0
-	var diff: float = best_coin.position.x - position.x
-	if absf(diff) < AUTO_DEADZONE:
-		return 0.0
-	return signf(diff)
+	return best_coin
+
+
+func _should_auto_boost(coin: Node) -> bool:
+	if _boost_active or _boost_cooldown_remaining > 0.0:
+		return false
+	if _bomb_shrink_active:
+		return false
+	if GameManager.get_upgrade_level("boost_power") <= 0:
+		return false
+	var dist: float = absf(coin.position.x - position.x)
+	var boost_dist: float = GameManager.get_boost_distance()
+	if dist < boost_dist * AUTO_BOOST_MIN_DIST_RATIO:
+		return false
+	var viewport_h: float = get_viewport_rect().size.y
+	if coin.position.y < viewport_h * AUTO_BOOST_DANGER_ZONE_Y:
+		return false
+	return true

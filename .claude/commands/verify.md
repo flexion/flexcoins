@@ -67,6 +67,10 @@ Run in order:
 
 ## Phase 4: Feature Tests (diff-aware)
 
+Phase 4 has two parts: **baseline regression recipes** (static) and **change-specific tests** (dynamic). Both must pass.
+
+### Part A: Baseline Regression Recipes
+
 Before running recipes, determine what changed:
 
 ```bash
@@ -107,6 +111,69 @@ python3 tools/devtools.py run-method --node "/root/GameManager" --method try_pur
 python3 tools/devtools.py get-state --node "/root/GameManager"
 ```
 Verify `upgrade_levels.spawn_rate` incremented and currency decreased.
+
+### Part B: Change-Specific Tests
+
+After running baseline recipes, design and execute tests that specifically exercise the new or modified behavior from this session. These tests are **not** pre-written — you must create them dynamically each run.
+
+**Step 1: Analyze the diff.** Read the actual code changes (not just file names):
+
+```bash
+git diff HEAD
+```
+
+If no working tree changes, use your knowledge of what was modified in this session. Identify:
+- What new code paths were added (new functions, new branches in existing functions)
+- What conditions trigger them (upgrade levels, game states, input actions, timers)
+- What observable effects they produce (position changes, currency changes, visual changes, node creation/removal)
+
+**Step 2: Design tests.** For each significant new behavior, design a test that:
+- Sets up the required preconditions using devtools (e.g., `set-upgrade-levels`, `run-method`, `add_currency`, `input`)
+- Triggers the behavior (e.g., spawn coins in specific positions, simulate input, toggle game states)
+- Verifies the outcome through observable state (e.g., `get-catcher-state`, `get-state`, `get-active-coins`, `node-bounds`, `screenshot`, position comparisons)
+
+**Step 3: Execute and verify.** Run each test, check results, and report pass/fail. Use `reset-session` between tests if they require conflicting game states.
+
+**Available devtools for building tests:**
+
+| Command | Use for |
+|---|---|
+| `set-upgrade-levels --spawn-rate N --coin-value N ...` | Set upgrade preconditions |
+| `run-method --node PATH --method NAME --args "[...]"` | Call any game method (add_currency, toggle_auto_mode, etc.) |
+| `get-catcher-state` | Check catcher position, width, speed |
+| `get-state --node PATH` | Read any node's properties |
+| `spawn-coin --type TYPE --x N` | Spawn coin at specific X position |
+| `spawn-coin-on-catcher --type TYPE` | Spawn coin directly above catcher |
+| `get-active-coins` | List all coins with positions and types |
+| `input tap ACTION --hold N` | Simulate input actions |
+| `set-game-speed N` | Speed up game for time-dependent tests |
+| `wait-frames N` | Wait for physics frames to elapse |
+| `screenshot` | Visual verification |
+| `node-bounds PATH` | Get exact position/size of any node |
+| `reset-session` | Reset to fresh game state |
+
+**Example** — if the diff added auto-boost behavior to the catcher when auto-mode is active and boost_power is purchased:
+```bash
+# Setup: purchase boost_power, enable auto-mode
+python3 tools/devtools.py set-upgrade-levels --boost-power 3
+python3 tools/devtools.py run-method --node "/root/GameManager" --method toggle_auto_mode --args "[]"
+# Record catcher starting position
+python3 tools/devtools.py get-catcher-state
+# Spawn a coin far from catcher in danger zone (lower 40% of screen)
+python3 tools/devtools.py spawn-coin --type SILVER --x 200
+# Wait for the auto-boost to fire
+sleep 1
+# Verify catcher moved significantly toward the coin
+python3 tools/devtools.py get-catcher-state
+# Take screenshot for visual verification
+python3 tools/devtools.py screenshot
+```
+
+**Guidelines:**
+- Design at least 1 test per significant new behavior in the diff
+- Test both the happy path AND at least one guard/edge case (e.g., feature should NOT activate when a prerequisite is missing)
+- If the change is purely visual, use screenshots before/after and inspect them
+- Report each test with a name, what it verified, and pass/fail
 
 ## Phase 5: Clean Shutdown
 
@@ -189,4 +256,4 @@ For each issue found, present a recommendation in this format:
 
 ## Pass/Fail Summary
 
-Report results as a table: lint status, validate-all, validate-ui, performance (FPS + orphan nodes), any feature test outcomes, and any verify.md updates made. Also check Godot terminal output for GDScript runtime errors or warnings. If all pass, the commit is safe to proceed.
+Report results as a table: lint status, validate-all, validate-ui, performance (FPS + orphan nodes), baseline recipe outcomes, change-specific test outcomes (name + pass/fail for each), and any verify.md updates made. Also check Godot terminal output for GDScript runtime errors or warnings. If all pass, the commit is safe to proceed.
