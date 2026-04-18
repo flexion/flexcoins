@@ -129,6 +129,7 @@ func _create_background(vp_size: Vector2) -> void:
 	base.position = Vector2.ZERO
 	base.size = vp_size
 	base.z_index = -10
+	base.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bg_container.add_child(base)
 
 	# Breathing overlay
@@ -138,6 +139,7 @@ func _create_background(vp_size: Vector2) -> void:
 	breathing.size = vp_size
 	breathing.modulate.a = 0.0
 	breathing.z_index = -9
+	breathing.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bg_container.add_child(breathing)
 
 	var breathing_tween: Tween = create_tween().set_loops()
@@ -268,6 +270,7 @@ func _create_logo_area() -> void:
 	logo_wrapper.position = Vector2(0.0, 100.0)
 	logo_wrapper.size = logo_size
 	logo_wrapper.z_index = 6
+	logo_wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_logo_container.add_child(logo_wrapper)
 
 	var logo_rect: TextureRect = TextureRect.new()
@@ -278,6 +281,7 @@ func _create_logo_area() -> void:
 	logo_rect.custom_minimum_size = logo_size
 	logo_rect.size = logo_size
 	logo_rect.position = Vector2.ZERO
+	logo_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	logo_wrapper.add_child(logo_rect)
 
 	# Control in Node2D: layout disabled, using explicit position (fixed viewport)
@@ -285,6 +289,7 @@ func _create_logo_area() -> void:
 	label_wrapper.position = Vector2(0.0, 850.0)
 	label_wrapper.size = label_size
 	label_wrapper.z_index = 7
+	label_wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_logo_container.add_child(label_wrapper)
 
 	var tap_label: Label = Label.new()
@@ -295,6 +300,7 @@ func _create_logo_area() -> void:
 	tap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tap_label.size = label_size
 	tap_label.position = Vector2.ZERO
+	tap_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label_wrapper.add_child(tap_label)
 
 	# Label pulse
