@@ -6,7 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/hud.tscn" id="4_hud_scene"]
 [ext_resource type="PackedScene" path="res://scenes/floating_text.tscn" id="5_float_text"]
 [ext_resource type="Script" uid="uid://cf7gmqefvsg6p" path="res://scripts/background.gd" id="6_bg_script"]
-[ext_resource type="AudioStream" uid="uid://diemibg141f2a" path="res://assets/sounds/music/flexion-game-bonus.mp3" id="7_music"]
+[ext_resource type="AudioStream" uid="uid://cbq8gqs0a1l5u" path="res://assets/sounds/music/Sad Town.ogg" id="7_music"]
 [ext_resource type="Script" uid="uid://c10eotbo7oef2" path="res://scripts/background_music.gd" id="8_music_script"]
 [ext_resource type="Script" uid="uid://cur1rcm3nh501" path="res://scripts/auto_catcher_manager.gd" id="9_auto_mgr"]
 [ext_resource type="Texture2D" uid="uid://vrqw1mu1ogsh" path="res://assets/textures/bg-dark-abstract-wide.png" id="9_bg_texture"]
@@ -38,7 +38,7 @@ floating_text_scene = ExtResource("5_float_text")
 
 [node name="BackgroundMusic" type="AudioStreamPlayer" parent="." unique_id=920392579]
 stream = ExtResource("7_music")
-volume_db = -10.0
+volume_db = -18.0
 autoplay = true
 script = ExtResource("8_music_script")
 

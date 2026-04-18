@@ -18,6 +18,7 @@ var _coin_rotation_speeds: Array[float] = []
 var _fade_overlay: ColorRect
 var _transitioning: bool = false
 var _click_sound: AudioStreamPlayer
+var _music: AudioStreamPlayer
 
 var _bg_container: Node2D
 var _orb_container: Node2D
@@ -57,6 +58,14 @@ func _ready() -> void:
 	_click_sound.stream = preload("res://assets/sounds/click-b.ogg")
 	_click_sound.volume_db = -10.0
 	add_child(_click_sound)
+
+	# Background music
+	_music = AudioStreamPlayer.new()
+	_music.stream = preload("res://assets/sounds/music/Sad Town.ogg")
+	_music.volume_db = -18.0
+	_music.finished.connect(_music.play)
+	add_child(_music)
+	_music.play()
 
 	# Control in Node2D: layout disabled, using explicit position (fixed viewport)
 	_fade_overlay = ColorRect.new()
