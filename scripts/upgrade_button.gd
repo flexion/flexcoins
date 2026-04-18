@@ -8,7 +8,10 @@ const TIER_COLORS: Array[Color] = [
 	Color(0.8, 0.4, 1.0, 1.0),    # Purple (tier 3+)
 ]
 const EMPTY_COLOR := Color(0.78, 0.8, 0.82, 1.0)
-const COLOR_NAVY := Color(0.122, 0.161, 0.216, 1.0)       # #1F2937
+const COLOR_BTN_AFFORDABLE := Color(0.231, 0.698, 0.451, 1.0)   # #3BB273 Green
+const COLOR_BTN_UNAFFORDABLE := Color(0.6, 0.22, 0.15, 1.0)     # Muted red (intentional)
+const COLOR_REJECT := Color(0.929, 0.325, 0.220, 1.0)          # Light Tango
+const COLOR_WHITE := Color(1.0, 1.0, 1.0, 1.0)
 const UPGRADE_ICONS: Dictionary = {
 	"spawn_rate": preload("res://assets/textures/icon_repeat.png"),
 	"coin_value": preload("res://assets/textures/icon_star.png"),
@@ -18,9 +21,6 @@ const UPGRADE_ICONS: Dictionary = {
 	"coin_types": preload("res://assets/textures/icon_circle.png"),
 	"boost_power": preload("res://assets/textures/icon_arrow_up.png"),
 }
-# Flexion brand colors for buy button states
-const COLOR_GREEN := Color(0.231, 0.698, 0.451, 1.0)            # #3BB273
-const COLOR_CHARCOAL := Color(0.294, 0.333, 0.388, 1.0)         # #4B5563
 
 var upgrade_id: String = ""
 var _segment_rects: Array[ColorRect] = []
@@ -31,8 +31,8 @@ var _pulse_tween: Tween
 var _shake_tween: Tween
 var _purchase_sound: AudioStreamPlayer
 var _reject_sound: AudioStreamPlayer
-var _style_afford: StyleBoxTexture
-var _style_unafford: StyleBoxTexture
+var _style_afford: StyleBoxFlat
+var _style_unafford: StyleBoxFlat
 
 
 @onready var name_label: Label = %NameLabel
@@ -55,9 +55,8 @@ func _ready() -> void:
 	_create_segment_bar()
 	_setup_icon()
 	_setup_sounds()
-	var sheet: Texture2D = preload("res://assets/ui/greySheet.png")
-	_style_afford = _create_atlas_style(sheet, Rect2(0, 49, 191, 49))    # grey_button06 — raised
-	_style_unafford = _create_atlas_style(sheet, Rect2(0, 286, 190, 45)) # grey_button04 — flat/muted
+	_style_afford = _create_flat_style(COLOR_BTN_AFFORDABLE)
+	_style_unafford = _create_flat_style(COLOR_BTN_UNAFFORDABLE)
 	_apply_buy_style(_style_unafford)
 	_update_display()
 
@@ -173,16 +172,13 @@ func _update_segments(level: int) -> void:
 		_segment_rects[i].color = fill_color if i < filled else EMPTY_COLOR
 
 
-func _create_atlas_style(sheet: Texture2D, region: Rect2) -> StyleBoxTexture:
-	var atlas := AtlasTexture.new()
-	atlas.atlas = sheet
-	atlas.region = region
-	var style := StyleBoxTexture.new()
-	style.texture = atlas
-	style.texture_margin_left = 12.0
-	style.texture_margin_top = 12.0
-	style.texture_margin_right = 12.0
-	style.texture_margin_bottom = 12.0
+func _create_flat_style(bg_color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = bg_color
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
 	style.content_margin_left = 8.0
 	style.content_margin_top = 4.0
 	style.content_margin_right = 8.0
@@ -190,23 +186,25 @@ func _create_atlas_style(sheet: Texture2D, region: Rect2) -> StyleBoxTexture:
 	return style
 
 
-func _apply_buy_style(style: StyleBoxTexture) -> void:
+func _apply_buy_style(style: StyleBoxFlat) -> void:
 	buy_button.add_theme_stylebox_override("normal", style)
 	buy_button.add_theme_stylebox_override("hover", style)
 	buy_button.add_theme_stylebox_override("pressed", style)
+	buy_button.add_theme_stylebox_override("disabled", style)
+	buy_button.add_theme_stylebox_override("focus", style)
 
 
 func _update_afford_cue(affordable: bool) -> void:
 	if affordable:
 		modulate.a = 1.0
-		buy_button.add_theme_color_override("font_color", COLOR_NAVY)
+		buy_button.add_theme_color_override("font_color", COLOR_WHITE)
 		_apply_buy_style(_style_afford)
 		if not _was_affordable:
 			_was_affordable = true
 			_start_pulse()
 	else:
 		modulate.a = 0.85
-		buy_button.add_theme_color_override("font_color", COLOR_CHARCOAL)
+		buy_button.add_theme_color_override("font_color", COLOR_WHITE)
 		_apply_buy_style(_style_unafford)
 		if _was_affordable:
 			_was_affordable = false
@@ -228,15 +226,17 @@ func _stop_pulse() -> void:
 
 func _animate_purchase() -> void:
 	_apply_buy_style(_style_afford)
-	buy_button.add_theme_color_override("font_color", COLOR_GREEN)
+	buy_button.add_theme_color_override("font_color", COLOR_WHITE)
 	pivot_offset = size / 2.0
 	var tween := create_tween()
 	tween.tween_property(self, "scale", Vector2(1.05, 1.05), 0.08).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.12).set_ease(Tween.EASE_IN_OUT)
 	tween.tween_callback(func() -> void:
 		scale = Vector2(1.0, 1.0)
+		if buy_button.disabled:
+			return
 		var affordable := GameManager.currency >= GameManager.get_upgrade_cost(upgrade_id)
-		buy_button.add_theme_color_override("font_color", COLOR_NAVY if affordable else COLOR_CHARCOAL)
+		buy_button.add_theme_color_override("font_color", COLOR_WHITE)
 		_apply_buy_style(_style_afford if affordable else _style_unafford)
 	)
 	if _purchase_sound:
@@ -247,17 +247,15 @@ func _animate_purchase() -> void:
 func _animate_reject() -> void:
 	if _shake_tween and _shake_tween.is_running():
 		_shake_tween.kill()
-	var original_x: float = buy_button.position.x
 	_shake_tween = create_tween()
 	for i: int in range(4):
-		_shake_tween.tween_property(buy_button, "position:x", original_x + 6.0, 0.037)
-		_shake_tween.tween_property(buy_button, "position:x", original_x - 6.0, 0.037)
-	_shake_tween.tween_property(buy_button, "position:x", original_x, 0.037)
-	buy_button.add_theme_color_override("font_color", Color(1.0, 0.3, 0.2, 1.0))
+		_shake_tween.tween_property(buy_button, "position:x", 6.0, 0.037)
+		_shake_tween.tween_property(buy_button, "position:x", -6.0, 0.037)
+	_shake_tween.tween_property(buy_button, "position:x", 0.0, 0.037)
+	buy_button.add_theme_color_override("font_color", COLOR_REJECT)
 	_shake_tween.tween_callback(func() -> void:
 		buy_button.get_parent().queue_sort()
-		var affordable := GameManager.currency >= GameManager.get_upgrade_cost(upgrade_id)
-		buy_button.add_theme_color_override("font_color", COLOR_NAVY if affordable else COLOR_CHARCOAL)
+		buy_button.add_theme_color_override("font_color", COLOR_WHITE)
 	)
 	if _reject_sound:
 		_reject_sound.play()

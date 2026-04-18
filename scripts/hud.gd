@@ -208,6 +208,7 @@ func _create_bottom_bar() -> void:
 	# Auto button (leftmost)
 	_auto_button = Button.new()
 	_auto_button.theme = preload("res://assets/ui_theme.tres")
+	_auto_button.add_theme_font_override("font", _narrow_font)
 	_auto_button.add_theme_font_size_override("font_size", 28)
 	_auto_button.text = "Auto"
 	_auto_button.custom_minimum_size = Vector2(160, 60)
@@ -219,6 +220,7 @@ func _create_bottom_bar() -> void:
 	_bottom_bar.add_child(_auto_button)
 	# Reparent ShopToggle into the bottom bar
 	shop_toggle.reparent(_bottom_bar)
+	shop_toggle.add_theme_font_override("font", _narrow_font)
 	shop_toggle.custom_minimum_size = Vector2(160, 60)
 	# Move gear button from top-right into bottom bar
 	_gear_button.reparent(_bottom_bar)
@@ -693,6 +695,7 @@ func _create_settings_ui() -> void:
 	# Gear button (top-right, replacing mute button position)
 	_gear_button = Button.new()
 	_gear_button.theme = preload("res://assets/ui_theme.tres")
+	_gear_button.add_theme_font_override("font", _narrow_font)
 	_gear_button.add_theme_font_size_override("font_size", 28)
 	_gear_button.text = "Menu"
 	_gear_button.pressed.connect(_on_gear_pressed)
