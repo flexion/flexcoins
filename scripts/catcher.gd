@@ -1,7 +1,5 @@
 extends Area2D
 
-@export var floating_text_scene: PackedScene
-
 const BURST_COLORS: Dictionary = {
 	0: Color(0.8, 0.5, 0.2, 0.9),    # COPPER -> copper brown
 	1: Color(1.0, 0.84, 0.0, 0.9),   # SILVER -> gold
@@ -37,6 +35,15 @@ const AUTO_DEADZONE: float = 10.0
 const AUTO_BOOST_MIN_DIST_RATIO: float = 0.5
 const AUTO_BOOST_DANGER_ZONE_Y: float = 0.6
 const COIN_SCRIPT: GDScript = preload("res://scripts/coin.gd")
+const BLING_POOL_SIZE: int = 4
+const SPRITE_NATIVE_W: float = 128.0
+const SPRITE_NATIVE_H: float = 8.0
+const CATCHER_HEIGHT: float = 20.0
+const CATCHER_BOTTOM_OFFSET: float = 240.0
+const BOMB_SHRINK_FACTOR: float = 0.6
+
+@export var floating_text_scene: PackedScene
+
 var speed: float = 600.0
 
 var _prev_x: float = 0.0
@@ -57,16 +64,11 @@ var _boost_tween: Tween
 var _cooldown_bar: ColorRect
 var _cooldown_bar_bg: ColorRect
 var _cooldown_hide_tween: Tween
-
-const SPRITE_NATIVE_W: float = 128.0
-const SPRITE_NATIVE_H: float = 8.0
-const CATCHER_HEIGHT: float = 20.0
-const CATCHER_BOTTOM_OFFSET: float = 240.0
-const BOMB_SHRINK_FACTOR: float = 0.6
+var _bling_pool: Array[AudioStreamPlayer] = []
+var _bling_index: int = 0
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
-@onready var bling_sound: AudioStreamPlayer = $BlingSound
 
 
 func _ready() -> void:
@@ -91,6 +93,16 @@ func _ready() -> void:
 	GameManager.shop_closed.connect(_on_shop_closed)
 	GameManager.frenzy_started.connect(_on_frenzy_started)
 	GameManager.frenzy_ended.connect(_on_frenzy_ended)
+	# Build bling sound pool from the scene-defined template node
+	var bling_stream: AudioStream = $BlingSound.stream
+	var bling_bus: StringName = $BlingSound.bus
+	$BlingSound.queue_free()
+	for i: int in range(BLING_POOL_SIZE):
+		var player: AudioStreamPlayer = AudioStreamPlayer.new()
+		player.stream = bling_stream
+		player.bus = bling_bus
+		add_child(player)
+		_bling_pool.append(player)
 
 
 func _process(delta: float) -> void:
@@ -148,7 +160,7 @@ func _on_area_entered(area: Area2D) -> void:
 		var value: int = area.value
 		var pos: Vector2 = area.global_position
 		_combo += 1
-		bling_sound.pitch_scale = minf(1.0 + (_combo - 1) * PITCH_STEP, MAX_COMBO_PITCH)
+		var pitch: float = minf(1.0 + (_combo - 1) * PITCH_STEP, MAX_COMBO_PITCH)
 
 		# Update combo multiplier based on threshold and apply via GameManager
 		_update_combo_multiplier()
@@ -159,7 +171,7 @@ func _on_area_entered(area: Area2D) -> void:
 		_spawn_floating_text(pos, value, area.coin_type)
 		_spawn_collect_burst(pos, area.coin_type)
 		_squash_bounce()
-		bling_sound.play()
+		_play_bling(pitch)
 		area.collect()
 
 
@@ -208,6 +220,12 @@ func _squash_bounce() -> void:
 	_squash_tween.tween_property(sprite, "scale", _base_scale * Vector2(0.95, 1.1), 0.08).set_ease(Tween.EASE_OUT)
 	_squash_tween.tween_property(sprite, "scale", _base_scale, 0.1).set_ease(Tween.EASE_IN_OUT)
 
+
+func _play_bling(pitch: float) -> void:
+	var player: AudioStreamPlayer = _bling_pool[_bling_index]
+	player.pitch_scale = pitch
+	player.play()
+	_bling_index = (_bling_index + 1) % BLING_POOL_SIZE
 
 
 func _spawn_floating_text(at_position: Vector2, value: int, coin_type: int = 0) -> void:
@@ -278,12 +296,10 @@ func _spawn_collect_burst(at_position: Vector2, coin_type: int = 0) -> void:
 	get_tree().create_timer(burst.lifetime + 0.1).timeout.connect(burst.queue_free)
 
 
-
 func _on_coin_missed() -> void:
 	_combo = 0
 	_reset_combo_multiplier()
 	GameManager.combo_changed.emit(0)
-	bling_sound.pitch_scale = 1.0
 
 
 func _on_bomb_hit() -> void:
@@ -373,7 +389,6 @@ func _on_shop_opened() -> void:
 func _on_shop_closed() -> void:
 	_game_paused = false
 	monitoring = true
-
 
 
 func _unhandled_input(event: InputEvent) -> void:
